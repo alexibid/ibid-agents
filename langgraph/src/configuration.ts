@@ -1,0 +1,31 @@
+import { join, resolve } from 'node:path';
+
+export interface Configuration {
+  readonly workspaceRoot: string;
+  readonly projectsDirectory: string;
+  readonly contractsDirectory: string;
+  readonly stateFile: string;
+}
+
+const PACKAGE_ROOT = resolve(import.meta.dirname, '..');
+const WORKSPACE_VARIABLE = 'IBID_WORKSPACE_ROOT';
+
+export class MissingWorkspaceError extends Error {
+  constructor() {
+    super(`Set ${WORKSPACE_VARIABLE} to the absolute path of ibid-workspace.`);
+    this.name = 'MissingWorkspaceError';
+  }
+}
+
+export function readConfiguration(): Configuration {
+  const workspaceRoot = process.env[WORKSPACE_VARIABLE];
+  if (workspaceRoot === undefined || workspaceRoot === '') {
+    throw new MissingWorkspaceError();
+  }
+  return {
+    workspaceRoot,
+    projectsDirectory: process.env['IBID_PROJECT_SHEETS'] ?? join(PACKAGE_ROOT, '..', 'rules', 'projects'),
+    contractsDirectory: process.env['IBID_AGENT_CONTRACTS'] ?? join(PACKAGE_ROOT, '..', 'agents'),
+    stateFile: process.env['IBID_LANGGRAPH_STATE'] ?? join(PACKAGE_ROOT, 'state', 'stories.sqlite'),
+  };
+}

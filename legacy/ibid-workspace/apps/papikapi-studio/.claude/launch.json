@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "papikapi-studio",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["nx", "run", "papikapi-studio:serve-app"],
+      "port": 4500
+    }
+  ]
+}

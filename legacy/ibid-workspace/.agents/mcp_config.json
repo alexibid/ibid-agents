@@ -1,0 +1,33 @@
+{
+  "mcpServers": {
+    "paper": {
+      "type": "http",
+      "url": "http://localhost:29979/mcp",
+      "headers": {
+        "Host": "localhost",
+        "Accept": "application/json, text/event-stream"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-playwright"
+      ]
+    },
+    "storybook": {
+      "type": "http",
+      "url": "http://localhost:6006/mcp",
+      "headers": {
+        "Host": "localhost",
+        "Accept": "application/json, text/event-stream"
+      }
+    },
+    "kirigami": {
+      "command": "node",
+      "args": [
+        "apps/kirigami-studio/scripts/common/mcp/server.mjs"
+      ]
+    }
+  }
+}

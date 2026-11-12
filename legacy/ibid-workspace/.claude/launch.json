@@ -1,0 +1,65 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "oh-save-me",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "nx",
+        "serve",
+        "oh-save-me"
+      ],
+      "port": 4200
+    },
+    {
+      "name": "boilerplate",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "nx",
+        "serve",
+        "boilerplate"
+      ],
+      "port": 4300
+    },
+    {
+      "name": "papikapi",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "nx",
+        "serve",
+        "papikapi"
+      ],
+      "port": 4400
+    },
+    {
+      "name": "papikapi-studio",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "nx",
+        "serve",
+        "papikapi-studio"
+      ],
+      "port": 4500
+    },
+    {
+      "name": "facet-review",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4810",
+        "--directory",
+        "/private/tmp/claude-501/-Users-alexsantos-Projects-ibid-workspace/ca50c171-afef-442e-9327-c80ffd0e377a/scratchpad/review-site"
+      ],
+      "port": 4810
+    },
+    {
+      "name": "kirigami-generator",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "tools/kirigami/generate-server.mjs"
+      ],
+      "port": 4700
+    }
+  ]
+}

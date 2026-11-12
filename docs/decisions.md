@@ -1,0 +1,44 @@
+# Decisions
+
+Settled with the user. A decision here overrides any older rule file that says otherwise.
+
+| Date | Decision | Replaces |
+| --- | --- | --- |
+| 2026-11-11 | LangGraph is a requirement of this system | — |
+| 2026-11-11 | The user works inside Claude Desktop and Antigravity; no command line, no new chat app | — |
+| 2026-11-11 | LangGraph runs unit tests, journeys and accessibility checks | "The user runs all tests" in every rule file |
+| 2026-11-11 | LangGraph runs every validation command; no agent chooses when to validate | "Run `check:fast`" in project files and "never run `check:fast` unprompted" in the workspace file |
+| 2026-11-11 | A commit has no file limit | "At most 10 files per commit" in `oh-save-me` |
+| 2026-11-11 | Comments are forbidden, with one written exception: `secretlint-disable` for a confirmed false positive | The undeclared exception in the workspace file |
+| 2026-11-11 | Agent scripts live in this repository | "Always write scripts under `tools/scratch/`" |
+| 2026-11-11 | `camila` is removed from every rule | References in `oh-save-me`, `boilerplate` and `ibid-ui` |
+| 2026-11-11 | The commit is always the user's; agents never change git state | Unchanged, restated |
+| 2026-11-11 | Antigravity is never wrapped by another application | — |
+| 2026-11-12 | An agent may start a server, on a port named with `--port` that no `project.json` declares. Watch mode stays forbidden | "Never run watch mode or synchronous servers" |
+| 2026-11-12 | The workspace holds no agent file. Skills, tool server and guard are installed at the level of the user account; the old files are kept under `legacy/` | The earlier plan to leave links inside the workspace |
+| 2026-11-12 | Nothing of any agent tool stays in the workspace: `.claude/` and `.gemini/` leave it completely, in the root and in every project. A backup goes to the Desktop first | Keeping `launch.json`, `settings.local.json` and `worktrees` |
+| 2026-11-12 | The graph has one node per step, and LangSmith Studio is set up to view it | The two-node graph |
+| 2026-11-12 | The program is called LangGraph, in prose and in code (`langgraph/`, `ibid-langgraph`) | The name "referee" |
+| 2026-11-12 | The handover is a ready command per repository: `cd <absolute path> && git add -- <this story's files> && git commit -m <line>`. Files that already held earlier work are never staged | "No git commands" in the handover rules |
+
+## Deferred to the workspace
+
+These are defects in `ibid-workspace` itself. Each becomes a user story once the system runs.
+
+| Defect | Rule |
+| --- | --- |
+| Module boundaries allow every project to depend on every other | W01, W02 |
+| No style checker is installed | W12, W25, W26, O08 |
+| `eslint.config.mjs` carries a comment | W22 |
+| No rule sets `no-explicit-any` explicitly | W17 |
+
+## Open
+
+| Question | Why it matters |
+| --- | --- |
+| `papikapi-api` has no rule file | It cannot get a specialist until its rules are written |
+| `libs/testing` and `libs/utils` declare no targets in `project.json` | Their checks must be confirmed from the inferred targets |
+| An older note allows a header comment at the top of a file or class; the workspace rule bans every comment | LangGraph currently fails every comment except `secretlint-disable` |
+| The visual gate depends on the scripts of the `visual-qa` skill, which still live outside this repository | They must be moved here, and the user has so far reserved running figure scripts to himself |
+| The Angular skill, Modern Web Guidance and the Playwright test agents are named in contracts but not installed | The contracts point at references that are not on disk yet |
+| `design-system-specialist` asks for 12 to 20 changed files per step | Dropped: the plan decides the files; to confirm |
