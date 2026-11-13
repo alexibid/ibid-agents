@@ -1,0 +1,67 @@
+.graph {
+  display: block;
+  inline-size: 100%;
+  max-block-size: 26rem;
+
+  &__link {
+    stroke: var(--color-line);
+    stroke-width: 2;
+
+    &--failed {
+      stroke: var(--color-bad);
+      stroke-dasharray: 6 4;
+    }
+  }
+
+  &__node {
+    --node-color: var(--color-accent);
+
+    cursor: pointer;
+
+    &--assistant {
+      --node-color: var(--color-muted);
+
+      cursor: default;
+    }
+
+    &--langgraph {
+      --node-color: var(--color-langgraph);
+    }
+
+    &--skill {
+      --node-color: var(--color-antigravity);
+    }
+
+    &--failed {
+      --node-color: var(--color-bad);
+    }
+
+    &:focus-visible {
+      outline: none;
+    }
+  }
+
+  &__box {
+    fill: var(--color-panel);
+    stroke: var(--node-color);
+    stroke-width: 2;
+  }
+
+  &__node:focus-visible &__box,
+  &__node:hover &__box {
+    stroke-width: 4;
+  }
+
+  &__name {
+    fill: var(--color-text);
+    font-size: 14px;
+    font-weight: 600;
+    text-anchor: middle;
+  }
+
+  &__count {
+    fill: var(--color-muted);
+    font-size: 11px;
+    text-anchor: middle;
+  }
+}

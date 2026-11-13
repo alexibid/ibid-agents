@@ -1,0 +1,41 @@
+@use 'tools';
+
+.meter {
+  --meter-color: var(--color-good);
+
+  display: grid;
+  gap: var(--space-1);
+  min-width: 9.5rem;
+
+  &--medium {
+    --meter-color: var(--color-warn);
+  }
+
+  &--high {
+    --meter-color: var(--color-bad);
+  }
+
+  &__heading {
+    display: flex;
+    font-size: var(--size-small);
+    gap: var(--space-2);
+    justify-content: space-between;
+  }
+
+  &__track {
+    background: var(--color-line);
+    border-radius: 999px;
+    block-size: 0.375rem;
+    overflow: hidden;
+  }
+
+  &__fill {
+    background: var(--meter-color);
+    block-size: 100%;
+    max-inline-size: 100%;
+  }
+
+  &__caption {
+    @include tools.small-label;
+  }
+}

@@ -32,6 +32,7 @@ Every contract has the same six sections, in this order.
 | `reviewer.md` | `review` | First version, from `code-auditor` |
 | `final-verifier.md` | `final-verification` | First version |
 | `nx.md` | `plan`, and `implement` when workspace files change | First version, from the Nx skills |
+| `archivist.md` | Before the story, and whenever something is concluded | First version |
 
 No contract has trials yet, and none has been used on a real story.
 

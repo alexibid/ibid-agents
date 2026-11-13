@@ -1,0 +1,24 @@
+@use 'tools';
+
+:host {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.limits {
+  @include tools.panel;
+
+  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-6);
+  padding: var(--space-3) var(--space-4);
+
+  &__tool {
+    flex-basis: 6.5rem;
+  }
+
+  &__unknown {
+    @include tools.small-label;
+  }
+}

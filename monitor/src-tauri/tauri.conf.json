@@ -1,0 +1,43 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "ibid agents",
+  "version": "0.1.0",
+  "identifier": "pt.ibid.agents",
+  "build": {
+    "frontendDist": "../dist/monitor/browser",
+    "devUrl": "http://localhost:4711",
+    "beforeDevCommand": "npm start",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "ibid agents",
+        "width": 1240,
+        "height": 860,
+        "resizable": true,
+        "fullscreen": false,
+        "label": "main"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "app"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "android": {
+      "debugApplicationIdSuffix": ".debug"
+    }
+  }
+}

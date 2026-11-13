@@ -4,6 +4,7 @@ import type { Story } from './domain/plan.js';
 import type { StepName } from './domain/steps.js';
 import type { FlowGraph } from './flow/graph.js';
 import type { Instruction } from './flow/instructions.js';
+import { NOT_RECORDING, type FlowJournal } from './journal/flow-journal.js';
 import type { HistoryEntry, FlowStateValue, StoryStatus } from './flow/state.js';
 
 export interface StoryReport {
@@ -12,6 +13,7 @@ export interface StoryReport {
   readonly next: Instruction | 'nothing';
   readonly remainingSteps: readonly StepName[];
   readonly history: readonly HistoryEntry[];
+  readonly recorded: boolean;
 }
 
 export class UnknownStoryError extends Error {
@@ -24,12 +26,17 @@ export class UnknownStoryError extends Error {
 const RECURSION_LIMIT = 200;
 
 export class StoryFlow {
-  constructor(private readonly graph: FlowGraph) {}
+  constructor(
+    private readonly graph: FlowGraph,
+    private readonly journal: FlowJournal = NOT_RECORDING,
+  ) {}
 
   async startStory(story: Story): Promise<StoryReport> {
     const storyId = `${story.project}-${randomUUID().slice(0, 8)}`;
     await this.graph.invoke({ story }, configOf(storyId));
-    return this.report(storyId);
+    const started = await this.report(storyId);
+    const recorded = await this.journal.storyStarted({ storyId, story, status: started.status });
+    return { ...started, recorded };
   }
 
   async submit(storyId: string, handedBack: unknown): Promise<StoryReport> {
@@ -38,7 +45,10 @@ export class StoryFlow {
       return before;
     }
     await this.graph.invoke(new Command({ resume: handedBack }), configOf(storyId));
-    return this.report(storyId);
+    const after = await this.report(storyId);
+    const entries = after.history.slice(before.history.length);
+    const recorded = await this.journal.stepsJudged({ storyId, status: after.status, entries });
+    return { ...after, recorded };
   }
 
   async report(storyId: string): Promise<StoryReport> {
@@ -54,6 +64,7 @@ export class StoryFlow {
       next: pending === undefined ? 'nothing' : (pending.value as Instruction),
       remainingSteps: (state.queue ?? []).slice(state.position ?? 0),
       history: state.history ?? [],
+      recorded: false,
     };
   }
 }

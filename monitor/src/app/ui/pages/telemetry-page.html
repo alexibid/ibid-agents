@@ -1,0 +1,54 @@
+@let telemetry = store.telemetry();
+<section class="o-stack">
+  <div class="o-row">
+    <h1>Telemetria</h1>
+    <monitor-choice-field label="Período" [choices]="periods" [value]="days()" (valueChange)="choosePeriod($event)" />
+  </div>
+
+  <section class="o-panel o-stack">
+    <h2>Tokens gastos por dia</h2>
+    @for (day of telemetry.tokensByDay; track day.day + day.tool) {
+      <div class="day">
+        <span class="day__date">{{ day.day | date: 'EEE d MMM' }}</span>
+        <monitor-tool-badge [tool]="day.tool" />
+        <div class="day__track"><div class="day__bar" [class]="'day__bar day__bar--' + day.tool" [style.inline-size.%]="shareOf(day.tokens)"></div></div>
+        <span class="u-numeric">{{ day.tokens | number }}</span>
+        <span class="u-muted u-numeric">{{ day.prompts }} {{ day.prompts === 1 ? 'pedido' : 'pedidos' }}</span>
+      </div>
+    } @empty {
+      <p class="o-empty">Sem consumo registado neste período.</p>
+    }
+  </section>
+
+  <section class="o-panel o-stack">
+    <h2>Agentes mais chamados</h2>
+    @if (telemetry.agents.length > 0) {
+      <table>
+        <thead><tr><th scope="col">Agente</th><th scope="col">Tipo</th><th scope="col" class="u-numeric">Chamadas</th><th scope="col" class="u-numeric">Falhas</th></tr></thead>
+        <tbody>
+          @for (agent of telemetry.agents; track agent.agent + agent.kind) {
+            <tr><td>{{ agent.agent }}</td><td class="u-muted">{{ agent.kind }}</td><td class="u-numeric">{{ agent.calls | number }}</td><td class="u-numeric">{{ agent.failures | number }}</td></tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <p class="o-empty">Nenhum agente foi chamado neste período.</p>
+    }
+  </section>
+
+  <section class="o-panel o-stack">
+    <h2>Passos do LangGraph</h2>
+    @if (telemetry.steps.length > 0) {
+      <table>
+        <thead><tr><th scope="col">Passo</th><th scope="col" class="u-numeric">Vezes</th><th scope="col" class="u-numeric">Falhas</th><th scope="col" class="u-numeric">Tempo médio</th></tr></thead>
+        <tbody>
+          @for (step of telemetry.steps; track step.step) {
+            <tr><td>{{ step.step }}</td><td class="u-numeric">{{ step.runs | number }}</td><td class="u-numeric">{{ step.failures | number }}</td><td class="u-numeric">{{ step.averageSeconds | number: '1.0-1' }} s</td></tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <p class="o-empty">Ainda nenhuma user story passou pelo LangGraph neste período.</p>
+    }
+  </section>
+</section>

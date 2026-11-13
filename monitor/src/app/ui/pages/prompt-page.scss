@@ -1,0 +1,34 @@
+@use 'tools';
+
+.summary {
+  display: grid;
+  gap: var(--space-4);
+
+  &__text {
+    max-block-size: 14rem;
+    overflow: auto;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+
+  &__figures {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4) var(--space-8);
+    margin: 0;
+
+    dt {
+      @include tools.small-label;
+    }
+
+    dd {
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      margin: 0;
+    }
+  }
+
+  &__error {
+    color: var(--color-bad);
+  }
+}

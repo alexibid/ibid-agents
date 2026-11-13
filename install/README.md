@@ -25,6 +25,8 @@ Build LangGraph first: `npm run build` inside `langgraph/`.
 | LangGraph as a tool server | `~/.gemini/config/mcp_config.json` | Antigravity |
 | The guard, before commands and file writes | `~/.claude/settings.json` | Claude |
 | The guard, before commands and file writes | `~/.gemini/config/hooks.json` | Antigravity |
+| The assistant and the core rules at the start of every conversation | `~/.claude/settings.json` | Claude |
+| The status line that hands Claude's limits to the monitor, unless another status line is set | `~/.claude/settings.json` | Claude |
 | The official Nx plugin | `~/.claude/settings.json` | Claude |
 
 A skill whose name already exists at the destination is skipped and the existing one is kept.
@@ -53,8 +55,11 @@ It keeps three things that only work from inside the workspace and hold no rule:
 
 ## Consequences
 
-- After the workspace is cleared, a conversation that does not start with `/assistente` has
-  no project rules, only the user's own global instructions.
+- In Claude, a conversation opened inside the workspace starts with the core rules and the
+  instruction to act as the assistant. It is added again when the conversation is resumed or
+  summarised. It has not yet been seen in a new conversation.
+- In Antigravity, a conversation that does not start with `/assistente` has no project rules,
+  only the user's own global instructions.
 - The guard does not yet deny edits made outside an active step, nor inline scripts (W41).
 - The Antigravity guard follows the documented format and has not been seen working inside
   Antigravity.

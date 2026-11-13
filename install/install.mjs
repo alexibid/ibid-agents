@@ -7,6 +7,8 @@ import { dirname, join, resolve } from 'node:path';
 const AGENTS_ROOT = resolve(import.meta.dirname, '..');
 const LANGGRAPH_SERVER = join(AGENTS_ROOT, 'langgraph', 'dist', 'server.js');
 const GUARD = join(AGENTS_ROOT, 'langgraph', 'dist', 'guard.js');
+const SESSION_START = join(AGENTS_ROOT, 'langgraph', 'dist', 'session-start.js');
+const STATUS_LINE = join(AGENTS_ROOT, 'langgraph', 'dist', 'status-line.js');
 const SKILLS = join(AGENTS_ROOT, 'skills');
 const CLAUDE_HOME = join(homedir(), '.claude');
 const ANTIGRAVITY_HOME = join(homedir(), '.gemini', 'config');
@@ -31,7 +33,7 @@ function assertReady(workspace) {
   if (!existsSync(join(workspace, 'nx.json'))) {
     throw new UsageError(`${workspace} is not an Nx workspace.`);
   }
-  if (!existsSync(LANGGRAPH_SERVER) || !existsSync(GUARD)) {
+  if (![LANGGRAPH_SERVER, GUARD, SESSION_START, STATUS_LINE].every((script) => existsSync(script))) {
     throw new UsageError('LangGraph is not built. Run "npm run build" inside langgraph/ first.');
   }
 }
@@ -93,7 +95,7 @@ function antigravityServerStep(workspace) {
 }
 
 function antigravityGuardStep(workspace) {
-  const handler = { type: 'command', command: guardCommand(workspace), timeout: 10 };
+  const handler = { type: 'command', command: scriptCommand(workspace, GUARD), timeout: 10 };
   const entry = { PreToolUse: [{ matcher: ANTIGRAVITY_MATCHER, hooks: [handler] }] };
   return jsonStep(
     join(ANTIGRAVITY_HOME, 'hooks.json'),
@@ -105,14 +107,37 @@ function antigravityGuardStep(workspace) {
 }
 
 function claudeGuardStep(workspace) {
-  const entry = { matcher: CLAUDE_MATCHER, hooks: [{ type: 'command', command: guardCommand(workspace) }] };
-  const others = (settings) => (settings.hooks?.PreToolUse ?? []).filter((hook) => !isGuardEntry(hook));
+  const entry = { matcher: CLAUDE_MATCHER, hooks: [{ type: 'command', command: scriptCommand(workspace, GUARD) }] };
+  return claudeHookStep({ event: 'PreToolUse', script: GUARD, entry, label: `guard "${GUARD_NAME}" for Claude` });
+}
+
+function claudeSessionStartStep(workspace) {
+  const entry = { hooks: [{ type: 'command', command: scriptCommand(workspace, SESSION_START) }] };
+  return claudeHookStep({ event: 'SessionStart', script: SESSION_START, entry, label: 'the assistant at the start of every Claude conversation' });
+}
+
+function claudeStatusLineStep() {
+  const file = join(CLAUDE_HOME, 'settings.json');
+  const entry = { type: 'command', command: `node '${STATUS_LINE}'` };
+  const step = jsonStep(
+    file,
+    'the status line that hands Claude limits to the monitor',
+    (settings) => sameJson(settings.statusLine, entry),
+    (settings) => ({ ...settings, statusLine: entry }),
+    (settings) => omit(settings, 'statusLine'),
+  );
+  const another = () => readJson(file).statusLine !== undefined && !sameJson(readJson(file).statusLine, entry);
+  return { ...step, blocker: () => (another() ? 'another status line is already set and is kept' : '') };
+}
+
+function claudeHookStep({ event, script, entry, label }) {
+  const others = (settings) => (settings.hooks?.[event] ?? []).filter((hook) => !runsScript(hook, script));
   return jsonStep(
     join(CLAUDE_HOME, 'settings.json'),
-    `guard "${GUARD_NAME}" for Claude`,
-    (settings) => (settings.hooks?.PreToolUse ?? []).some((hook) => sameJson(hook, entry)),
-    (settings) => ({ ...settings, hooks: { ...settings.hooks, PreToolUse: [...others(settings), entry] } }),
-    (settings) => ({ ...settings, hooks: { ...settings.hooks, PreToolUse: others(settings) } }),
+    label,
+    (settings) => (settings.hooks?.[event] ?? []).some((hook) => sameJson(hook, entry)),
+    (settings) => ({ ...settings, hooks: { ...settings.hooks, [event]: [...others(settings), entry] } }),
+    (settings) => ({ ...settings, hooks: { ...settings.hooks, [event]: others(settings) } }),
   );
 }
 
@@ -147,12 +172,12 @@ function claudeServerStep(workspace) {
   };
 }
 
-function guardCommand(workspace) {
-  return `IBID_WORKSPACE_ROOT='${workspace}' node '${GUARD}'`;
+function scriptCommand(workspace, script) {
+  return `IBID_WORKSPACE_ROOT='${workspace}' node '${script}'`;
 }
 
-function isGuardEntry(hook) {
-  return (hook.hooks ?? []).some((handler) => String(handler.command ?? '').includes(GUARD));
+function runsScript(hook, script) {
+  return (hook.hooks ?? []).some((handler) => String(handler.command ?? '').includes(script));
 }
 
 function omit(record = {}, key) {
@@ -173,6 +198,8 @@ function stepsFor(workspace) {
     antigravityServerStep(workspace),
     claudeGuardStep(workspace),
     antigravityGuardStep(workspace),
+    claudeSessionStartStep(workspace),
+    claudeStatusLineStep(),
     claudeNxPluginStep(),
   ];
 }

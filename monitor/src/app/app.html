@@ -1,0 +1,21 @@
+<header class="shell">
+  <strong class="shell__name">ibid agents</strong>
+  <nav class="shell__screens" aria-label="Ecrãs">
+    @for (screen of screens; track screen.path) {
+      <a
+        class="shell__screen"
+        [routerLink]="screen.path"
+        routerLinkActive="shell__screen--current"
+        [routerLinkActiveOptions]="{ exact: screen.exact }"
+        >{{ screen.label }}</a
+      >
+    }
+  </nav>
+  <span class="shell__state" [class.shell__state--offline]="!gateway.online()" role="status">
+    {{ gateway.online() ? 'Ligado' : 'Sem ligação ao serviço. A tentar de novo…' }}
+  </span>
+</header>
+<main class="o-page">
+  <monitor-limits-strip />
+  <router-outlet />
+</main>

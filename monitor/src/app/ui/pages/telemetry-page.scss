@@ -1,0 +1,29 @@
+.day {
+  align-items: center;
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 6.5rem 6.5rem minmax(4rem, 1fr) 7rem 6rem;
+
+  &__date {
+    white-space: nowrap;
+  }
+
+  &__track {
+    background: var(--color-surface);
+    border-radius: 999px;
+    block-size: 0.625rem;
+    overflow: hidden;
+  }
+
+  &__bar {
+    block-size: 100%;
+
+    &--claude {
+      background: var(--color-claude);
+    }
+
+    &--antigravity {
+      background: var(--color-antigravity);
+    }
+  }
+}

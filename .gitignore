@@ -7,3 +7,6 @@ dist/
 langgraph/state/
 backup/
 .langgraph_api/
+.angular/
+target/
+monitor/src-tauri/gen/

@@ -1,0 +1,34 @@
+<table class="prompts">
+  <thead>
+    <tr>
+      <th scope="col">Pedido</th>
+      <th scope="col">Data</th>
+      <th scope="col" class="u-numeric">Tokens</th>
+      <th scope="col" class="u-numeric">% das 5 horas</th>
+      <th scope="col" class="u-numeric">% da semana</th>
+      <th scope="col">Ferramenta</th>
+      <th scope="col"><span class="prompts__hidden">Abrir</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (prompt of prompts(); track prompt.id) {
+      <tr>
+        <td>
+          <p class="prompts__text">{{ prompt.text }}</p>
+          @if (prompt.agents.length > 0) {
+            <p class="prompts__agents">Agentes: {{ prompt.agents.join(', ') }}</p>
+          }
+          @if (prompt.errors.length > 0) {
+            <p class="prompts__failed">{{ prompt.errors.length }} {{ prompt.errors.length === 1 ? 'erro' : 'erros' }}</p>
+          }
+        </td>
+        <td class="prompts__when">{{ prompt.askedOn | date: 'd MMM, HH:mm' }}</td>
+        <td class="u-numeric">{{ tokensSpentOn(prompt) | number }}</td>
+        <td class="u-numeric"><monitor-percent [value]="prompt.fiveHourPercent" /></td>
+        <td class="u-numeric"><monitor-percent [value]="prompt.weeklyPercent" /></td>
+        <td><monitor-tool-badge [tool]="prompt.tool" /></td>
+        <td><a class="prompts__more" [routerLink]="['/pedido', prompt.id]">Ver mais</a></td>
+      </tr>
+    }
+  </tbody>
+</table>

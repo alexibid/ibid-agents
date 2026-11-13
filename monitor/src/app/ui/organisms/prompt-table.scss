@@ -1,0 +1,32 @@
+@use 'tools';
+
+.prompts {
+  &__text {
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    line-clamp: 2;
+    max-inline-size: 38rem;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+
+  &__agents,
+  &__failed {
+    @include tools.small-label;
+  }
+
+  &__failed {
+    color: var(--color-bad);
+  }
+
+  &__when,
+  &__more {
+    white-space: nowrap;
+  }
+
+  &__hidden {
+    clip-path: inset(50%);
+    position: absolute;
+  }
+}
