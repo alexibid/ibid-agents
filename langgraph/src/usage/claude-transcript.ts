@@ -1,12 +1,17 @@
 import { numberIn, objectIn, objectsIn, parsedLines, textIn, type JsonObject } from './json-reading.js';
 import {
   clipped,
+  clippedForTool,
   isLangGraphTool,
   langGraphRequest,
+  requestIn,
   sumOf,
   type AgentCall,
+  shortToolName,
   type AgentKind,
+  type LimitHit,
   type PromptRecord,
+  type TimeWindow,
   type TokenCount,
 } from './prompt-record.js';
 
@@ -26,6 +31,9 @@ interface OpenPrompt {
 const SUBAGENT_TOOLS = new Set(['Agent', 'Task']);
 const SKILL_TOOL = 'Skill';
 const DEFAULT_AGENT = 'general-purpose';
+const REFUSED = 'rejected';
+const HUMAN = 'human';
+const WINDOWS: Readonly<Record<string, TimeWindow>> = { five_hour: '5h', seven_day: 'weekly' };
 
 export function promptsOfClaudeTranscript(lines: readonly string[]): PromptRecord[] {
   const prompts: OpenPrompt[] = [];
@@ -43,9 +51,30 @@ export function promptsOfClaudeTranscript(lines: readonly string[]): PromptRecor
   return prompts.map(recordOf);
 }
 
+export function limitHitsOfClaudeTranscript(lines: readonly string[]): LimitHit[] {
+  return parsedLines(lines.filter((line) => line.includes('"quotaLimits"'))).flatMap((line) => {
+    const limits = objectIn(line, 'quotaLimits');
+    const window = WINDOWS[textIn(limits, 'rateLimitType')];
+    const resetsAt = numberIn(limits, 'resetsAt');
+    return limits['status'] === REFUSED && window !== undefined && resetsAt > 0
+      ? [{ tool: 'claude' as const, window, hitOn: textIn(line, 'timestamp'), resetsOn: new Date(resetsAt * 1000).toISOString() }]
+      : [];
+  });
+}
+
 function startsPrompt(line: JsonObject, current: OpenPrompt | undefined): boolean {
   const promptId = textIn(line, 'promptId');
-  return line['type'] === 'user' && promptId !== '' && promptId !== current?.promptId && spokenTextOf(line) !== '';
+  return line['type'] === 'user' && promptId !== '' && promptId !== current?.promptId && wasTypedByTheUser(line) && requestOf(line) !== '';
+}
+
+function wasTypedByTheUser(line: JsonObject): boolean {
+  const origin = textIn(objectIn(line, 'origin'), 'kind');
+  const turnOrigin = textIn(line, 'turnOrigin');
+  return origin === HUMAN || (origin === '' && (turnOrigin === '' || turnOrigin === HUMAN) && line['isCompactSummary'] !== true);
+}
+
+function requestOf(line: JsonObject): string {
+  return requestIn(spokenTextOf(line));
 }
 
 function opened(line: JsonObject): OpenPrompt {
@@ -54,7 +83,7 @@ function opened(line: JsonObject): OpenPrompt {
     promptId: textIn(line, 'promptId'),
     conversationId: textIn(line, 'sessionId'),
     workspace: textIn(line, 'cwd'),
-    text: clipped(spokenTextOf(line)),
+    text: clipped(requestOf(line)),
     askedOn,
     finishedOn: askedOn,
     model: '',
@@ -82,10 +111,8 @@ function readAnswer(prompt: OpenPrompt, line: JsonObject): void {
   prompt.model = textIn(message, 'model') || prompt.model;
   prompt.tokensByMessage.set(textIn(message, 'id'), tokensOf(objectIn(message, 'usage')));
   for (const block of objectsIn(message, 'content').filter((entry) => entry['type'] === 'tool_use')) {
-    const call = agentCallOf(block, prompt.finishedOn);
-    if (call !== undefined) {
-      prompt.calls.set(call.id, call);
-    }
+    const call = callOf(block, prompt.finishedOn);
+    prompt.calls.set(call.id, call);
   }
 }
 
@@ -93,12 +120,13 @@ function readToolResults(prompt: OpenPrompt, line: JsonObject): void {
   for (const block of objectsIn(objectIn(line, 'message'), 'content')) {
     const call = prompt.calls.get(textIn(block, 'tool_use_id'));
     if (block['type'] === 'tool_result' && call !== undefined) {
-      prompt.calls.set(call.id, { ...call, response: clipped(resultTextOf(block)), failed: block['is_error'] === true });
+      const response = call.kind === 'tool' ? clippedForTool(resultTextOf(block)) : clipped(resultTextOf(block));
+      prompt.calls.set(call.id, { ...call, response, failed: block['is_error'] === true });
     }
   }
 }
 
-function agentCallOf(block: JsonObject, calledOn: string): AgentCall | undefined {
+function callOf(block: JsonObject, calledOn: string): AgentCall {
   const name = textIn(block, 'name');
   const input = objectIn(block, 'input');
   const base = { id: textIn(block, 'id'), response: '', failed: false, calledOn };
@@ -108,7 +136,10 @@ function agentCallOf(block: JsonObject, calledOn: string): AgentCall | undefined
   if (name === SKILL_TOOL) {
     return { ...base, ...named('skill', textIn(input, 'skill')), request: clipped(textIn(input, 'args')) };
   }
-  return isLangGraphTool(name) ? { ...base, ...named('langgraph', 'LangGraph'), request: langGraphRequest(name, input) } : undefined;
+  if (isLangGraphTool(name)) {
+    return { ...base, ...named('langgraph', 'LangGraph'), request: langGraphRequest(name, input) };
+  }
+  return { ...base, ...named('tool', shortToolName(name)), request: clippedForTool(JSON.stringify(input, null, 2)) };
 }
 
 function named(kind: AgentKind, agent: string): { readonly kind: AgentKind; readonly agent: string } {

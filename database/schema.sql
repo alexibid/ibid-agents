@@ -84,6 +84,7 @@ create table if not exists prompts (
 );
 
 alter table prompts add column if not exists errors text[] not null default '{}';
+alter table prompts add column if not exists percent_estimated boolean not null default false;
 
 create index if not exists prompts_recent on prompts (asked_at desc);
 
@@ -98,6 +99,9 @@ create table if not exists agent_calls (
   called_at timestamptz not null
 );
 
+alter table agent_calls drop constraint if exists agent_calls_kind_check;
+alter table agent_calls add constraint agent_calls_kind_check check (kind in ('agent', 'langgraph', 'skill', 'tool'));
+
 create index if not exists agent_calls_prompt on agent_calls (prompt_id, called_at);
 
 create table if not exists limit_samples (
@@ -111,3 +115,11 @@ create table if not exists limit_samples (
 );
 
 create index if not exists limit_samples_recent on limit_samples (tool, pool, time_window, sampled_at desc);
+
+create table if not exists limit_hits (
+  tool text not null check (tool in ('claude', 'antigravity')),
+  time_window text not null check (time_window in ('5h', 'weekly')),
+  hit_at timestamptz not null,
+  resets_at timestamptz not null,
+  primary key (tool, time_window, resets_at)
+);

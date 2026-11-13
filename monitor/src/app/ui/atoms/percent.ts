@@ -11,10 +11,13 @@ import type { Percent as PercentValue } from '../../domain/prompt';
     @if (percent === 'unknown') {
       <span class="u-muted" title="Sem leituras do limite antes e depois deste pedido">desconhecido</span>
     } @else {
-      <span>{{ percent | number: '1.1-1' }} %</span>
+      <span [title]="estimated() ? 'Estimativa, calculada a partir das vezes em que o limite foi atingido' : 'Medido'">
+        {{ estimated() ? '≈ ' : '' }}{{ percent | number: '1.3-3' }} %
+      </span>
     }
   `,
 })
 export class Percent {
   readonly value = input.required<PercentValue>();
+  readonly estimated = input(false);
 }

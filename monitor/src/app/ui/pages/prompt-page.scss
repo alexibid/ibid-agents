@@ -32,3 +32,26 @@
     color: var(--color-bad);
   }
 }
+
+.summary__warning {
+  color: var(--color-warn);
+  font-weight: 600;
+}
+
+.legend {
+  border-inline-start: 0.75rem solid var(--color-accent);
+  margin-inline-start: var(--space-3);
+  padding-inline-start: var(--space-1);
+
+  &--langgraph {
+    border-color: var(--color-langgraph);
+  }
+
+  &--skill {
+    border-color: var(--color-antigravity);
+  }
+
+  &--tool {
+    border-color: var(--color-muted);
+  }
+}

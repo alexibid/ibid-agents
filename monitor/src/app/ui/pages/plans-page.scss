@@ -1,0 +1,29 @@
+.plan {
+  display: grid;
+  gap: var(--space-3);
+
+  &--closed {
+    opacity: 0.7;
+  }
+
+  &__header {
+    align-items: start;
+    display: flex;
+    gap: var(--space-4);
+    justify-content: space-between;
+  }
+
+  &__title {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  &__body {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+
+  &__failure {
+    color: var(--color-bad);
+  }
+}

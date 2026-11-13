@@ -1,0 +1,37 @@
+<section class="o-stack">
+  <h1>Planos</h1>
+  <p class="u-muted">Ideias e planos que ficaram para concretizar depois. O assistente consulta-os antes de investigar de novo.</p>
+  <monitor-text-field label="Procurar nos planos" placeholder="Uma palavra do título ou do texto" [(value)]="store.text" />
+
+  @for (plan of store.plans(); track plan.id) {
+    <article class="o-panel plan" [class.plan--closed]="plan.status !== 'open'">
+      <header class="plan__header">
+        <div class="plan__title">
+          <h2>{{ plan.title }}</h2>
+          <span class="u-muted">{{ kindNames[plan.kind] }} · {{ statusNames[plan.status] }} · {{ plan.project }} · {{ plan.updatedOn | date: 'd MMM y' }}</span>
+        </div>
+        <monitor-trash-button [label]="'Apagar ' + plan.title" (click)="doomedId.set(plan.id)" />
+      </header>
+      <p class="plan__body">{{ plan.body }}</p>
+      @if (plan.sources.length > 0) {
+        <p class="u-muted">Fontes: {{ plan.sources.join(', ') }}</p>
+      }
+    </article>
+  } @empty {
+    <p class="o-panel o-empty">{{ store.text() ? 'Nenhum plano tem essas palavras.' : 'Não há planos nem ideias guardados.' }}</p>
+  }
+</section>
+
+<monitor-dialog heading="Apagar este plano?" [open]="doomedId() !== ''" (closed)="closeConfirmation()">
+  @if (doomed(); as plan) {
+    <p><strong>{{ plan.title }}</strong></p>
+    <p>Desaparece de vez e o assistente deixa de o encontrar. Não dá para desfazer.</p>
+    @if (failure()) {
+      <p class="plan__failure" role="alert">{{ failure() }}</p>
+    }
+    <div class="o-row">
+      <monitor-button (click)="forget(plan.id)">Apagar</monitor-button>
+      <monitor-button look="quiet" (click)="closeConfirmation()">Cancelar</monitor-button>
+    </div>
+  }
+</monitor-dialog>

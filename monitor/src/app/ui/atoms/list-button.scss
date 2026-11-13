@@ -1,0 +1,32 @@
+@use 'tools';
+
+:host {
+  display: block;
+}
+
+.list-button {
+  background: transparent;
+  border: 0;
+  border-inline-start: 3px solid transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  gap: 2px;
+  inline-size: 100%;
+  padding: var(--space-2) var(--space-3);
+  text-align: start;
+
+  &:hover {
+    background: var(--color-surface);
+  }
+
+  &:focus-visible {
+    @include tools.focus-ring;
+  }
+
+  &--current {
+    background: var(--color-surface);
+    border-inline-start-color: var(--color-accent);
+  }
+}

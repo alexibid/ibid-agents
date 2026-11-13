@@ -53,10 +53,47 @@ One entry in `details` per mandatory part. A part that could not be inspected is
   see. Only a final pass lets a figure through.
 - Change no project file.
 
+## Method
+
+1. Read the art and name every mandatory part. Create or revise the regions file: for each
+   part, a box `[x, y, width, height]` in art pixels, with `kind` (`eye`, `mark`, `ear`,
+   `paw`, `tail`, `default`), `mandatory`, and `visibility` (`visible`, or `hidden` when the
+   art does not show it). Eye boxes fit the iris. `scripts/regions.example.json` shows the
+   shape. Whoever built the figure may not mark a part the art shows as `hidden`.
+2. Run the region audit. Open the side-by-side image and every crop, and confirm each verdict
+   matches what is seen.
+3. Open the fit, right, back and left renders. Use the free camera for the belly, the soles
+   and the back of the tail.
+4. When a region is inconclusive for lack of pixels, run again with a larger `--size`.
+5. Compare with the defects of the previous round, then report.
+
+What the region audit measures in each region: whether it can be located in the model, pixels
+across (inconclusive below the minimum), colour difference, structure, overlap of the dark
+shape, edge sharpness against the art, and for eyes a pupil probe: present, dark, the art's
+shape, proportion, area, position in the eye and iris colour. Thresholds live in `THRESHOLDS`;
+recalibrate the art against itself when the figure changes.
+
+## Report
+
+Before the verdict, a coverage table: each part, the views and crops opened, pixels across,
+conclusive or not. Then the measurements per region, then each defect with its severity, root
+cause (input, seed, generation, texture or simplification), whether it can be fixed further
+down, and the proof. A base gate report always says the figure must not reach the user.
+
 ## Tools
 
-- The region audit and free camera scripts of the `visual-qa` skill, for measurements and
-  extra views.
+The scripts live in `skills/visual-gate/scripts/` of this repository.
+
+```bash
+S=<ibid-agents>/skills/visual-gate/scripts
+python3 $S/audit_regions.py --glb <model.glb> --art <art-with-alpha.png> --regions <regions.json> --out <folder> --size 3000
+python3 $S/inspect_camera.py --glb <model.glb> --out <file.png> --azimuth A --elevation E --focus full --zoom Z
+python3 $S/inspect_camera.py --glb <model.glb> --audit-all --out <folder>
+```
+
+The region audit exits with code 1 when the gate fails. When the model has no plinth but the
+art does, pass `--art-floor-y <row>` and `--camera` so the art is aligned without it.
+
 - Reading images.
 
 ## Verified by

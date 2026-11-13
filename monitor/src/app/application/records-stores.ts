@@ -1,4 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
+import type { Observable } from 'rxjs';
 import { matchesProblem, NO_TELEMETRY, type LimitReading, type Note, type Problem, type Telemetry } from '../domain/records';
 import { keptFresh } from './kept-fresh';
 import { MonitorGateway } from './monitor-gateway';
@@ -50,14 +51,18 @@ export class ProblemsStore {
 }
 
 @Injectable({ providedIn: 'root' })
-export class NotesStore {
+export class PlansStore {
   private readonly gateway = inject(MonitorGateway);
 
   readonly text = signal('');
-  readonly notes = keptFresh<string, readonly Note[]>({
+  readonly plans = keptFresh<string, readonly Note[]>({
     gateway: this.gateway,
     choice: this.text,
-    load: (text) => this.gateway.notes(text),
+    load: (text) => this.gateway.plans(text),
     whileLoading: [],
   });
+
+  forget(planId: string): Observable<unknown> {
+    return this.gateway.forgetPlan(planId);
+  }
 }

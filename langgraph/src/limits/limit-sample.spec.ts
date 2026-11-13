@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { samplesOfAntigravitySummary, samplesOfClaudeStatusLine, usedPercentOf } from './limit-sample.js';
+import { currentWindowOf, samplesOfAntigravitySummary, samplesOfClaudeStatusLine, usedPercentOf } from './limit-sample.js';
 
 describe('usedPercentOf', () => {
   it.each([
     [1, 0],
-    [0.32282624, 67.72],
+    [0.32282624, 67.7174],
     [0, 100],
     [1.4, 0],
     [-0.2, 100],
@@ -54,7 +54,7 @@ describe('samplesOfClaudeStatusLine', () => {
     };
 
     expect(samplesOfClaudeStatusLine(statusLine)).toEqual([
-      { tool: 'claude', pool: 'all models', window: '5h', usedPercent: 23.46, resetsOn: '2025-02-01T16:00:00.000Z' },
+      { tool: 'claude', pool: 'all models', window: '5h', usedPercent: 23.456, resetsOn: '2025-02-01T16:00:00.000Z' },
       { tool: 'claude', pool: 'all models', window: 'weekly', usedPercent: 41.2, resetsOn: '2025-02-06T16:00:00.000Z' },
     ]);
   });
@@ -67,5 +67,42 @@ describe('samplesOfClaudeStatusLine', () => {
 
   it('should read nothing when Claude sent no limits', () => {
     expect(samplesOfClaudeStatusLine({ model: {} })).toEqual([]);
+  });
+});
+
+describe('currentWindowOf', () => {
+  const at = (time: string) => new Date(`2026-11-13T${time}:00.000Z`);
+
+  it('should add up what was spent since the five hour window opened', () => {
+    const spending = [
+      { askedOn: at('09:00'), percent: 10 },
+      { askedOn: at('10:30'), percent: 2.5 },
+      { askedOn: at('13:59'), percent: 4 },
+    ];
+
+    expect(currentWindowOf(spending, at('14:10'))).toEqual([]);
+    expect(currentWindowOf(spending, at('13:59'))).toEqual([
+      { tool: 'claude', pool: 'estimate', window: '5h', usedPercent: 16.5, resetsOn: '2026-11-13T14:00:00.000Z' },
+    ]);
+  });
+
+  it('should start again from the first prompt after the window closed', () => {
+    const spending = [
+      { askedOn: at('03:00'), percent: 60 },
+      { askedOn: at('08:00'), percent: 5 },
+      { askedOn: at('09:00'), percent: 7 },
+    ];
+
+    expect(currentWindowOf(spending, at('09:30'))).toEqual([
+      { tool: 'claude', pool: 'estimate', window: '5h', usedPercent: 12, resetsOn: '2026-11-13T13:00:00.000Z' },
+    ]);
+  });
+
+  it('should never show more than everything spent', () => {
+    expect(currentWindowOf([{ askedOn: at('09:00'), percent: 140 }], at('09:30'))[0]?.usedPercent).toBe(100);
+  });
+
+  it('should show nothing when no prompt was made', () => {
+    expect(currentWindowOf([], at('09:30'))).toEqual([]);
   });
 });

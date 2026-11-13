@@ -53,6 +53,9 @@ Personal finance, local-first. **Oh Save Me!** in English, **Oh poupa-me!** in P
 
 ## Design rules
 
+- The design source is the Paper file `01KYYWXKZBF3RDTQ9Y56TEVCDW`. The visual system is node
+  `8KQ-0` and the icon collection is node `IRV-0`. Source code never names the design tool.
+
 - Line art, hand-drawn. The main background is on every page. (O05)
 - Use the visible area for data. Tables and charts carry no hand-drawn border.
 - On a card the main figure is the largest element. Split dense cards into child cards.

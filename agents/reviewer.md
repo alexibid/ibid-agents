@@ -42,6 +42,8 @@ and could still be clearer; those reach the user in the handover.
 | W61 | Is everything in English, with product copy in translations? |
 | K01 | Is mock data written inline in a spec? |
 | K04 | Does a component stylesheet carry shared look instead of local structure? |
+| Layers | Does `domain/` stay free of framework imports, with use cases in `application/` and only presentation in `ui/`? |
+| Atomic level | Does each interface part sit at the right level: atom, molecule, organism, template or page? |
 | Sheet | Is every `judgement` rule of the project sheet respected? |
 
 Names are part of every question: a name that hides intent, misleads or needs decoding is a

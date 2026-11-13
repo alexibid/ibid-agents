@@ -1,0 +1,27 @@
+@use 'tools';
+
+.trash-button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  color: var(--color-muted);
+  cursor: pointer;
+  display: inline-flex;
+  padding: var(--space-1);
+
+  &:hover {
+    border-color: var(--color-bad);
+    color: var(--color-bad);
+  }
+
+  &:focus-visible {
+    @include tools.focus-ring;
+  }
+
+  &__icon {
+    block-size: 1.125rem;
+    fill: currentcolor;
+    inline-size: 1.125rem;
+  }
+}

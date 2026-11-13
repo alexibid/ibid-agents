@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
@@ -10,6 +10,10 @@ const GUARD = join(AGENTS_ROOT, 'langgraph', 'dist', 'guard.js');
 const SESSION_START = join(AGENTS_ROOT, 'langgraph', 'dist', 'session-start.js');
 const STATUS_LINE = join(AGENTS_ROOT, 'langgraph', 'dist', 'status-line.js');
 const SKILLS = join(AGENTS_ROOT, 'skills');
+const SYSTEM_SKILLS = join(AGENTS_ROOT, 'system-skills');
+const INSTRUCTIONS = join(AGENTS_ROOT, 'instructions');
+const SHARED_SKILLS = join(homedir(), '.agents', 'skills');
+const ANTIGRAVITY_AGENTS = join(AGENTS_ROOT, 'antigravity', 'agents');
 const CLAUDE_HOME = join(homedir(), '.claude');
 const ANTIGRAVITY_HOME = join(homedir(), '.gemini', 'config');
 const SERVER_NAME = 'ibid-langgraph';
@@ -43,26 +47,58 @@ function readJson(file) {
 }
 
 function isLinkTo(link, target) {
-  return lstatSync(link, { throwIfNoEntry: false })?.isSymbolicLink() === true && readlinkSync(link) === target;
+  if (lstatSync(link, { throwIfNoEntry: false })?.isSymbolicLink() !== true) {
+    return false;
+  }
+  return readlinkSync(link) === target || resolvesTo(link, target);
 }
 
-function linkStep(link, target) {
+function resolvesTo(link, target) {
+  try {
+    return realpathSync(link) === realpathSync(target);
+  } catch {
+    return false;
+  }
+}
+
+function linkStep(link, target, type = 'dir') {
   return {
     label: `link ${link}`,
     isInstalled: () => isLinkTo(link, target),
     blocker: () => (existsSync(link) ? 'a skill with this name is already there and is kept' : ''),
     install: () => {
       mkdirSync(dirname(link), { recursive: true });
-      symlinkSync(target, link, 'dir');
+      symlinkSync(target, link, type);
     },
     remove: () => rmSync(link),
   };
 }
 
 function skillSteps(skillsHome) {
-  return readdirSync(SKILLS, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => linkStep(join(skillsHome, entry.name), join(SKILLS, entry.name)));
+  return [SKILLS, SYSTEM_SKILLS].flatMap((source) =>
+    readdirSync(source, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => linkStep(join(skillsHome, entry.name), join(source, entry.name))),
+  );
+}
+
+function pruneStep(skillsHome) {
+  const stale = () =>
+    readdirSync(skillsHome, { withFileTypes: true })
+      .map((entry) => join(skillsHome, entry.name))
+      .filter((link) => lstatSync(link).isSymbolicLink() && !existsSync(link) && pointsIntoThisRepository(link));
+  return {
+    label: `remove links in ${skillsHome} to skills that no longer exist`,
+    isInstalled: () => stale().length === 0,
+    blocker: () => '',
+    install: () => stale().forEach((link) => rmSync(link)),
+    remove: () => undefined,
+  };
+}
+
+function pointsIntoThisRepository(link) {
+  const target = readlinkSync(link);
+  return target.startsWith(AGENTS_ROOT) || target.startsWith(SHARED_SKILLS);
 }
 
 function jsonStep(file, label, isInstalled, withEntry, withoutEntry) {
@@ -192,6 +228,14 @@ function assertSucceeded(result) {
 
 function stepsFor(workspace) {
   return [
+    linkStep(SHARED_SKILLS, SKILLS),
+    linkStep(join(ANTIGRAVITY_HOME, 'agents'), ANTIGRAVITY_AGENTS),
+    linkStep(join(CLAUDE_HOME, 'CLAUDE.md'), join(INSTRUCTIONS, 'claude', 'CLAUDE.md'), 'file'),
+    linkStep(join(homedir(), '.gemini', 'GEMINI.md'), join(INSTRUCTIONS, 'gemini', 'GEMINI.md'), 'file'),
+    linkStep(join(ANTIGRAVITY_HOME, 'AGENTS.md'), join(INSTRUCTIONS, 'antigravity', 'AGENTS.md'), 'file'),
+    linkStep(join(homedir(), '.codex', 'AGENTS.md'), join(INSTRUCTIONS, 'codex', 'AGENTS.md'), 'file'),
+    pruneStep(join(CLAUDE_HOME, 'skills')),
+    pruneStep(join(ANTIGRAVITY_HOME, 'skills')),
     ...skillSteps(join(CLAUDE_HOME, 'skills')),
     ...skillSteps(join(ANTIGRAVITY_HOME, 'skills')),
     claudeServerStep(workspace),

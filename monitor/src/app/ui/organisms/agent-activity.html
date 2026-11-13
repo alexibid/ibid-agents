@@ -1,0 +1,51 @@
+@let shown = agent();
+<header class="activity__header">
+  <div class="o-row">
+    <h2>{{ shown.name }}</h2>
+    @if (shown.command) {
+      <monitor-copy-button [text]="shown.command" />
+    }
+    @if (shown.group === 'mine') {
+      <monitor-trash-button [label]="'Apagar ' + shown.name" (click)="removeAsked.emit()" />
+    }
+  </div>
+  @if (shown.group === 'langgraph') {
+    <p class="u-muted">Papel do LangGraph: entra sozinho no passo certo de cada user story. O comando chama-o à parte, no Claude ou no Antigravity.</p>
+  } @else if (shown.command) {
+    <p class="u-muted">Cola o comando no Claude ou no Antigravity para o chamar.</p>
+  }
+  @if (shown.job) {
+    <p>{{ shown.job }}</p>
+  }
+  <p class="u-muted">
+    @if (shown.inRepository) {
+      {{ shown.group === 'system' ? 'system-skills/' : 'skills/' }}{{ shown.file }}
+    } @else {
+      Não está no ibid-agents: vem da própria ferramenta ou de outro sítio do computador.
+    }
+  </p>
+</header>
+
+@for (run of runs(); track run.id) {
+  <article class="activity__run" [class.activity__run--failed]="run.failed">
+    <div class="o-row">
+      <span>{{ run.calledOn | date: 'EEE d MMM, HH:mm:ss' }}</span>
+      <monitor-tool-badge [tool]="run.tool" />
+      @if (run.failed) {
+        <span class="activity__failed">falhou</span>
+      }
+      <a [routerLink]="['/pedido', run.promptId]">ver o pedido</a>
+    </div>
+    <p class="activity__prompt">{{ run.promptText }}</p>
+    <details class="activity__exchange">
+      <summary>O que lhe foi pedido</summary>
+      <pre>{{ run.request || 'Sem texto.' }}</pre>
+    </details>
+    <details class="activity__exchange">
+      <summary>O que devolveu</summary>
+      <pre>{{ run.response || 'Ainda sem resposta registada.' }}</pre>
+    </details>
+  </article>
+} @empty {
+  <p class="o-empty">Este agente ainda não foi executado em nenhuma conversa registada.</p>
+}

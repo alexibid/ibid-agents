@@ -28,6 +28,13 @@ Settled with the user. A decision here overrides any older rule file that says o
 | 2026-11-13 | Tokens are read from the conversation records both tools write on disk | — |
 | 2026-11-13 | Antigravity limits are read from its local process with its session key, held in memory only. The user approved this undocumented route | Showing Antigravity limits as unknown |
 | 2026-11-13 | The percentage a prompt spent is the difference between the limit read before and after it, per tool. It is approximate when two conversations run at once | — |
+| 2026-11-13 | Claude Desktop does not run the status line, so Claude's percentages are estimated: the tokens spent before each time Claude refused for a limit give that limit's size per model, and each prompt is a share of it. Shown with ≈ | Showing Claude's percentages as unknown |
+| 2026-11-13 | The graph of a prompt shows everything the assistant called (LangGraph, agents, skills and tools) and warns when it bypassed LangGraph and the agents | A graph of agents only |
+| 2026-11-13 | Every agent on the machine lives in this repository: skills in `skills/` (the user's own and the LangGraph roles) and `system-skills/` (vendor skills such as Firebase and Nx); Antigravity's own agents in `antigravity/agents/`; the global instruction files in `instructions/`. The old places hold links | Agents scattered across `~/.agents`, `~/.gemini` and `~/.claude` |
+| 2026-11-13 | Claude and Antigravity see exactly the same skills, and every one is invoked by `/name` | Each tool with its own set |
+| 2026-11-13 | Each LangGraph contract in `agents/` has a skill of the same name that only points to it, so the role can also be invoked on its own | Contracts reachable only through LangGraph |
+| 2026-11-13 | Duplicates merged into one: `qa-tester` and `playwright` into the test and browser contracts, `code-auditor` into `reviewer`, `visual-qa` and its scripts into `visual-gate`, `cv-generator` into `job`, `design-system-specialist` into `ui`, `web-design` and the oh-save-me sheet; the `agents` skill dropped. The originals are in `legacy/merged-skills/` | — |
+| 2026-11-13 | The user's own skills can be removed from the dashboard; they go to the Mac Trash and their links leave both tools. LangGraph roles and system skills cannot be removed there | — |
 
 ## Deferred to the workspace
 

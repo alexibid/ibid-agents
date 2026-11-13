@@ -111,3 +111,24 @@ function contractsOf(step: StepName, state: FlowStateValue): readonly string[] {
 function contractPaths(files: readonly string[], state: FlowStateValue): string[] {
   return files.map((file) => join(state.contractsDirectory, file));
 }
+
+export interface StepDescription {
+  readonly doneBy: string;
+  readonly task: string;
+  readonly contracts: readonly string[];
+  readonly contractsWhenNeeded: readonly string[];
+}
+
+const RUN_BY_LANGGRAPH = 'LangGraph runs the command the project sheet names for this step and judges its result itself.';
+
+export function describedStep(step: StepName | 'plan'): StepDescription {
+  if (step === 'plan') {
+    return { doneBy: 'project specialist', task: PLAN_TASK, contracts: [SPECIALIST_CONTRACT, NX_CONTRACT], contractsWhenNeeded: [] };
+  }
+  return {
+    doneBy: ownerOf(step),
+    task: TASKS[step] ?? RUN_BY_LANGGRAPH,
+    contracts: CONTRACTS[step] ?? [],
+    contractsWhenNeeded: step === 'implement' ? [UI_CONTRACT, NX_CONTRACT] : [],
+  };
+}

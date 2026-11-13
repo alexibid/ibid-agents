@@ -1,0 +1,8 @@
+{
+  "regions": [
+    {"name": "eye_left", "kind": "eye", "box": [160, 95, 24, 26], "mandatory": true},
+    {"name": "eye_right", "kind": "eye", "box": [208, 96, 34, 26], "mandatory": true},
+    {"name": "nose_mouth", "kind": "mark", "box": [172, 132, 46, 40], "mandatory": true},
+    {"name": "blaze", "kind": "mark", "box": [186, 66, 40, 60], "mandatory": true}
+  ]
+}

@@ -1,0 +1,41 @@
+@use 'tools';
+
+:host {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.step {
+  display: grid;
+  gap: var(--space-1) var(--space-4);
+  grid-template-columns: max-content 1fr;
+  margin: 0;
+
+  dt {
+    @include tools.small-label;
+  }
+
+  dd {
+    margin: 0;
+  }
+
+  &__contract {
+    border-inline-start: 3px solid var(--color-accent);
+    display: grid;
+    gap: var(--space-1);
+    padding-inline-start: var(--space-3);
+
+    &--optional {
+      border-inline-start-style: dashed;
+    }
+  }
+
+  &__event {
+    border-inline-start: 3px solid var(--color-good);
+    padding-inline-start: var(--space-3);
+
+    &--failed {
+      border-inline-start-color: var(--color-bad);
+    }
+  }
+}

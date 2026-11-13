@@ -42,7 +42,7 @@ describe('promptsOfAntigravityTranscript', () => {
     expect(prompts[1]?.tokens).toEqual({ input: 0, output: 0, cacheRead: 0, cacheWrite: 0 });
   });
 
-  it('should keep LangGraph and agent calls with the step that answered them, and no other tool', () => {
+  it('should keep LangGraph, agent and tool calls with the step that answered them', () => {
     const [prompt] = read([
       userInput(0, 'build it', '2026-11-13T10:00:00Z'),
       planner(1, '2026-11-13T10:00:01Z', [
@@ -50,15 +50,23 @@ describe('promptsOfAntigravityTranscript', () => {
         { name: 'run_command', args: { CommandLine: 'ls' } },
       ]),
       step({ step_index: 2, source: 'MODEL', type: 'GENERIC', content: 'story started', created_at: '2026-11-13T10:00:02Z' }),
+      step({ step_index: 2, source: 'MODEL', type: 'RUN_COMMAND', content: 'apps libs', created_at: '2026-11-13T10:00:02Z' }),
       planner(3, '2026-11-13T10:00:03Z', [{ name: 'browser_subagent', args: { Task: 'open the page' } }]),
       step({ step_index: 4, source: 'MODEL', type: 'GENERIC', status: 'ERROR', content: 'timed out', created_at: '2026-11-13T10:00:08Z' }),
     ]);
 
     expect(prompt?.agentCalls).toEqual([
       expect.objectContaining({ kind: 'langgraph', agent: 'LangGraph', response: 'story started', failed: false }),
+      expect.objectContaining({ kind: 'tool', agent: 'run_command', response: 'apps libs', failed: false }),
       expect.objectContaining({ kind: 'agent', agent: 'browser_subagent', response: 'timed out', failed: true }),
     ]);
     expect(prompt?.agentCalls[0]?.request).toContain('papikapi');
+  });
+
+  it('should show only what the user wrote, without the wrapping the tool adds', () => {
+    const wrapped = '<USER_REQUEST>\nnext lesson\n</USER_REQUEST>\n<ADDITIONAL_METADATA>cursor at line 4</ADDITIONAL_METADATA>';
+
+    expect(read([userInput(0, wrapped, '2026-11-13T10:00:00Z')])[0]?.text).toBe('next lesson');
   });
 
   it('should keep a failed step as an error of the prompt', () => {

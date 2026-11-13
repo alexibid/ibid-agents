@@ -2,11 +2,14 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { Observable, share } from 'rxjs';
 import { MonitorGateway } from '../application/monitor-gateway';
+import type { AgentRun, RosterEntry } from '../domain/agent-roster';
+import type { FlowMap, Story } from '../domain/flow-map';
 import type { PromptDetail, PromptSummary } from '../domain/prompt';
 import type { LimitReading, Note, Problem, Telemetry } from '../domain/records';
 
 const SERVICE = 'http://127.0.0.1:4710/api';
 const PROBLEMS_READ = 200;
+const RUNS_READ = 200;
 
 @Injectable()
 export class HttpMonitorGateway extends MonitorGateway {
@@ -47,7 +50,31 @@ export class HttpMonitorGateway extends MonitorGateway {
     return this.http.get<Problem[]>(`${SERVICE}/errors`, { params: { limit: PROBLEMS_READ } });
   }
 
-  override notes(text: string): Observable<Note[]> {
-    return this.http.get<Note[]>(`${SERVICE}/notes`, { params: { text } });
+  override plans(text: string): Observable<Note[]> {
+    return this.http.get<Note[]>(`${SERVICE}/plans`, { params: { text } });
+  }
+
+  override forgetPlan(planId: string): Observable<unknown> {
+    return this.http.post(`${SERVICE}/plans/forget`, null, { params: { id: planId } });
+  }
+
+  override flowMap(): Observable<FlowMap> {
+    return this.http.get<FlowMap>(`${SERVICE}/flow-map`);
+  }
+
+  override stories(limit: number): Observable<Story[]> {
+    return this.http.get<Story[]>(`${SERVICE}/stories`, { params: { limit } });
+  }
+
+  override agentRoster(): Observable<RosterEntry[]> {
+    return this.http.get<RosterEntry[]>(`${SERVICE}/agents`);
+  }
+
+  override agentActivity(agent: string): Observable<AgentRun[]> {
+    return this.http.get<AgentRun[]>(`${SERVICE}/agent-activity`, { params: { agent, limit: RUNS_READ } });
+  }
+
+  override removeSkill(name: string): Observable<unknown> {
+    return this.http.post(`${SERVICE}/skills/remove`, null, { params: { name } });
   }
 }

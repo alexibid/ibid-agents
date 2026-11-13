@@ -1,7 +1,9 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
-import type { NoteArchive } from '../memory/note-archive.js';
+import { UnknownNoteError, type NoteArchive } from '../memory/note-archive.js';
 import { DatabaseNotInstalledError, DatabaseUnavailableError } from '../store/database-settings.js';
 import type { ChangeFeed } from './change-feed.js';
+import { flowMapOf } from './flow-map.js';
+import { moveSkillToTrash, SkillNotRemovableError } from './skill-removal.js';
 import type { MonitorQueries, Page } from './monitor-queries.js';
 
 export interface MonitorParts {
@@ -20,6 +22,10 @@ const ALLOWED_ORIGINS = new Set([
   'http://127.0.0.1:4711',
 ]);
 const LARGEST_PAGE = 200;
+const FORGET_PLAN = '/api/plans/forget';
+const REMOVE_SKILL = '/api/skills/remove';
+const NOT_ALLOWED = 405;
+const FORBIDDEN = 403;
 const DEFAULT_PAGE = 50;
 const DEFAULT_DAYS = 14;
 const NOT_FOUND = 404;
@@ -33,7 +39,10 @@ export function createMonitorApi({ queries, archive, feed }: MonitorParts): Serv
     '/api/telemetry': (url) => queries.telemetry(numberOf(url, 'days', DEFAULT_DAYS)),
     '/api/stories': (url) => queries.stories(pageOf(url)),
     '/api/errors': (url) => queries.errors(pageOf(url)),
-    '/api/notes': (url) => notesFor(archive, url.searchParams.get('text') ?? ''),
+    '/api/plans': (url) => archive.plans(url.searchParams.get('text') ?? ''),
+    '/api/flow-map': () => flowMapOf(),
+    '/api/agents': () => queries.agentRoster(),
+    '/api/agent-activity': (url) => queries.agentActivity(url.searchParams.get('agent') ?? '', pageOf(url)),
   };
 
   return createServer((request, response) => {
@@ -41,6 +50,22 @@ export function createMonitorApi({ queries, archive, feed }: MonitorParts): Serv
     allowKnownOrigin(request, response);
     if (url.pathname === '/api/events') {
       feed.follow(response);
+      return;
+    }
+    if (url.pathname === REMOVE_SKILL) {
+      postOnly(request, response, () =>
+        moveSkillToTrash(url.searchParams.get('name') ?? '', isOwnSkill).then((kept) => {
+          feed.announce();
+          return { removed: true, keptIn: kept };
+        }),
+      );
+      return;
+    }
+    if (url.pathname === FORGET_PLAN) {
+      postOnly(request, response, () => archive.forget(url.searchParams.get('id') ?? '').then(() => {
+        feed.announce();
+        return { forgotten: true };
+      }));
       return;
     }
     const answer = answers[url.pathname];
@@ -55,8 +80,30 @@ export function createMonitorApi({ queries, archive, feed }: MonitorParts): Serv
   });
 }
 
-function notesFor(archive: NoteArchive, text: string): Promise<unknown> {
-  return text.trim() === '' ? archive.stillOpen([]) : archive.recall({ text, projects: [] });
+function postOnly(request: IncomingMessage, response: ServerResponse, act: () => Promise<unknown>): void {
+  if (request.method !== 'POST') {
+    send(response, NOT_ALLOWED, { message: 'This change is made with POST only.' });
+    return;
+  }
+  act().then(
+    (done) => send(response, 200, done),
+    (error: unknown) => send(response, statusOfChange(error), { message: messageOf(error) }),
+  );
+}
+
+function statusOfChange(error: unknown): number {
+  if (error instanceof UnknownNoteError) {
+    return NOT_FOUND;
+  }
+  return error instanceof SkillNotRemovableError ? FORBIDDEN : statusOf(error);
+}
+
+async function isOwnSkill(name: string): Promise<boolean> {
+  return (await flowMapOf()).skills.some((skill) => skill.name === name && skill.origin === 'mine');
+}
+
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function allowKnownOrigin(request: IncomingMessage, response: ServerResponse): void {

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readAntigravityLimits } from './limits/antigravity-limits.js';
+import { ClaudeEstimate } from './limits/claude-estimate.js';
 import { readClaudeLimits } from './limits/claude-limits.js';
 import { LimitLedger } from './limits/limit-ledger.js';
 import { PostgresNoteArchive } from './memory/note-archive.js';
@@ -18,6 +19,7 @@ const database = new Database();
 const feed = new ChangeFeed();
 const usageSync = new UsageSync(new UsageLedger(database));
 const limitLedger = new LimitLedger(database);
+const claudeEstimate = new ClaudeEstimate(database);
 let lastFault = '';
 
 async function readActivity(): Promise<void> {
@@ -27,7 +29,7 @@ async function readActivity(): Promise<void> {
 }
 
 async function sampleLimits(): Promise<void> {
-  const samples = (await Promise.all([readAntigravityLimits(), readClaudeLimits()])).flat();
+  const samples = (await Promise.all([readAntigravityLimits(), readClaudeLimits(), claudeEstimate.refresh()])).flat();
   if (samples.length > 0) {
     await limitLedger.keep(samples);
   }

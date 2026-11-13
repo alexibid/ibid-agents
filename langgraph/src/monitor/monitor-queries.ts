@@ -14,11 +14,12 @@ const PROMPT_COLUMNS = `
   prompts.cache_read_tokens::float8 as "cacheReadTokens", prompts.cache_write_tokens::float8 as "cacheWriteTokens",
   coalesce(prompts.five_hour_percent::float8::text, 'unknown') as "fiveHourPercent",
   coalesce(prompts.weekly_percent::float8::text, 'unknown') as "weeklyPercent",
-  prompts.errors`;
+  prompts.percent_estimated as "percentEstimated", prompts.errors`;
 
 const PROMPTS = `
   select ${PROMPT_COLUMNS}, left(prompts.text, 400) as text,
-    coalesce((select array_agg(distinct agent) from agent_calls where prompt_id = prompts.id), '{}') as agents
+    coalesce((select array_agg(distinct agent) from agent_calls where prompt_id = prompts.id and kind <> 'tool'), '{}') as agents,
+    (select count(distinct agent)::int from agent_calls where prompt_id = prompts.id and kind = 'tool') as "toolsUsed"
   from prompts order by prompts.asked_at desc limit $1 offset $2`;
 
 const PROMPT = `select ${PROMPT_COLUMNS}, prompts.text from prompts where prompts.id = $1`;
@@ -48,7 +49,7 @@ const STEPS = `
 
 const AGENTS = `
   select agent, kind, count(*)::int as calls, count(*) filter (where failed)::int as failures
-  from agent_calls where called_at > now() - make_interval(days => $1)
+  from agent_calls where called_at > now() - make_interval(days => $1) and kind <> 'tool'
   group by agent, kind order by calls desc`;
 
 const STORIES = `
@@ -71,6 +72,19 @@ const ERRORS = `
       array_to_string(step_events.details, E'\\n'), ''
     from step_events join stories on stories.id = step_events.story_id where not step_events.passed
   ) problems order by "occurredOn" desc limit $1 offset $2`;
+
+const AGENT_ROSTER = `
+  select agent, kind, count(*)::int as calls, count(*) filter (where failed)::int as failures,
+    max(called_at) as "lastOn"
+  from agent_calls where kind <> 'tool'
+  group by agent, kind order by max(called_at) desc`;
+
+const AGENT_ACTIVITY = `
+  select agent_calls.id, agent_calls.kind, agent_calls.request, agent_calls.response, agent_calls.failed,
+    agent_calls.called_at as "calledOn", prompts.id as "promptId", prompts.tool, left(prompts.text, 240) as "promptText"
+  from agent_calls join prompts on prompts.id = agent_calls.prompt_id
+  where agent_calls.agent = $1 and agent_calls.kind <> 'tool'
+  order by agent_calls.called_at desc limit $2 offset $3`;
 
 export class MonitorQueries {
   constructor(private readonly database: Database) {}
@@ -101,6 +115,14 @@ export class MonitorQueries {
 
   errors({ limit, offset }: Page): Promise<Row[]> {
     return this.database.rows(ERRORS, [limit, offset]);
+  }
+
+  agentRoster(): Promise<Row[]> {
+    return this.database.rows(AGENT_ROSTER);
+  }
+
+  agentActivity(agent: string, { limit, offset }: Page): Promise<Row[]> {
+    return this.database.rows(AGENT_ACTIVITY, [agent, limit, offset]);
   }
 }
 

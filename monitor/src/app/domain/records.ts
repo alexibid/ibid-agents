@@ -66,6 +66,7 @@ export const WINDOW_NAMES: Readonly<Record<TimeWindow, string>> = { '5h': '5 hor
 
 export const POOL_NAMES: Readonly<Record<string, string>> = {
   'all models': 'Todos os modelos',
+  estimate: 'estimativa',
   gemini: 'Gemini Flash e Pro',
   '3p': 'Claude e GPT-OSS',
   'gemini-argon-wtu': 'Gemini Argon',

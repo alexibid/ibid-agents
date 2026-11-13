@@ -1,9 +1,9 @@
 .graph {
   display: block;
   inline-size: 100%;
-  max-block-size: 26rem;
 
   &__link {
+    fill: none;
     stroke: var(--color-line);
     stroke-width: 2;
 
@@ -32,6 +32,10 @@
       --node-color: var(--color-antigravity);
     }
 
+    &--tool {
+      --node-color: var(--color-muted);
+    }
+
     &--failed {
       --node-color: var(--color-bad);
     }
@@ -41,10 +45,19 @@
     }
   }
 
+  &__group {
+    --node-color: var(--color-accent);
+  }
+
   &__box {
     fill: var(--color-panel);
     stroke: var(--node-color);
     stroke-width: 2;
+  }
+
+  &__box--group {
+    fill: var(--color-surface);
+    stroke-width: 1.5;
   }
 
   &__node:focus-visible &__box,

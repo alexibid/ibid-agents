@@ -1,5 +1,5 @@
 export type Tool = 'claude' | 'antigravity';
-export type AgentKind = 'agent' | 'langgraph' | 'skill';
+export type AgentKind = 'agent' | 'langgraph' | 'skill' | 'tool';
 export type Percent = number | 'unknown';
 
 export interface PromptSummary {
@@ -16,8 +16,10 @@ export interface PromptSummary {
   readonly cacheWriteTokens: number;
   readonly fiveHourPercent: Percent;
   readonly weeklyPercent: Percent;
+  readonly percentEstimated: boolean;
   readonly errors: readonly string[];
   readonly agents: readonly string[];
+  readonly toolsUsed: number;
 }
 
 export interface AgentCall {
@@ -30,7 +32,7 @@ export interface AgentCall {
   readonly calledOn: string;
 }
 
-export interface PromptDetail extends Omit<PromptSummary, 'agents'> {
+export interface PromptDetail extends Omit<PromptSummary, 'agents' | 'toolsUsed'> {
   readonly calls: readonly AgentCall[];
 }
 

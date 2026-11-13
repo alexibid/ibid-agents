@@ -1,0 +1,57 @@
+<section class="o-stack">
+  <h1>Agentes</h1>
+
+  <section class="o-panel agents">
+    <div class="agents__list">
+      <h2>Todos os agentes ({{ store.agents().length }})</h2>
+      <monitor-agent-list [groups]="store.groups()" [picked]="store.agentName()" (agentPicked)="store.agentName.set($event)" />
+    </div>
+    <div class="agents__activity">
+      @if (store.agent(); as agent) {
+        <monitor-agent-activity [agent]="agent" [runs]="store.runs()" (removeAsked)="doomed.set(agent.name)" />
+      } @else {
+        <p class="o-empty">Escolhe um agente para ver o que fez.</p>
+      }
+    </div>
+  </section>
+
+  <section class="o-panel o-stack">
+    <h2>Fluxo do LangGraph</h2>
+    <p class="u-muted">
+      Cada passo, da esquerda para a direita, com quem o faz e o contrato que segue. As linhas tracejadas por baixo são os regressos
+      quando um passo falha. Escolhe uma user story para pintar os passos: verde passou, vermelho falhou.
+    </p>
+    <div class="o-row">
+      <monitor-choice-field label="Fluxo" [choices]="flowChoices()" [(value)]="store.flowId" />
+      @if (store.flowId() === 'story') {
+        <monitor-choice-field label="User story" [choices]="storyChoices()" [(value)]="store.storyId" />
+      }
+    </div>
+    @if (store.flowId() === 'story' && store.stories().length === 0) {
+      <p class="u-muted">Ainda nenhuma user story passou pelo LangGraph: o mapa aparece sem cores.</p>
+    }
+    @if (store.drawing(); as drawing) {
+      <monitor-flow-diagram [drawing]="drawing" (nodePicked)="pickedNode.set($event)" />
+    } @else {
+      <p class="o-empty">A carregar o fluxo…</p>
+    }
+  </section>
+</section>
+
+<monitor-dialog heading="Apagar este agente?" [open]="doomed() !== ''" (closed)="closeRemoval()">
+  <p><strong>/{{ doomed() }}</strong></p>
+  <p>Sai do ibid-agents e deixa de aparecer no Claude e no Antigravity. A pasta vai para o Lixo do Mac, de onde a podes recuperar.</p>
+  @if (removalFailure()) {
+    <p class="agents__failure" role="alert">{{ removalFailure() }}</p>
+  }
+  <div class="o-row">
+    <monitor-button (click)="remove(doomed())">Apagar</monitor-button>
+    <monitor-button look="quiet" (click)="closeRemoval()">Cancelar</monitor-button>
+  </div>
+</monitor-dialog>
+
+<monitor-dialog [heading]="nameOf(pickedNode())" [open]="pickedNode() !== ''" (closed)="pickedNode.set('')">
+  @if (node(); as shown) {
+    <monitor-step-detail [node]="shown" [catalog]="store.catalog()" [events]="nodeEvents()" />
+  }
+</monitor-dialog>

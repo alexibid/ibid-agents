@@ -22,14 +22,14 @@ Every contract has the same six sections, in this order.
 | --- | --- | --- |
 | `specialist.md` | `plan` | First version, from `solution-architect` |
 | `developer.md` | `implement` | First version |
-| `ui.md` | `implement`, when the interface changes | First version, from `design-system-specialist` |
-| `test-author.md` | `author-tests` | First version, from `qa-tester` and `playwright` |
-| `test-validator.md` | `validate-tests` | First version, from `qa-tester` |
-| `browser-qa.md` | `browser-qa` | First version, from `playwright` |
+| `ui.md` | `implement`, when the interface changes | First version; absorbed `design-system-specialist` |
+| `test-author.md` | `author-tests` | First version; absorbed `qa-tester` and `playwright` |
+| `test-validator.md` | `validate-tests` | First version |
+| `browser-qa.md` | `browser-qa` | First version; absorbed `playwright` |
 | `accessibility-performance.md` | `performance` | First version |
 | `ux-critic.md` | `ux-critique` | First version |
-| `visual-gate.md` | `visual-gate` | First version, from `visual-qa` |
-| `reviewer.md` | `review` | First version, from `code-auditor` |
+| `visual-gate.md` | `visual-gate` | First version; absorbed `visual-qa` and its scripts |
+| `reviewer.md` | `review` | First version; absorbed `code-auditor` |
 | `final-verifier.md` | `final-verification` | First version |
 | `nx.md` | `plan`, and `implement` when workspace files change | First version, from the Nx skills |
 | `archivist.md` | Before the story, and whenever something is concluded | First version |
@@ -37,6 +37,9 @@ Every contract has the same six sections, in this order.
 No contract has trials yet, and none has been used on a real story.
 
 The assistant is not here. It is the skill `skills/assistente`, because the user invokes it.
+
+Every contract here also has a skill of the same name in `skills/`, which only points to the
+contract. It lets the role be invoked on its own with `/name`, in Claude and in Antigravity.
 
 ## Separation
 

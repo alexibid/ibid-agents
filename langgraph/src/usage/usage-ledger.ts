@@ -1,5 +1,5 @@
 import type { Database, Row, Statement } from '../store/database.js';
-import type { AgentCall, PromptRecord } from './prompt-record.js';
+import type { AgentCall, LimitHit, PromptRecord } from './prompt-record.js';
 import type { TranscriptFile } from './transcript-files.js';
 
 interface KnownFileRow extends Row {
@@ -29,6 +29,15 @@ const SAVE_CALL = `
   values ($1, $2, $3, $4, $5, $6, $7, $8)
   on conflict (id) do update set response = excluded.response, failed = excluded.failed`;
 
+const SAVE_HIT = `
+  insert into limit_hits (tool, time_window, hit_at, resets_at) values ($1, $2, $3, $4)
+  on conflict (tool, time_window, resets_at) do update set hit_at = least(limit_hits.hit_at, excluded.hit_at)`;
+
+export interface TranscriptContent {
+  readonly prompts: readonly PromptRecord[];
+  readonly limitHits: readonly LimitHit[];
+}
+
 export class UsageLedger {
   constructor(private readonly database: Database) {}
 
@@ -40,10 +49,11 @@ export class UsageLedger {
     });
   }
 
-  async keep(file: TranscriptFile, prompts: readonly PromptRecord[]): Promise<void> {
+  async keep(file: TranscriptFile, { prompts, limitHits }: TranscriptContent): Promise<void> {
     const dated = prompts.filter((prompt) => prompt.askedOn !== '');
     await this.database.inOneTransaction([
       ...dated.flatMap((prompt) => [promptStatement(prompt), ...prompt.agentCalls.map((call) => callStatement(prompt, call))]),
+      ...limitHits.map((hit) => ({ text: SAVE_HIT, values: [hit.tool, hit.window, hit.hitOn, hit.resetsOn] })),
       { text: SAVE_FILE, values: [file.path, file.tool, file.sizeBytes, file.modifiedOn] },
     ]);
   }

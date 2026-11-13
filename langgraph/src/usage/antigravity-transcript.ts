@@ -1,5 +1,15 @@
 import { numberIn, objectIn, objectsIn, parsedLines, textIn, type JsonObject } from './json-reading.js';
-import { clipped, isLangGraphTool, langGraphRequest, sumOf, type AgentCall, type PromptRecord, type TokenCount } from './prompt-record.js';
+import {
+  clipped,
+  clippedForTool,
+  isLangGraphTool,
+  langGraphRequest,
+  requestIn,
+  sumOf,
+  type AgentCall,
+  type PromptRecord,
+  type TokenCount,
+} from './prompt-record.js';
 
 export interface AntigravityConversation {
   readonly conversationId: string;
@@ -41,7 +51,7 @@ function opened(conversationId: string, line: JsonObject): OpenPrompt {
   const askedOn = textIn(line, 'created_at');
   return {
     id: `antigravity:${conversationId}:${numberIn(line, 'step_index')}`,
-    text: clipped(textIn(line, 'content').trim()),
+    text: clipped(requestIn(textIn(line, 'content')) || textIn(line, 'content').trim()),
     askedOn,
     finishedOn: askedOn,
     tokens: [],
@@ -71,10 +81,8 @@ function readPlannerStep(prompt: OpenPrompt, line: JsonObject): void {
     cacheWrite: 0,
   });
   objectsIn(line, 'tool_calls').forEach((toolCall, position) => {
-    const call = agentCallOf(toolCall, `${prompt.id}:${numberIn(line, 'step_index')}:${position}`, prompt.finishedOn);
-    if (call !== undefined) {
-      prompt.awaitingAnswer.push(prompt.calls.push(call) - 1);
-    }
+    const call = callOf(toolCall, `${prompt.id}:${numberIn(line, 'step_index')}:${position}`, prompt.finishedOn);
+    prompt.awaitingAnswer.push(prompt.calls.push(call) - 1);
   });
 }
 
@@ -82,18 +90,22 @@ function answerOldestCall(prompt: OpenPrompt, line: JsonObject): void {
   const position = prompt.awaitingAnswer.shift();
   const call = position === undefined ? undefined : prompt.calls[position];
   if (position !== undefined && call !== undefined) {
-    prompt.calls[position] = { ...call, response: clipped(textIn(line, 'content')), failed: line['status'] === FAILED };
+    const content = textIn(line, 'content');
+    const response = call.kind === 'tool' ? clippedForTool(content) : clipped(content);
+    prompt.calls[position] = { ...call, response, failed: line['status'] === FAILED };
   }
 }
 
-function agentCallOf(toolCall: JsonObject, id: string, calledOn: string): AgentCall | undefined {
+function callOf(toolCall: JsonObject, id: string, calledOn: string): AgentCall {
   const name = textIn(toolCall, 'name');
   const args = objectIn(toolCall, 'args');
   const base = { id, response: '', failed: false, calledOn };
   if (isLangGraphTool(name)) {
     return { ...base, kind: 'langgraph', agent: 'LangGraph', request: langGraphRequest(name, args) };
   }
-  return SUBAGENT_TOOL.test(name) ? { ...base, kind: 'agent', agent: name, request: clipped(JSON.stringify(args, null, 2)) } : undefined;
+  return SUBAGENT_TOOL.test(name)
+    ? { ...base, kind: 'agent', agent: name, request: clipped(JSON.stringify(args, null, 2)) }
+    : { ...base, kind: 'tool', agent: name, request: clippedForTool(JSON.stringify(args, null, 2)) };
 }
 
 function recordOf(prompt: OpenPrompt, conversationId: string): PromptRecord {

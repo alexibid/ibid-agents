@@ -1,34 +1,40 @@
 @let drawing = graph();
-<svg class="graph" [attr.viewBox]="'0 0 ' + drawing.width + ' ' + drawing.height" role="group" aria-label="Agentes chamados neste pedido">
-  @for (node of drawing.agents; track node.agent) {
-    <line
-      class="graph__link"
-      [class.graph__link--failed]="node.failed"
-      [attr.x1]="drawing.centre.x"
-      [attr.y1]="drawing.centre.y"
-      [attr.x2]="node.x"
-      [attr.y2]="node.y"
-    />
+<svg class="graph" [attr.viewBox]="'0 0 ' + drawing.width + ' ' + drawing.height" role="group" aria-label="O que o assistente chamou neste pedido">
+  @for (link of drawing.links; track link.id) {
+    <path class="graph__link" [class.graph__link--failed]="link.failed" [attr.d]="link.path" />
   }
+
   <g class="graph__node graph__node--assistant" [attr.transform]="'translate(' + drawing.centre.x + ' ' + drawing.centre.y + ')'">
-    <rect class="graph__box" x="-70" y="-24" width="140" height="48" rx="10" />
-    <text class="graph__name" y="5">{{ drawing.centre.agent }}</text>
+    <rect class="graph__box" [attr.x]="-centreHalfWidth" y="-24" [attr.width]="centreHalfWidth * 2" height="48" rx="10" />
+    <text class="graph__name" y="-2">{{ assistant }}</text>
+    <text class="graph__count" y="15">{{ drawing.centre.calls }} {{ drawing.centre.calls === 1 ? 'chamada' : 'chamadas' }}</text>
   </g>
+
+  @for (group of drawing.groups; track group.kind) {
+    <g
+      [class]="'graph__group graph__node--' + group.kind"
+      [class.graph__node--failed]="group.failed"
+      [attr.transform]="'translate(' + group.x + ' ' + group.y + ')'"
+    >
+      <rect class="graph__box graph__box--group" [attr.x]="-groupHalfWidth" y="-18" [attr.width]="groupHalfWidth * 2" height="36" rx="18" />
+      <text class="graph__name" y="5">{{ group.label }}</text>
+    </g>
+  }
+
   @for (node of drawing.agents; track node.agent) {
     <g
-      class="graph__node"
       [class]="'graph__node graph__node--' + node.kind"
       [class.graph__node--failed]="node.failed"
       [attr.transform]="'translate(' + node.x + ' ' + node.y + ')'"
       role="button"
       tabindex="0"
-      [attr.aria-label]="'Ver as mensagens trocadas com ' + node.agent"
+      [attr.aria-label]="'Ver o que foi pedido a ' + node.agent + ' e o que devolveu'"
       (click)="agentPicked.emit(node.agent)"
       (keydown.enter)="agentPicked.emit(node.agent)"
     >
-      <rect class="graph__box" x="-84" y="-26" width="168" height="52" rx="10" />
-      <text class="graph__name" y="-2">{{ node.agent }}</text>
-      <text class="graph__count" y="16">{{ node.calls }} {{ node.calls === 1 ? 'mensagem' : 'mensagens' }}{{ node.failed ? ' · falhou' : '' }}</text>
+      <rect class="graph__box" [attr.x]="-nodeHalfWidth" y="-24" [attr.width]="nodeHalfWidth * 2" height="48" rx="10" />
+      <text class="graph__name" y="-3">{{ node.agent }}</text>
+      <text class="graph__count" y="14">{{ node.calls }} {{ node.calls === 1 ? 'chamada' : 'chamadas' }}{{ node.failed ? ' · falhou' : '' }}</text>
     </g>
   }
 </svg>

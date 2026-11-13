@@ -1,0 +1,102 @@
+@use 'tools';
+
+:host {
+  display: block;
+  min-inline-size: 0;
+}
+
+.flow {
+  overflow-x: auto;
+  padding-block-end: var(--space-2);
+
+  &__drawing {
+    display: block;
+  }
+
+  &__link {
+    stroke: var(--color-muted);
+    stroke-width: 2;
+  }
+
+  &__arrow-head {
+    fill: var(--color-muted);
+  }
+
+  &__repair {
+    fill: none;
+    stroke: var(--color-warn);
+    stroke-dasharray: 5 4;
+    stroke-opacity: 0.55;
+    stroke-width: 1.5;
+  }
+
+  &__node {
+    --node-color: var(--color-line);
+    --node-fill: var(--color-panel);
+
+    cursor: pointer;
+
+    &--passed {
+      --node-color: var(--color-good);
+    }
+
+    &--failed {
+      --node-color: var(--color-bad);
+    }
+
+    &:focus-visible {
+      outline: none;
+    }
+  }
+
+  &__box {
+    fill: var(--node-fill);
+    stroke: var(--node-color);
+    stroke-width: 2;
+  }
+
+  &__node:hover &__box,
+  &__node:focus-visible &__box {
+    stroke: var(--color-accent);
+    stroke-width: 3;
+  }
+
+  &__name {
+    fill: var(--color-text);
+    font-size: 13px;
+    font-weight: 650;
+    text-anchor: middle;
+  }
+
+  &__stem {
+    stroke: var(--color-line);
+    stroke-dasharray: 2 3;
+  }
+
+  &__agent {
+    fill: var(--color-surface);
+    stroke: var(--color-accent);
+
+    &--langgraph {
+      stroke: var(--color-langgraph);
+    }
+  }
+
+  &__agent-name {
+    fill: var(--color-text);
+    font-size: 11px;
+    font-weight: 600;
+    text-anchor: middle;
+  }
+
+  &__contract {
+    fill: var(--color-muted);
+    font-family: var(--font-code);
+    font-size: 10px;
+    text-anchor: middle;
+
+    &--optional {
+      font-style: italic;
+    }
+  }
+}

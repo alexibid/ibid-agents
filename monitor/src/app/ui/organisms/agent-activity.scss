@@ -1,0 +1,56 @@
+@use 'tools';
+
+:host {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.activity {
+  &__header {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  &__run {
+    border-inline-start: 3px solid var(--color-accent);
+    display: grid;
+    gap: var(--space-2);
+    padding-inline-start: var(--space-3);
+
+    &--failed {
+      border-inline-start-color: var(--color-bad);
+    }
+  }
+
+  &__failed {
+    color: var(--color-bad);
+    font-weight: 600;
+  }
+
+  &__prompt {
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+
+  &__exchange {
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    padding: var(--space-2) var(--space-3);
+
+    summary {
+      @include tools.small-label;
+
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    pre {
+      margin-block-start: var(--space-2);
+      max-block-size: 20rem;
+      overflow: auto;
+    }
+  }
+}

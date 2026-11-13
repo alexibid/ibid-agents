@@ -16,18 +16,27 @@
         <div><dt>Escritos</dt><dd>{{ found.outputTokens | number }}</dd></div>
         <div><dt>Guardados em cache</dt><dd>{{ found.cacheWriteTokens | number }}</dd></div>
         <div><dt>Reutilizados da cache</dt><dd>{{ found.cacheReadTokens | number }}</dd></div>
-        <div><dt>% das 5 horas</dt><dd><monitor-percent [value]="found.fiveHourPercent" /></dd></div>
-        <div><dt>% da semana</dt><dd><monitor-percent [value]="found.weeklyPercent" /></dd></div>
+        <div><dt>% das 5 horas</dt><dd><monitor-percent [value]="found.fiveHourPercent" [estimated]="found.percentEstimated" /></dd></div>
+        <div><dt>% da semana</dt><dd><monitor-percent [value]="found.weeklyPercent" [estimated]="found.percentEstimated" /></dd></div>
       </dl>
     </header>
 
     <section class="o-panel o-stack">
-      <h2>Agentes chamados neste pedido</h2>
+      <h2>O que o assistente chamou neste pedido</h2>
       @if (found.calls.length > 0) {
-        <p class="u-muted">Clica num agente para ver o que lhe foi pedido e o que devolveu.</p>
+        <p class="u-muted">
+          Clica num nó para ver o que lhe foi pedido e o que devolveu.
+          <span class="legend legend--langgraph">LangGraph</span>
+          <span class="legend legend--agent">agente</span>
+          <span class="legend legend--skill">skill</span>
+          <span class="legend legend--tool">ferramenta</span>
+        </p>
+        @if (!orchestrated()) {
+          <p class="summary__warning">Neste pedido o assistente não passou pelo LangGraph nem chamou nenhum agente: trabalhou sozinho, só com ferramentas.</p>
+        }
         <monitor-agent-graph [calls]="found.calls" (agentPicked)="pickedAgent.set($event)" />
       } @else {
-        <p class="o-empty">Neste pedido o assistente não chamou nenhum agente.</p>
+        <p class="o-empty">Neste pedido o assistente respondeu sem chamar nada.</p>
       }
     </section>
 

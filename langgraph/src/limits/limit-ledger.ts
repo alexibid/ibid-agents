@@ -11,7 +11,7 @@ const NEAREST = `
   where tool = pools.tool and pool = pools.pool and time_window = pools.time_window`;
 
 const SHARE_OUT = `
-  with pools as (select distinct tool, pool, time_window from limit_samples),
+  with pools as (select distinct tool, pool, time_window from limit_samples where pool <> 'estimate'),
   spent as (
     select prompts.id, pools.time_window,
       max(case when after.used_percent >= before.used_percent
@@ -29,7 +29,8 @@ const SHARE_OUT = `
   )
   update prompts set
     five_hour_percent = coalesce((select percent from spent where id = prompts.id and time_window = '5h'), five_hour_percent),
-    weekly_percent = coalesce((select percent from spent where id = prompts.id and time_window = 'weekly'), weekly_percent)
+    weekly_percent = coalesce((select percent from spent where id = prompts.id and time_window = 'weekly'), weekly_percent),
+    percent_estimated = false
   where id in (select id from spent)`;
 
 export class LimitLedger {

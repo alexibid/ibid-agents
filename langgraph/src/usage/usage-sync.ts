@@ -1,11 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { promptsOfAntigravityTranscript } from './antigravity-transcript.js';
-import { promptsOfClaudeTranscript } from './claude-transcript.js';
-import type { PromptRecord } from './prompt-record.js';
+import { limitHitsOfClaudeTranscript, promptsOfClaudeTranscript } from './claude-transcript.js';
 import { transcriptsChangedWithin, type TranscriptFile } from './transcript-files.js';
-import type { UsageLedger } from './usage-ledger.js';
+import type { TranscriptContent, UsageLedger } from './usage-ledger.js';
 
-const DAYS_LOOKED_BACK = 30;
+const DAYS_LOOKED_BACK = 120;
 
 export class UsageSync {
   constructor(private readonly ledger: UsageLedger) {}
@@ -13,15 +12,15 @@ export class UsageSync {
   async readNewActivity(): Promise<number> {
     const changed = await this.ledger.notYetRead(await transcriptsChangedWithin(DAYS_LOOKED_BACK));
     for (const file of changed) {
-      await this.ledger.keep(file, await promptsIn(file));
+      await this.ledger.keep(file, await contentOf(file));
     }
     return changed.length;
   }
 }
 
-async function promptsIn(file: TranscriptFile): Promise<PromptRecord[]> {
+async function contentOf(file: TranscriptFile): Promise<TranscriptContent> {
   const lines = (await readFile(file.path, 'utf8')).split('\n');
   return file.tool === 'claude'
-    ? promptsOfClaudeTranscript(lines)
-    : promptsOfAntigravityTranscript({ conversationId: file.conversationId, lines });
+    ? { prompts: promptsOfClaudeTranscript(lines), limitHits: limitHitsOfClaudeTranscript(lines) }
+    : { prompts: promptsOfAntigravityTranscript({ conversationId: file.conversationId, lines }), limitHits: [] };
 }

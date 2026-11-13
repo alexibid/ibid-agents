@@ -13,7 +13,7 @@ describe('menuBarTextOf', () => {
     expect(menuBarTextOf([])).toBe('ibid');
   });
 
-  it('should show both windows of both tools, rounded', () => {
+  it('should show both windows of both tools, with three decimals', () => {
     const text = menuBarTextOf([
       reading({ tool: 'antigravity', pool: 'gemini', window: 'weekly', usedPercent: 67.72 }),
       reading({ tool: 'antigravity', pool: 'gemini', window: '5h', usedPercent: 0 }),
@@ -21,7 +21,7 @@ describe('menuBarTextOf', () => {
       reading({ tool: 'claude', pool: 'all models', window: 'weekly', usedPercent: 41.2 }),
     ]);
 
-    expect(text).toBe('Claude 5h 23% sem 41% · Antigravity 5h 0% sem 68%');
+    expect(text).toBe('Claude 5h 23,400% sem 41,200% · Antigravity 5h 0,000% sem 67,720%');
   });
 
   it('should show the most spent group when a tool has several', () => {
@@ -31,6 +31,6 @@ describe('menuBarTextOf', () => {
       reading({ tool: 'antigravity', pool: 'gemini-argon-wtu', window: 'weekly', usedPercent: 9.84 }),
     ]);
 
-    expect(text).toBe('Antigravity sem 68%');
+    expect(text).toBe('Antigravity sem 67,720%');
   });
 });

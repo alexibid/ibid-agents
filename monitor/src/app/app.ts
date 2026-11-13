@@ -8,9 +8,10 @@ import { LimitsStrip } from './ui/organisms/limits-strip';
 
 const SCREENS = [
   { path: '/', label: 'Pedidos', exact: true },
+  { path: '/agentes', label: 'Agentes', exact: false },
   { path: '/telemetria', label: 'Telemetria', exact: false },
   { path: '/erros', label: 'Erros', exact: false },
-  { path: '/memoria', label: 'Memória', exact: false },
+  { path: '/planos', label: 'Planos', exact: false },
 ] as const;
 
 @Component({

@@ -6,6 +6,8 @@ export interface NoteArchive {
   recall(question: Question): Promise<Note[]>;
   stillOpen(projects: readonly string[]): Promise<Note[]>;
   changeStatus(change: StatusChange): Promise<Note>;
+  plans(text: string): Promise<Note[]>;
+  forget(noteId: string): Promise<void>;
 }
 
 interface NoteRow extends Row {
@@ -48,6 +50,18 @@ const RECALL = `
 
 const STILL_OPEN = `select ${COLUMNS} from notes where ${IN_PROJECTS} and status = 'open' order by updated_at desc`;
 
+const PLAN_KINDS = `kind in ('idea', 'plan')`;
+const OPEN_FIRST = `case status when 'open' then 0 when 'done' then 1 else 2 end`;
+
+const ALL_PLANS = `select ${COLUMNS} from notes where ${PLAN_KINDS} order by ${OPEN_FIRST}, updated_at desc`;
+
+const MATCHING_PLANS = `
+  select ${COLUMNS} from notes
+  where ${PLAN_KINDS} and (search @@ note_query($1) or title ilike '%' || $1 || '%' or body ilike '%' || $1 || '%')
+  order by ${OPEN_FIRST}, ts_rank(search, note_query($1)) desc, updated_at desc`;
+
+const FORGET = `delete from notes where id::text = $1 returning id`;
+
 const CHANGE_STATUS = `update notes set status = $2, updated_at = now() where id::text = $1 returning ${COLUMNS}`;
 
 export class PostgresNoteArchive implements NoteArchive {
@@ -69,6 +83,18 @@ export class PostgresNoteArchive implements NoteArchive {
 
   async changeStatus({ noteId, status }: StatusChange): Promise<Note> {
     return noteOf((await this.database.rows<NoteRow>(CHANGE_STATUS, [noteId, status])).at(0), noteId);
+  }
+
+  async plans(text: string): Promise<Note[]> {
+    const wanted = text.trim();
+    const rows = wanted === '' ? await this.database.rows<NoteRow>(ALL_PLANS) : await this.database.rows<NoteRow>(MATCHING_PLANS, [wanted]);
+    return rows.map((row) => noteOf(row, row.id));
+  }
+
+  async forget(noteId: string): Promise<void> {
+    if ((await this.database.rows<Row>(FORGET, [noteId])).length === 0) {
+      throw new UnknownNoteError(noteId);
+    }
   }
 }
 

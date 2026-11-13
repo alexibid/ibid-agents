@@ -27,6 +27,7 @@ export class PromptPage {
   protected readonly prompt = computed(() => this.store.openPrompts().find((prompt) => prompt.id === this.promptId()));
   protected readonly pickedAgent = signal(NO_AGENT_PICKED);
   protected readonly pickedCalls = computed(() => callsTo(this.pickedAgent(), this.prompt()?.calls ?? []));
+  protected readonly orchestrated = computed(() => (this.prompt()?.calls ?? []).some((call) => call.kind === 'langgraph' || call.kind === 'agent'));
   protected readonly tokensSpentOn = tokensSpentOn;
   protected readonly secondsTakenBy = secondsTakenBy;
 

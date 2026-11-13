@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { promptsOfClaudeTranscript } from './claude-transcript.js';
+import { limitHitsOfClaudeTranscript, promptsOfClaudeTranscript } from './claude-transcript.js';
 
 const session = { sessionId: 'session-1', cwd: '/work/ibid-workspace' };
 
@@ -54,7 +54,7 @@ describe('promptsOfClaudeTranscript', () => {
     expect(prompt?.tokens).toEqual({ input: 20, output: 40, cacheRead: 600, cacheWrite: 8 });
   });
 
-  it('should list the agents, skills and LangGraph calls of a prompt with what came back', () => {
+  it('should list the agents, skills, LangGraph calls and tools of a prompt with what came back', () => {
     const [prompt] = promptsOfClaudeTranscript([
       asked('p1', 'build it', '2026-11-13T10:00:00.000Z'),
       answered(
@@ -74,6 +74,7 @@ describe('promptsOfClaudeTranscript', () => {
       { id: 't1', kind: 'agent', agent: 'Explore', request: 'find the service', response: 'found it', failed: false, calledOn: '2026-11-13T10:00:01.000Z' },
       expect.objectContaining({ id: 't2', kind: 'langgraph', agent: 'LangGraph', response: 'unknown project', failed: true }),
       expect.objectContaining({ id: 't3', kind: 'skill', agent: 'assistente', request: 'go', response: '' }),
+      expect.objectContaining({ id: 't4', kind: 'tool', agent: 'Bash' }),
     ]);
     expect(prompt?.agentCalls[1]?.request).toContain('start_story');
   });
@@ -100,5 +101,61 @@ describe('promptsOfClaudeTranscript', () => {
 
     expect(prompt?.errors).toEqual(['API Error: overloaded']);
     expect(prompt?.tokens.output).toBe(0);
+  });
+});
+
+describe('promptsOfClaudeTranscript, telling the user apart from the tool', () => {
+  const written = (promptId: string, content: string, fields: Readonly<Record<string, unknown>>) =>
+    JSON.stringify({ type: 'user', promptId, timestamp: '2026-11-13T10:00:00.000Z', message: { role: 'user', content }, ...session, ...fields });
+
+  it('should keep a message the tool wrote for itself inside the request that was running', () => {
+    const prompts = promptsOfClaudeTranscript([
+      written('p1', 'fix everything', { origin: { kind: 'human' }, turnOrigin: 'human' }),
+      written('p2', 'I hit my usage limit while you were working', { turnOrigin: 'host_synthetic' }),
+      answered('m1', [{ type: 'text', text: 'done' }], '2026-11-13T10:09:00.000Z'),
+      written('p3', '<bash-input>npm test</bash-input>', { origin: { kind: 'human' }, turnOrigin: 'human' }),
+      written('p4', 'This session is being continued from a previous conversation', { turnOrigin: 'human', isCompactSummary: true }),
+    ]);
+
+    expect(prompts.map((prompt) => prompt.text)).toEqual(['fix everything']);
+    expect(prompts[0]?.tokens.output).toBe(20);
+  });
+
+  it('should show a slash command as the user typed it', () => {
+    const [prompt] = promptsOfClaudeTranscript([
+      written('p1', '<command-message>assistente</command-message>\n<command-name>/assistente</command-name>\n<command-args>check the workspace</command-args>', {
+        origin: { kind: 'human' },
+      }),
+    ]);
+
+    expect(prompt?.text).toBe('/assistente check the workspace');
+  });
+
+  it('should show what the user wrote after a local command', () => {
+    const [prompt] = promptsOfClaudeTranscript([
+      written('p1', '<command-name>/model</command-name>\n<command-args>opus</command-args>\n<local-command-stdout>Set model</local-command-stdout>\ncarry on', {
+        origin: { kind: 'human' },
+      }),
+    ]);
+
+    expect(prompt?.text).toBe('carry on');
+  });
+});
+
+describe('limitHitsOfClaudeTranscript', () => {
+  const refusal = (rateLimitType: string, status: string) =>
+    JSON.stringify({ type: 'assistant', timestamp: '2026-11-13T10:05:17.152Z', quotaLimits: { status, resetsAt: 1794579000, rateLimitType } });
+
+  it('should read the moment a limit was hit and when it resets', () => {
+    expect(limitHitsOfClaudeTranscript([refusal('five_hour', 'rejected'), refusal('seven_day', 'rejected')])).toEqual([
+      { tool: 'claude', window: '5h', hitOn: '2026-11-13T10:05:17.152Z', resetsOn: '2026-11-13T14:10:00.000Z' },
+      { tool: 'claude', window: 'weekly', hitOn: '2026-11-13T10:05:17.152Z', resetsOn: '2026-11-13T14:10:00.000Z' },
+    ]);
+  });
+
+  it('should ignore a limit that only warned, an unknown window and other lines', () => {
+    const lines = [refusal('five_hour', 'allowed_warning'), refusal('monthly', 'rejected'), JSON.stringify({ type: 'user' }), 'not json'];
+
+    expect(limitHitsOfClaudeTranscript(lines)).toEqual([]);
   });
 });
