@@ -1,0 +1,13 @@
+[[rule]]
+subagent = "boilerstudio"
+toolName = "run_shell_command"
+argsPattern = "^(?!.*/projects/boilerstudio).*$"
+decision = "deny"
+denyMessage = "O agente @boilerstudio está restrito ao diretório ~/projects/boilerstudio."
+
+[[rule]]
+subagent = "boilerstudio"
+toolName = ["write_file", "replace", "read_file", "list_directory", "glob", "grep_search"]
+argsPattern = "^(?!.*/projects/boilerstudio).*$"
+decision = "deny"
+denyMessage = "Acesso negado. O agente @boilerstudio apenas pode aceder a ficheiros em ~/projects/boilerstudio."

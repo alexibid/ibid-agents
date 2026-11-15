@@ -86,6 +86,13 @@ const AGENT_ACTIVITY = `
   where agent_calls.agent = $1 and agent_calls.kind <> 'tool'
   order by agent_calls.called_at desc limit $2 offset $3`;
 
+const RUNS = `
+  select id, agent as project, request as title, status, started_at as "startedOn", updated_at as "updatedOn",
+    coalesce((select json_agg(json_build_object('step', step, 'passed', passed, 'attempt', attempt,
+      'details', details, 'seconds', seconds_taken::float8, 'occurredOn', occurred_at) order by agent_run_events.id)
+      from agent_run_events where run_id = agent_runs.id), '[]') as steps
+  from agent_runs where agent = $1 order by started_at desc limit $2`;
+
 export class MonitorQueries {
   constructor(private readonly database: Database) {}
 
@@ -115,6 +122,10 @@ export class MonitorQueries {
 
   errors({ limit, offset }: Page): Promise<Row[]> {
     return this.database.rows(ERRORS, [limit, offset]);
+  }
+
+  runs(agent: string, { limit }: Page): Promise<Row[]> {
+    return this.database.rows(RUNS, [agent, limit]);
   }
 
   agentRoster(): Promise<Row[]> {

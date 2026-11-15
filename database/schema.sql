@@ -123,3 +123,39 @@ create table if not exists limit_hits (
   resets_at timestamptz not null,
   primary key (tool, time_window, resets_at)
 );
+
+create table if not exists agent_runs (
+  id text primary key,
+  agent text not null,
+  request text not null,
+  status text not null,
+  started_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists agent_run_events (
+  id bigint generated always as identity primary key,
+  run_id text not null references agent_runs (id) on delete cascade,
+  step text not null,
+  passed boolean not null,
+  details text[] not null default '{}',
+  attempt integer not null,
+  seconds_taken numeric not null,
+  occurred_at timestamptz not null default now()
+);
+
+create index if not exists agent_run_events_run on agent_run_events (run_id, occurred_at);
+
+create table if not exists eval_results (
+  id bigint generated always as identity primary key,
+  agent text not null,
+  case_id text not null,
+  request text not null,
+  passed boolean not null,
+  details text[] not null default '{}',
+  run_id text not null,
+  answer text not null,
+  ran_at timestamptz not null default now()
+);
+
+create index if not exists eval_results_recent on eval_results (agent, case_id, ran_at desc);

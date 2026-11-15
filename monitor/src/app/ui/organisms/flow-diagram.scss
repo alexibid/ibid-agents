@@ -89,6 +89,14 @@
     text-anchor: middle;
   }
 
+  &__call {
+    fill: var(--color-accent);
+    font-family: var(--font-code);
+    font-size: 10px;
+    font-weight: 600;
+    text-anchor: middle;
+  }
+
   &__contract {
     fill: var(--color-muted);
     font-family: var(--font-code);

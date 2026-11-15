@@ -2,11 +2,14 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { UnknownNoteError, type NoteArchive } from '../memory/note-archive.js';
 import { DatabaseNotInstalledError, DatabaseUnavailableError } from '../store/database-settings.js';
 import type { ChangeFeed } from './change-feed.js';
+import { evalsReportOf } from './evals-report.js';
 import { flowMapOf } from './flow-map.js';
 import { moveSkillToTrash, SkillNotRemovableError } from './skill-removal.js';
+import type { Database } from '../store/database.js';
 import type { MonitorQueries, Page } from './monitor-queries.js';
 
 export interface MonitorParts {
+  readonly database: Database;
   readonly queries: MonitorQueries;
   readonly archive: NoteArchive;
   readonly feed: ChangeFeed;
@@ -31,16 +34,18 @@ const DEFAULT_DAYS = 14;
 const NOT_FOUND = 404;
 const UNAVAILABLE = 503;
 
-export function createMonitorApi({ queries, archive, feed }: MonitorParts): Server {
+export function createMonitorApi({ database, queries, archive, feed }: MonitorParts): Server {
   const answers: Readonly<Record<string, Answer>> = {
     '/api/prompts': (url) => queries.prompts(pageOf(url)),
     '/api/prompt': (url) => queries.prompt(url.searchParams.get('id') ?? ''),
     '/api/limits': () => queries.limits(),
     '/api/telemetry': (url) => queries.telemetry(numberOf(url, 'days', DEFAULT_DAYS)),
     '/api/stories': (url) => queries.stories(pageOf(url)),
+    '/api/runs': (url) => queries.runs(url.searchParams.get('agent') ?? '', pageOf(url)),
     '/api/errors': (url) => queries.errors(pageOf(url)),
     '/api/plans': (url) => archive.plans(url.searchParams.get('text') ?? ''),
     '/api/flow-map': () => flowMapOf(),
+    '/api/evals': (url) => evalsReportOf(database, url.searchParams.get('agent') ?? ''),
     '/api/agents': () => queries.agentRoster(),
     '/api/agent-activity': (url) => queries.agentActivity(url.searchParams.get('agent') ?? '', pageOf(url)),
   };

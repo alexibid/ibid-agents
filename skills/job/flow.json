@@ -1,0 +1,43 @@
+{
+  "title": "Job",
+  "steps": [
+    {
+      "id": "analyse-job",
+      "name": "Analisar a vaga",
+      "doneBy": "job",
+      "task": "Read the job description: requirements, stack, the company's pain points and its keywords.",
+      "fields": {
+        "requirements": "list",
+        "keywords": "list"
+      }
+    },
+    {
+      "id": "tailor",
+      "name": "Adaptar o CV",
+      "doneBy": "job",
+      "task": "Create the tailored HTML from index.html in /Users/alexsantos/Documents/cv/. Never invent experience; keep the word count of each block. No PDF.",
+      "fields": {
+        "file": "file",
+        "changes": "list"
+      }
+    },
+    {
+      "id": "checklist",
+      "name": "Verificação",
+      "doneBy": "job",
+      "task": "Run the final checklist: keywords present, results visible, simple and clear, tailored, authentic.",
+      "fields": {
+        "checklist": "list"
+      }
+    },
+    {
+      "id": "interview",
+      "name": "Entrevista",
+      "doneBy": "job",
+      "task": "Propose three to five likely interview questions with STAR answers for this role.",
+      "fields": {
+        "questions": "list"
+      }
+    }
+  ]
+}

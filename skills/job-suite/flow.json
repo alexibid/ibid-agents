@@ -1,0 +1,33 @@
+{
+  "title": "Job suite",
+  "steps": [
+    {
+      "id": "choose",
+      "name": "Escolher",
+      "doneBy": "job-suite",
+      "task": "Say which capability the request needs: scout, tracker, tailor or status.",
+      "fields": {
+        "capability": "text"
+      }
+    },
+    {
+      "id": "run",
+      "name": "Executar",
+      "doneBy": "job-suite",
+      "task": "Run the matching command of the skill in /Users/alexsantos/Projects/job-suite and keep its output.",
+      "fields": {
+        "command": "text",
+        "output": "text"
+      }
+    },
+    {
+      "id": "report",
+      "name": "Relatório",
+      "doneBy": "job-suite",
+      "task": "Report what changed: jobs found, pipeline updates or files written.",
+      "fields": {
+        "answer": "text"
+      }
+    }
+  ]
+}

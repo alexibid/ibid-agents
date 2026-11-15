@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "id": "shared-expenses-pt",
+      "request": "Quero perceber o mercado de apps de despesas partilhadas para casais em Portugal.",
+      "expect": {
+        "stopsAt": "finished",
+        "mentions": [
+          "ASO",
+          "SEO"
+        ],
+        "avoids": []
+      }
+    }
+  ]
+}

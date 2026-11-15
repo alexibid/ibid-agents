@@ -155,4 +155,7 @@ Respond in the language the user writes in (while keeping code, identifiers, and
   - *Defining NgRx Actions & Effects*: `CitySearchComponent` and `CurrentWeatherEffects` refactored with `inject()`, `switchMap`, and `takeUntilDestroyed()`.
   - *Implementing Reducers*: `CurrentWeatherComponent` modernized to Angular 22 (`inject()`, `toSignal()`, `computed()`, zero `| async` pipes, no `constructor()`).
   - *Testing NgRx with MockStore*: Unit tests in `current-weather.component.spec.ts` and `city-search.component.spec.ts` running with `provideMockStore()`, passing 15/15 tests cleanly.
-- **Pending Lesson**: *Rewriting Angular Apps with NgRx/SignalStore* (scheduled after completing the `lemon-mart` SignalStore & Facade refactor).
+  - *Rewriting Angular Apps with NgRx/SignalStore*: Successfully migrated `local-weather-alex` to `WeatherStore` (`signalStore`), removing 114 lines of classic NgRx boilerplate (`app.config.ts`, `Store`, `Actions`, `Effects`, `Reducers`), with 15/15 unit tests passing cleanly (commit `1b7c376`).
+  - *Global Loading Overlay with SignalState*: Implemented `signalState` in `UiService`, functional `LoadingHttpInterceptor`, and `LoadingOverlayComponent` with `ShadowDom` in `lemon-mart` (commit `0e0036d`).
+- **Milestone Completed**: Module 2 (*Advanced Patterns and Enterprise Deployment in Angular - State Management, Router-First, Signals, NgRx, and SignalStore*) is 100% COMPLETE.
+- **Next Module**: Containerization using Docker & Cloud Deployment (AWS ECS, Docker multi-stage builds).

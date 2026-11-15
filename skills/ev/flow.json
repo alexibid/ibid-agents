@@ -1,0 +1,45 @@
+{
+  "title": "EV e condomínio",
+  "steps": [
+    {
+      "id": "classify",
+      "name": "Classificar",
+      "doneBy": "ev",
+      "task": "Say which protocol of the skill applies: A (quote analysis), B (condo mediation) or C (daily charging).",
+      "fields": {
+        "protocol": "text",
+        "request": "text"
+      }
+    },
+    {
+      "id": "analyse",
+      "name": "Analisar",
+      "doneBy": "ev",
+      "task": "Work the case with the facts of the skill. Cite the law article or DGEG guide behind each legal claim and show every number computed. When a legal claim is made, give the link of each law or guide cited (for example on diariodarepublica.pt or dgeg.gov.pt); with no legal claim, hand back an empty list. Never give a link you did not open.",
+      "fields": {
+        "findings": "list",
+        "legalBasis": "list",
+        "numbers": "list",
+        "legalSources": "optional-urls"
+      }
+    },
+    {
+      "id": "draft",
+      "name": "Redigir",
+      "doneBy": "ev",
+      "task": "Write the answer or the letter to the condo administration, firm and polite, in PT-PT.",
+      "fields": {
+        "answer": "text"
+      }
+    },
+    {
+      "id": "verify",
+      "name": "Verificar",
+      "doneBy": "ev",
+      "task": "Recompute every number and re-read every citation against the source. List what was checked.",
+      "fields": {
+        "checked": "list"
+      }
+    }
+  ]
+}

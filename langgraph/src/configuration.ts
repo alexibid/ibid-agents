@@ -5,6 +5,7 @@ export interface Configuration {
   readonly projectsDirectory: string;
   readonly contractsDirectory: string;
   readonly stateFile: string;
+  readonly coachStateFile: string;
 }
 
 const PACKAGE_ROOT = resolve(import.meta.dirname, '..');
@@ -17,6 +18,10 @@ export class MissingWorkspaceError extends Error {
   }
 }
 
+export function contractsDirectoryPath(): string {
+  return process.env['IBID_AGENT_CONTRACTS'] ?? join(PACKAGE_ROOT, '..', 'agents');
+}
+
 export function readConfiguration(): Configuration {
   const workspaceRoot = process.env[WORKSPACE_VARIABLE];
   if (workspaceRoot === undefined || workspaceRoot === '') {
@@ -25,7 +30,8 @@ export function readConfiguration(): Configuration {
   return {
     workspaceRoot,
     projectsDirectory: process.env['IBID_PROJECT_SHEETS'] ?? join(PACKAGE_ROOT, '..', 'rules', 'projects'),
-    contractsDirectory: process.env['IBID_AGENT_CONTRACTS'] ?? join(PACKAGE_ROOT, '..', 'agents'),
+    contractsDirectory: contractsDirectoryPath(),
     stateFile: process.env['IBID_LANGGRAPH_STATE'] ?? join(PACKAGE_ROOT, 'state', 'stories.sqlite'),
+    coachStateFile: process.env['IBID_COACH_STATE'] ?? join(PACKAGE_ROOT, 'state', 'coach.sqlite'),
   };
 }

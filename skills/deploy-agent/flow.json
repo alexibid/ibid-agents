@@ -1,0 +1,54 @@
+{
+  "title": "Deploy e CI/CD",
+  "steps": [
+    {
+      "id": "discover",
+      "name": "Descobrir",
+      "doneBy": "deploy-agent",
+      "task": "Read the project first: stacks, target platforms, documented conventions, existing CI, git remote and commit convention.",
+      "fields": {
+        "stacks": "list",
+        "platforms": "list",
+        "existingCi": "text",
+        "remote": "text"
+      }
+    },
+    {
+      "id": "plan",
+      "name": "Plano",
+      "doneBy": "deploy-agent",
+      "task": "Plan each platform GitHub-first, saying why whenever GitHub alone does not serve it.",
+      "fields": {
+        "planPerPlatform": "list"
+      }
+    },
+    {
+      "id": "versioning",
+      "name": "Versões",
+      "doneBy": "deploy-agent",
+      "task": "Propose versioning from Conventional Commits, or introducing that convention first.",
+      "fields": {
+        "strategy": "text"
+      }
+    },
+    {
+      "id": "prepare-files",
+      "name": "Preparar ficheiros",
+      "doneBy": "deploy-agent",
+      "task": "Write the configuration files as drafts for review. Apply nothing.",
+      "fields": {
+        "files": "files",
+        "secretsNeeded": "list"
+      }
+    },
+    {
+      "id": "next-action",
+      "name": "Próximo passo",
+      "doneBy": "deploy-agent",
+      "task": "Name the single remote action that waits for the user (push, tag, release, secret). Never do it.",
+      "fields": {
+        "pendingAction": "text"
+      }
+    }
+  ]
+}

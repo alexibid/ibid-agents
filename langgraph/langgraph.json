@@ -1,7 +1,8 @@
 {
   "node_version": "22",
   "graphs": {
-    "ibid": "./src/studio.ts:graph"
+    "ibid": "./src/studio.ts:graph",
+    "coach": "./src/studio.ts:coachGraph"
   },
   "env": ".env"
 }

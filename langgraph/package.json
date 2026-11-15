@@ -12,7 +12,8 @@
     "typecheck": "tsc -p tsconfig.spec.json",
     "test": "vitest run",
     "start": "node dist/server.js",
-    "studio": "langgraphjs dev"
+    "studio": "langgraphjs dev",
+    "evals": "node dist/evals/run-evals.js"
   },
   "engines": {
     "node": ">=20.19"

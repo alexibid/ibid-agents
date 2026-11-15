@@ -41,6 +41,7 @@ export interface KnownAgent {
   readonly failures: number;
   readonly lastOn: string;
   readonly command: string;
+  readonly project: string;
 }
 
 const NEVER = '';
@@ -49,12 +50,12 @@ export function knownAgentsOf(catalog: readonly CatalogEntry[], roster: readonly
   const ran = new Map(roster.map((entry) => [slugOf(entry.agent), entry]));
   const kept = catalog.map((entry) => {
     const slug = slugOf(entry.name);
-    const activity = ran.get(slug);
-    ran.delete(slug);
+    const activity = entry.origin === 'project' ? undefined : ran.get(slug);
+    ran.delete(entry.origin === 'project' ? '' : slug);
     return {
       group: entry.origin,
       name: entry.name,
-      activityName: activity?.agent ?? slug,
+      activityName: activity?.agent ?? (entry.project === '' ? slug : `${slug}@${entry.project}`),
       kind: entry.kind,
       job: entry.job,
       file: entry.file,
@@ -63,6 +64,7 @@ export function knownAgentsOf(catalog: readonly CatalogEntry[], roster: readonly
       failures: activity?.failures ?? 0,
       lastOn: activity?.lastOn ?? NEVER,
       command: `/${entry.name}`,
+      project: entry.project,
     };
   });
   const elsewhere = [...ran.values()].map((entry) => ({
@@ -77,6 +79,7 @@ export function knownAgentsOf(catalog: readonly CatalogEntry[], roster: readonly
     failures: entry.failures,
     lastOn: entry.lastOn,
     command: '',
+    project: '',
   }));
   return [...kept, ...elsewhere].sort(byMostRecentThenName);
 }
@@ -84,6 +87,7 @@ export function knownAgentsOf(catalog: readonly CatalogEntry[], roster: readonly
 const GROUPS: readonly (readonly [Group, string])[] = [
   ['mine', 'Os meus'],
   ['langgraph', 'Do LangGraph'],
+  ['project', 'Dos projetos (chamam-se dentro do projeto)'],
   ['system', 'Do sistema'],
   ['tool', 'Das ferramentas (fora do ibid-agents)'],
 ];

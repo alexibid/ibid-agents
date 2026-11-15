@@ -1,0 +1,44 @@
+{
+  "title": "Product owner",
+  "steps": [
+    {
+      "id": "needs",
+      "name": "Necessidades",
+      "doneBy": "product-owner-assistant",
+      "task": "Frame the needs as jobs to be done, separating explicit from latent needs.",
+      "fields": {
+        "jobsToBeDone": "list"
+      }
+    },
+    {
+      "id": "benchmark",
+      "name": "Benchmark",
+      "doneBy": "product-owner-assistant",
+      "task": "Analyse at least three competitor apps: value proposition, monetisation, features, strengths, weaknesses, privacy stance. Give a feature matrix.",
+      "fields": {
+        "apps": "list",
+        "featureMatrix": "text"
+      }
+    },
+    {
+      "id": "prioritise",
+      "name": "Priorizar",
+      "doneBy": "product-owner-assistant",
+      "task": "Prioritise with RICE or MoSCoW and show the reasoning.",
+      "fields": {
+        "priorities": "list",
+        "reasoning": "text"
+      }
+    },
+    {
+      "id": "spec",
+      "name": "Especificar",
+      "doneBy": "product-owner-assistant",
+      "task": "Write user stories with testable acceptance criteria and the domain edge cases.",
+      "fields": {
+        "userStories": "list",
+        "edgeCases": "list"
+      }
+    }
+  ]
+}

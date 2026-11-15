@@ -1,0 +1,52 @@
+{
+  "title": "Blender",
+  "steps": [
+    {
+      "id": "understand",
+      "name": "Perceber",
+      "doneBy": "blender",
+      "task": "Restate the goal and name the input files.",
+      "fields": {
+        "goal": "text",
+        "inputs": "files"
+      }
+    },
+    {
+      "id": "prepare-input",
+      "name": "Preparar a entrada",
+      "doneBy": "blender",
+      "task": "Check the input image or mesh against the skill: clean background, framing, scale.",
+      "fields": {
+        "inputChecks": "list"
+      }
+    },
+    {
+      "id": "run",
+      "name": "Executar",
+      "doneBy": "blender",
+      "task": "Give the exact headless command and run it.",
+      "fields": {
+        "command": "text",
+        "output": "text"
+      }
+    },
+    {
+      "id": "measure",
+      "name": "Medir",
+      "doneBy": "blender",
+      "task": "Measure faces before and after, watertight, dimensions in mm and offenders per category.",
+      "fields": {
+        "measurements": "list"
+      }
+    },
+    {
+      "id": "report",
+      "name": "Relatório",
+      "doneBy": "blender",
+      "task": "Report the result. When something failed, name the phase, the cause and the fix, in that order.",
+      "fields": {
+        "answer": "text"
+      }
+    }
+  ]
+}

@@ -5,19 +5,34 @@ import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import { registerAgentRunTools } from './agent-runs/agent-run-tools.js';
+import { agentRunFlowOf } from './agent-runs/setup.js';
+import { buildCoachGraph } from './coach/graph.js';
+import { CoachFlow, type CoachReport } from './coach-flow.js';
 import { readConfiguration } from './configuration.js';
 import { buildFlowGraph } from './flow/graph.js';
+import { PostgresFlowJournal } from './journal/flow-journal.js';
+import { registerMemoryTools } from './memory/memory-tools.js';
+import { PostgresNoteArchive } from './memory/note-archive.js';
+import { Database } from './store/database.js';
 import { StoryFlow, type StoryReport } from './story-flow.js';
 import { SheetReader } from './sheets/sheet-reader.js';
 
-async function createStoryFlow(): Promise<StoryFlow> {
-  const { workspaceRoot, projectsDirectory, contractsDirectory, stateFile } = readConfiguration();
+const DEFAULT_COACH_WORKSPACE = '/Users/alexsantos/Projects/lemon-mart';
+const database = new Database();
+
+async function createFlows(): Promise<{ readonly storyFlow: StoryFlow; readonly coachFlow: CoachFlow }> {
+  const { workspaceRoot, projectsDirectory, contractsDirectory, stateFile, coachStateFile } = readConfiguration();
   await mkdir(dirname(stateFile), { recursive: true });
+  await mkdir(dirname(coachStateFile), { recursive: true });
   const sheets = new SheetReader(projectsDirectory);
-  return new StoryFlow(buildFlowGraph({ workspaceRoot, sheets, contractsDirectory }, SqliteSaver.fromConnString(stateFile)));
+  const storyGraph = buildFlowGraph({ workspaceRoot, sheets, contractsDirectory }, SqliteSaver.fromConnString(stateFile));
+  const storyFlow = new StoryFlow(storyGraph, new PostgresFlowJournal(database));
+  const coachFlow = new CoachFlow(buildCoachGraph({ contractsDirectory }, SqliteSaver.fromConnString(coachStateFile)));
+  return { storyFlow, coachFlow };
 }
 
-function answer(report: StoryReport) {
+function answer(report: StoryReport | CoachReport) {
   return { content: [{ type: 'text' as const, text: JSON.stringify(report, null, 2) }] };
 }
 
@@ -26,7 +41,7 @@ function refusal(error: unknown) {
   return { content: [{ type: 'text' as const, text: message }], isError: true };
 }
 
-function registerTools(server: McpServer, storyFlow: StoryFlow): void {
+function registerTools(server: McpServer, storyFlow: StoryFlow, coachFlow: CoachFlow): void {
   server.registerTool(
     'start_story',
     {
@@ -78,8 +93,49 @@ function registerTools(server: McpServer, storyFlow: StoryFlow): void {
     },
     async ({ storyId }) => storyFlow.report(storyId).then(answer, refusal),
   );
+
+  server.registerTool(
+    'start_coaching',
+    {
+      description:
+        'Start a pair-programming coaching session (separate from ibid-workspace stories). Returns the sessionId and the first step LangGraph is waiting for.',
+      inputSchema: {
+        goal: z.string().describe('What the student wants to learn or build in this session'),
+        workspaceRoot: z
+          .string()
+          .default(DEFAULT_COACH_WORKSPACE)
+          .describe('Absolute path of the coaching workspace (defaults to lemon-mart)'),
+      },
+    },
+    async (goal) => coachFlow.startCoaching(goal).then(answer, refusal),
+  );
+
+  server.registerTool(
+    'submit_coach_step',
+    {
+      description:
+        'Hand the result of the current coaching step to the Coach LangGraph. Validates outside-in design, bite-sized Angular 22 lessons, and student code.',
+      inputSchema: {
+        sessionId: z.string(),
+        handBack: z.record(z.string(), z.unknown()).describe('The payload expected by the current coaching step'),
+      },
+    },
+    async ({ sessionId, handBack }) => coachFlow.submit(sessionId, handBack).then(answer, refusal),
+  );
+
+  server.registerTool(
+    'coach_status',
+    {
+      description: 'Read where a coaching session stands: what step LangGraph is waiting for, validated lesson blocks, and history.',
+      inputSchema: { sessionId: z.string() },
+    },
+    async ({ sessionId }) => coachFlow.report(sessionId).then(answer, refusal),
+  );
 }
 
 const server = new McpServer({ name: 'ibid-langgraph', version: '0.1.0' });
-registerTools(server, await createStoryFlow());
+const { storyFlow, coachFlow } = await createFlows();
+registerTools(server, storyFlow, coachFlow);
+registerMemoryTools(server, new PostgresNoteArchive(database));
+registerAgentRunTools(server, await agentRunFlowOf(database));
 await server.connect(new StdioServerTransport());

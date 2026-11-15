@@ -9,6 +9,8 @@ const LANGGRAPH_SERVER = join(AGENTS_ROOT, 'langgraph', 'dist', 'server.js');
 const GUARD = join(AGENTS_ROOT, 'langgraph', 'dist', 'guard.js');
 const SESSION_START = join(AGENTS_ROOT, 'langgraph', 'dist', 'session-start.js');
 const STATUS_LINE = join(AGENTS_ROOT, 'langgraph', 'dist', 'status-line.js');
+const FLOW_REMINDER = join(AGENTS_ROOT, 'langgraph', 'dist', 'flow-reminder.js');
+const FLOW_REMINDER_NAME = 'ibid-flow-reminder';
 const SKILLS = join(AGENTS_ROOT, 'skills');
 const SYSTEM_SKILLS = join(AGENTS_ROOT, 'system-skills');
 const INSTRUCTIONS = join(AGENTS_ROOT, 'instructions');
@@ -37,7 +39,7 @@ function assertReady(workspace) {
   if (!existsSync(join(workspace, 'nx.json'))) {
     throw new UsageError(`${workspace} is not an Nx workspace.`);
   }
-  if (![LANGGRAPH_SERVER, GUARD, SESSION_START, STATUS_LINE].every((script) => existsSync(script))) {
+  if (![LANGGRAPH_SERVER, GUARD, SESSION_START, STATUS_LINE, FLOW_REMINDER].every((script) => existsSync(script))) {
     throw new UsageError('LangGraph is not built. Run "npm run build" inside langgraph/ first.');
   }
 }
@@ -166,6 +168,22 @@ function claudeStatusLineStep() {
   return { ...step, blocker: () => (another() ? 'another status line is already set and is kept' : '') };
 }
 
+function claudeFlowReminderStep(workspace) {
+  const entry = { hooks: [{ type: 'command', command: scriptCommand(workspace, FLOW_REMINDER) }] };
+  return claudeHookStep({ event: 'UserPromptSubmit', script: FLOW_REMINDER, entry, label: 'the reminder to run an agent through its flow, for Claude' });
+}
+
+function antigravityFlowReminderStep(workspace) {
+  const entry = { PreInvocation: [{ hooks: [{ type: 'command', command: scriptCommand(workspace, FLOW_REMINDER), timeout: 10 }] }] };
+  return jsonStep(
+    join(ANTIGRAVITY_HOME, 'hooks.json'),
+    'the reminder to run an agent through its flow, for Antigravity',
+    (hooks) => sameJson(hooks[FLOW_REMINDER_NAME], entry),
+    (hooks) => ({ ...hooks, [FLOW_REMINDER_NAME]: entry }),
+    (hooks) => omit(hooks, FLOW_REMINDER_NAME),
+  );
+}
+
 function claudeHookStep({ event, script, entry, label }) {
   const others = (settings) => (settings.hooks?.[event] ?? []).filter((hook) => !runsScript(hook, script));
   return jsonStep(
@@ -243,6 +261,8 @@ function stepsFor(workspace) {
     claudeGuardStep(workspace),
     antigravityGuardStep(workspace),
     claudeSessionStartStep(workspace),
+    claudeFlowReminderStep(workspace),
+    antigravityFlowReminderStep(workspace),
     claudeStatusLineStep(),
     claudeNxPluginStep(),
   ];

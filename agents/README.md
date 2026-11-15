@@ -34,7 +34,7 @@ Every contract has the same six sections, in this order.
 | `nx.md` | `plan`, and `implement` when workspace files change | First version, from the Nx skills |
 | `archivist.md` | Before the story, and whenever something is concluded | First version |
 
-No contract has trials yet, and none has been used on a real story.
+None has been used on a real story yet.
 
 The assistant is not here. It is the skill `skills/assistente`, because the user invokes it.
 
@@ -48,8 +48,11 @@ contract. It lets the role be invoked on its own with `/name`, in Claude and in 
 - Where a tool can run separate agents, each step runs in its own. Where it cannot, the same
   model takes one role at a time and LangGraph's checks carry the separation.
 
-## Trials
+## Evaluations
 
-Each contract gains a `trials/<contract>/` folder: a few example tasks with a known right
-answer. They are re-run whenever the contract changes, so a change never quietly breaks what
-worked.
+The user's own agents with a LangGraph flow keep their evaluation cases in
+`skills/<agent>/evals.json`: a request, the step the run must reach, and what the answer must
+and must not say. `npm run evals -- <agent>` in `langgraph/` runs each case through the Claude
+command line, checks that the agent went through its flow, and keeps the result, which the
+dashboard shows. Agents that touch the user's accounts, files or programs have no automatic
+evaluation.

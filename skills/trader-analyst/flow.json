@@ -1,0 +1,46 @@
+{
+  "title": "Trader Analyst",
+  "steps": [
+    {
+      "id": "read-raw",
+      "name": "Ler a folha raw",
+      "doneBy": "trader-analyst",
+      "task": "Read the raw sheet, read-only, and compute P&L, exposure, cashflow and TWR. Decide open or closed positions from real buys and sells.",
+      "fields": {
+        "metrics": "list",
+        "positions": "list"
+      }
+    },
+    {
+      "id": "order-worker",
+      "name": "Ordenar ao worker",
+      "doneBy": "trader-analyst",
+      "task": "When a table or dashboard is needed, write the exact instructions for trader-worker (QUERY/ARRAYFORMULA formulas, ranges).",
+      "fields": {
+        "instructions": "list"
+      },
+      "calls": [
+        "trader-worker"
+      ]
+    },
+    {
+      "id": "validate-sheet",
+      "name": "Validar o Sheets",
+      "doneBy": "trader-analyst",
+      "task": "Read the sheet after the worker. List every range checked and confirm there is no #N/A, empty column or wrong format.",
+      "fields": {
+        "checkedRanges": "list",
+        "problemsFound": "text"
+      }
+    },
+    {
+      "id": "report",
+      "name": "Relatório",
+      "doneBy": "trader-analyst",
+      "task": "Send trader only the processed data and the confirmation that the sheet is valid.",
+      "fields": {
+        "report": "text"
+      }
+    }
+  ]
+}

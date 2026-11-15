@@ -1,0 +1,15 @@
+{
+  "cases": [
+    {
+      "id": "third-blind-missing",
+      "request": "O terceiro estore continua sem aparecer na app. O que faço?",
+      "expect": {
+        "stopsAt": "approval",
+        "mentions": [
+          "Zigbee"
+        ],
+        "avoids": []
+      }
+    }
+  ]
+}

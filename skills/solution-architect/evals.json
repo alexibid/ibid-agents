@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "id": "monitor-service",
+      "request": "Avalia a arquitetura do serviço de monitorização em langgraph/src/monitor e propõe melhorias.",
+      "workingDirectory": "/Users/alexsantos/Projects/ibid-agents",
+      "expect": {
+        "stopsAt": "finished",
+        "mentions": [
+          "langgraph/src/monitor"
+        ],
+        "avoids": []
+      }
+    }
+  ]
+}

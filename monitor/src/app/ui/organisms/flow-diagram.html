@@ -28,12 +28,12 @@
         [attr.transform]="'translate(' + node.x + ' 0)'"
         role="button"
         tabindex="0"
-        [attr.aria-label]="'Ver o passo ' + nameOf(node.id)"
+        [attr.aria-label]="'Ver o passo ' + labelOf(node)"
         (click)="nodePicked.emit(node.id)"
         (keydown.enter)="nodePicked.emit(node.id)"
       >
         <rect class="flow__box" [attr.y]="nodeTop" [attr.width]="nodeWidth" [attr.height]="nodeHeight" rx="10" />
-        <text class="flow__name" [attr.x]="nodeWidth / 2" [attr.y]="middle + 5">{{ nameOf(node.id) }}</text>
+        <text class="flow__name" [attr.x]="nodeWidth / 2" [attr.y]="middle + 5">{{ labelOf(node) }}</text>
         <line class="flow__stem" [attr.x1]="nodeWidth / 2" [attr.y1]="nodeTop + nodeHeight" [attr.x2]="nodeWidth / 2" [attr.y2]="agentTop" />
         <rect
           [class]="node.byLangGraph ? 'flow__agent flow__agent--langgraph' : 'flow__agent'"
@@ -44,6 +44,9 @@
           rx="15"
         />
         <text class="flow__agent-name" [attr.x]="nodeWidth / 2" [attr.y]="agentTop + 20">{{ node.doneBy }}</text>
+        @for (called of node.calls ?? []; track called; let row = $index) {
+          <text class="flow__call" [attr.x]="nodeWidth / 2" [attr.y]="agentTop + 48 + row * 15">→ {{ called }}</text>
+        }
         @for (contract of node.contracts; track contract; let row = $index) {
           <text class="flow__contract" [attr.x]="nodeWidth / 2" [attr.y]="agentTop + 48 + row * 15">{{ contract }}</text>
         }

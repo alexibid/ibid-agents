@@ -16,6 +16,9 @@ import { ListButton } from '../atoms/list-button';
         <li class="agent-list__row">
           <monitor-list-button [current]="agent.activityName === picked()" (click)="agentPicked.emit(agent.activityName)">
             <span class="agent-list__name">{{ agent.name }}</span>
+            @if (agent.project) {
+              <span class="agent-list__facts">projeto {{ agent.project }}</span>
+            }
             <span class="agent-list__facts">
               {{ kindNames[agent.kind] }} · {{ agent.calls }} {{ agent.calls === 1 ? 'execução' : 'execuções' }}
               @if (agent.failures > 0) {

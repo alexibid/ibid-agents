@@ -1,0 +1,42 @@
+{
+  "title": "Business analyst",
+  "steps": [
+    {
+      "id": "discover",
+      "name": "Descoberta",
+      "doneBy": "business-analyst",
+      "task": "Answer the six discovery questions of the skill: problem and user, market boundary, platform, current substitute, YMYL, user context.",
+      "fields": {
+        "answers": "list"
+      }
+    },
+    {
+      "id": "research",
+      "name": "Pesquisar",
+      "doneBy": "business-analyst",
+      "task": "Research through the four lenses (ASO, SEO, business model, YMYL/E-E-A-T). Every price and fact carries its source and access date.",
+      "fields": {
+        "findings": "list",
+        "sources": "urls"
+      }
+    },
+    {
+      "id": "opportunities",
+      "name": "Oportunidades",
+      "doneBy": "business-analyst",
+      "task": "Name what the market does not serve yet, each backed by findings.",
+      "fields": {
+        "opportunities": "list"
+      }
+    },
+    {
+      "id": "report",
+      "name": "Relatório",
+      "doneBy": "business-analyst",
+      "task": "Write the benchmarking report.",
+      "fields": {
+        "report": "text"
+      }
+    }
+  ]
+}

@@ -49,3 +49,20 @@ Before handing a CV over: keywords from the job description present? Results vis
 4. **Interview Prep**:
    - Propose 3-5 typical technical/behavioral interview questions based on the job and customized CV.
    - Outline STAR responses tailored to Alexandre's profile, including addressing areas like balancing delivery vs technical debt, communication, and confidence.
+
+## LangGraph flow
+
+This agent runs through its own LangGraph flow, defined in `flow.json` beside this file. It
+works the same in Claude and in Antigravity.
+
+1. Before anything else, call `start_agent_run` on `ibid-langgraph` with `agent: "job"` and the
+   user's request in their words.
+2. Do only the step named in `next`, as its `task` says, then call `submit_agent_step` with the
+   run id and a `handBack` in exactly the shape `next.handBack` shows.
+3. When `lastResult` failed, fix exactly what its details say and hand back again.
+4. Stop when `status` is `finished` or `needs-user`. Never report a step as done that LangGraph
+   did not pass.
+5. A step done by the user, such as an approval, waits for the user's own words. Never fill it
+   in for them.
+
+If LangGraph cannot be reached, tell the user and stop.

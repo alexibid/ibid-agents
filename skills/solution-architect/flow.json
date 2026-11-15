@@ -1,0 +1,43 @@
+{
+  "title": "Solution architect",
+  "steps": [
+    {
+      "id": "discover",
+      "name": "Descobrir",
+      "doneBy": "solution-architect",
+      "task": "Read the documentation and the code to learn the architecture really in use. Write no code.",
+      "fields": {
+        "architecture": "text",
+        "readFiles": "files"
+      }
+    },
+    {
+      "id": "analyse",
+      "name": "Analisar",
+      "doneBy": "solution-architect",
+      "task": "List structural flaws and deviations from the documented conventions, with their risk and impact.",
+      "fields": {
+        "flaws": "list"
+      }
+    },
+    {
+      "id": "design",
+      "name": "Desenhar",
+      "doneBy": "solution-architect",
+      "task": "Design the solution: contracts, module boundaries, layers and data flow.",
+      "fields": {
+        "design": "text"
+      }
+    },
+    {
+      "id": "brief",
+      "name": "Briefing",
+      "doneBy": "solution-architect",
+      "task": "Write the execution prompt for the executing agent: files with exact paths, contracts, signatures, acceptance criteria and test plan.",
+      "fields": {
+        "files": "list",
+        "executionPrompt": "text"
+      }
+    }
+  ]
+}

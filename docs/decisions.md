@@ -35,6 +35,11 @@ Settled with the user. A decision here overrides any older rule file that says o
 | 2026-11-13 | Each LangGraph contract in `agents/` has a skill of the same name that only points to it, so the role can also be invoked on its own | Contracts reachable only through LangGraph |
 | 2026-11-13 | Duplicates merged into one: `qa-tester` and `playwright` into the test and browser contracts, `code-auditor` into `reviewer`, `visual-qa` and its scripts into `visual-gate`, `cv-generator` into `job`, `design-system-specialist` into `ui`, `web-design` and the oh-save-me sheet; the `agents` skill dropped. The originals are in `legacy/merged-skills/` | — |
 | 2026-11-13 | The user's own skills can be removed from the dashboard; they go to the Mac Trash and their links leave both tools. LangGraph roles and system skills cannot be removed there | — |
+| 2026-11-13 | The agent files of other projects (BoilerStudio, cv, personal-finance, trader, job-suite, poupado-app, wealth-simulator) live in `projects/<project>/`; each project keeps links. Each project agent is callable from Claude and Antigravity inside its project. `job-suite` became a shared skill | Agent files scattered in each project |
+| 2026-11-15 | Each of the user's own agents has its own LangGraph flow, described in `flow.json` beside its skill and built by one shared engine. LangGraph hands out one step at a time and only passes a step whose hand-back is complete; a step done by the user needs their own words. Three failed attempts stop the run for the user | Agents working without LangGraph |
+| 2026-11-15 | Flow steps check content where they can: links must open, files must exist | Checking only that fields are filled |
+| 2026-11-15 | Naming an agent with a flow makes the tool remind it to start the flow (Claude `UserPromptSubmit`, Antigravity `PreInvocation`) | Relying on the skill text alone |
+| 2026-11-15 | Agents are evaluated with cases in `evals.json`, run through the Claude command line and kept in the database. Agents that act on the user's accounts or files are not run automatically | Trials folders that were never written |
 
 ## Deferred to the workspace
 

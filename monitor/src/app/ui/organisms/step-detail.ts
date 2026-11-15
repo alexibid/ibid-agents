@@ -13,6 +13,10 @@ import type { CatalogEntry, FlowNode, StoryStep } from '../../domain/flow-map';
       <dd>{{ shown.doneBy }}</dd>
       <dt>O que faz</dt>
       <dd>{{ shown.task || 'Passo interno do LangGraph.' }}</dd>
+      @if (shown.calls?.length) {
+        <dt>Chama</dt>
+        <dd>{{ shown.calls?.join(', ') }}</dd>
+      }
     </dl>
     @for (file of shown.contracts; track file) {
       <article class="step__contract">

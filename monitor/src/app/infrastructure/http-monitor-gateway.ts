@@ -3,6 +3,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { Observable, share } from 'rxjs';
 import { MonitorGateway } from '../application/monitor-gateway';
 import type { AgentRun, RosterEntry } from '../domain/agent-roster';
+import type { CaseReport } from '../domain/evals';
 import type { FlowMap, Story } from '../domain/flow-map';
 import type { PromptDetail, PromptSummary } from '../domain/prompt';
 import type { LimitReading, Note, Problem, Telemetry } from '../domain/records';
@@ -76,5 +77,13 @@ export class HttpMonitorGateway extends MonitorGateway {
 
   override removeSkill(name: string): Observable<unknown> {
     return this.http.post(`${SERVICE}/skills/remove`, null, { params: { name } });
+  }
+
+  override runs(agent: string): Observable<Story[]> {
+    return this.http.get<Story[]>(`${SERVICE}/runs`, { params: { agent, limit: RUNS_READ } });
+  }
+
+  override evals(agent: string): Observable<CaseReport[]> {
+    return this.http.get<CaseReport[]>(`${SERVICE}/evals`, { params: { agent } });
   }
 }

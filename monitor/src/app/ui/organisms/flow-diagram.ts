@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { nameOf, NODE_WIDTH, type FlowDrawing } from '../../domain/flow-map';
+import { labelOf, NODE_WIDTH, type FlowDrawing } from '../../domain/flow-map';
 
 const NODE_TOP = 24;
 const NODE_HEIGHT = 56;
@@ -18,7 +18,7 @@ export class FlowDiagram {
   readonly drawing = input.required<FlowDrawing>();
   readonly nodePicked = output<string>();
 
-  protected readonly nameOf = nameOf;
+  protected readonly labelOf = labelOf;
   protected readonly nodeWidth = NODE_WIDTH;
   protected readonly nodeTop = NODE_TOP;
   protected readonly nodeHeight = NODE_HEIGHT;

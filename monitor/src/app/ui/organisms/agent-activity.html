@@ -9,7 +9,9 @@
       <monitor-trash-button [label]="'Apagar ' + shown.name" (click)="removeAsked.emit()" />
     }
   </div>
-  @if (shown.group === 'langgraph') {
+  @if (shown.group === 'project') {
+    <p class="u-muted">Só existe no projeto {{ shown.project }}: o comando funciona numa conversa aberta nesse projeto, no Claude ou no Antigravity.</p>
+  } @else if (shown.group === 'langgraph') {
     <p class="u-muted">Papel do LangGraph: entra sozinho no passo certo de cada user story. O comando chama-o à parte, no Claude ou no Antigravity.</p>
   } @else if (shown.command) {
     <p class="u-muted">Cola o comando no Claude ou no Antigravity para o chamar.</p>
@@ -19,12 +21,16 @@
   }
   <p class="u-muted">
     @if (shown.inRepository) {
-      {{ shown.group === 'system' ? 'system-skills/' : 'skills/' }}{{ shown.file }}
+      {{ shown.group === 'system' ? 'system-skills/' : shown.group === 'project' ? '' : 'skills/' }}{{ shown.file }}
     } @else {
       Não está no ibid-agents: vem da própria ferramenta ou de outro sítio do computador.
     }
   </p>
 </header>
+
+@if (shown.group === 'mine') {
+  <monitor-agent-evals [agent]="shown.name" [cases]="evals()" />
+}
 
 @for (run of runs(); track run.id) {
   <article class="activity__run" [class.activity__run--failed]="run.failed">

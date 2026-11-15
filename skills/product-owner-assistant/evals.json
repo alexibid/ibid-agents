@@ -1,0 +1,15 @@
+{
+  "cases": [
+    {
+      "id": "saving-for-holidays",
+      "request": "Que funcionalidades devemos priorizar para quem quer poupar para as férias?",
+      "expect": {
+        "stopsAt": "finished",
+        "mentions": [
+          "critérios de aceitação"
+        ],
+        "avoids": []
+      }
+    }
+  ]
+}

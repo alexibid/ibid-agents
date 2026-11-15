@@ -1,0 +1,39 @@
+@use 'tools';
+
+.evals {
+  border-block: 1px solid var(--color-line);
+  display: grid;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+
+  &__score {
+    @include tools.small-label;
+
+    color: var(--color-warn);
+    font-weight: 600;
+
+    &--good {
+      color: var(--color-good);
+    }
+  }
+
+  &__case {
+    border-inline-start: 3px solid var(--color-line);
+    display: grid;
+    gap: var(--space-1);
+    padding-inline-start: var(--space-3);
+
+    &--passed {
+      border-inline-start-color: var(--color-good);
+    }
+
+    &--failed {
+      border-inline-start-color: var(--color-bad);
+    }
+  }
+
+  &__problem {
+    color: var(--color-bad);
+    font-size: var(--size-small);
+  }
+}

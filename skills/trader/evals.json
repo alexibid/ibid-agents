@@ -1,0 +1,15 @@
+{
+  "cases": [
+    {
+      "id": "monthly-portfolio",
+      "request": "Como está a minha carteira este mês?",
+      "expect": {
+        "stopsAt": "approval",
+        "mentions": [
+          "trader-analyst"
+        ],
+        "avoids": []
+      }
+    }
+  ]
+}

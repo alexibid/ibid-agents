@@ -1,7 +1,9 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import type { Observable } from 'rxjs';
 import { groupedAgents, knownAgentsOf, type AgentRun, type RosterEntry } from '../domain/agent-roster';
-import { EMPTY_FLOW_MAP, flowDrawingOf, type FlowMap, type Story } from '../domain/flow-map';
+import { of } from 'rxjs';
+import type { CaseReport } from '../domain/evals';
+import { agentOfFlow, EMPTY_FLOW_MAP, flowDrawingOf, type FlowMap, type Story } from '../domain/flow-map';
 import { keptFresh } from './kept-fresh';
 import { MonitorGateway } from './monitor-gateway';
 
@@ -33,7 +35,14 @@ export class AgentsStore {
   readonly storyId = signal(NO_STORY);
 
   readonly flow = computed(() => this.map().flows.find((flow) => flow.id === this.flowId()));
-  readonly story = computed(() => (this.flowId() === STORY_FLOW ? this.stories().find((story) => story.id === this.storyId()) : undefined));
+  readonly agentRuns = keptFresh<string, readonly Story[]>({
+    gateway: this.gateway,
+    choice: this.flowId,
+    load: (flowId) => (agentOfFlow(flowId) === '' ? of([]) : this.gateway.runs(agentOfFlow(flowId))),
+    whileLoading: [],
+  });
+  readonly runsOfFlow = computed(() => (this.flowId() === STORY_FLOW ? this.stories() : this.agentRuns()));
+  readonly story = computed(() => this.runsOfFlow().find((story) => story.id === this.storyId()));
   readonly drawing = computed(() => {
     const flow = this.flow();
     return flow === undefined ? undefined : flowDrawingOf(flow, this.story());
@@ -51,6 +60,13 @@ export class AgentsStore {
   readonly groups = computed(() => groupedAgents(this.agents()));
   readonly agentName = signal(NO_AGENT);
   readonly agent = computed(() => this.agents().find((agent) => agent.activityName === this.agentName()));
+  readonly evals = keptFresh<string, readonly CaseReport[]>({
+    gateway: this.gateway,
+    choice: this.agentName,
+    load: (agent) => this.gateway.evals(agent),
+    whileLoading: [],
+  });
+
   removeSkill(name: string): Observable<unknown> {
     return this.gateway.removeSkill(name);
   }

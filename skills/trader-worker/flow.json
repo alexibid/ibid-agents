@@ -1,0 +1,42 @@
+{
+  "title": "Trader Worker",
+  "steps": [
+    {
+      "id": "receive-order",
+      "name": "Receber a ordem",
+      "doneBy": "trader-worker",
+      "task": "Restate the order and who gave it. Only trader-analyst, trader-strategist or trader-hunter may give one. Never touch the raw sheet.",
+      "fields": {
+        "order": "text",
+        "orderedBy": "text"
+      }
+    },
+    {
+      "id": "execute",
+      "name": "Executar",
+      "doneBy": "trader-worker",
+      "task": "Write and format the sheet exactly as ordered. List every range changed.",
+      "fields": {
+        "changes": "list"
+      }
+    },
+    {
+      "id": "check-standards",
+      "name": "Verificar padrões",
+      "doneBy": "trader-worker",
+      "task": "Confirm the house standards: frozen dark header row, banded ranges, pure numbers formatted pt_PT, right-aligned currency, centred dates.",
+      "fields": {
+        "checklist": "list"
+      }
+    },
+    {
+      "id": "report",
+      "name": "Relatório",
+      "doneBy": "trader-worker",
+      "task": "Give the technical execution report, for example \"columns A-G created, formatting applied\".",
+      "fields": {
+        "report": "text"
+      }
+    }
+  ]
+}

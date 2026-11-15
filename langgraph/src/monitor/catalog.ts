@@ -1,7 +1,7 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile, realpath } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 
-export type Origin = 'mine' | 'langgraph' | 'system';
+export type Origin = 'mine' | 'langgraph' | 'system' | 'project';
 
 export interface CatalogEntry {
   readonly file: string;
@@ -9,6 +9,7 @@ export interface CatalogEntry {
   readonly kind: 'agent' | 'skill';
   readonly job: string;
   readonly origin: Origin;
+  readonly project: string;
 }
 
 const CONTRACT_INDEX = 'README.md';
@@ -27,6 +28,7 @@ export async function agentsIn(contractsDirectory: string): Promise<CatalogEntry
         kind: 'agent' as const,
         job: JOB.exec(text)?.[1]?.trim().replace(/\s*\n\s*/g, ' ') ?? '',
         origin: 'langgraph' as const,
+        project: '',
       };
     }),
   );
@@ -44,10 +46,38 @@ export async function skillsIn(skillsDirectory: string, originOf: (name: string)
         kind: 'skill' as const,
         job: fieldOf(header, 'description'),
         origin: originOf(folder.name),
+        project: '',
       };
     }),
   );
   return skills.sort((first, second) => first.name.localeCompare(second.name));
+}
+
+export async function projectSkillsIn(projectsDirectory: string, systemSkills: string): Promise<CatalogEntry[]> {
+  const projects = (await readdir(projectsDirectory, { withFileTypes: true })).filter((entry) => entry.isDirectory());
+  const found = await Promise.all(
+    projects.map(async (project) => {
+      const folder = join(projectsDirectory, project.name, '.agents', 'skills');
+      const names = await readdir(folder).catch(() => []);
+      const own = await Promise.all(
+        names.map(async (name) => ((await realpath(join(folder, name)).catch(() => '')).startsWith(systemSkills) ? '' : name)),
+      );
+      return Promise.all(
+        own.filter((name) => name !== '').map(async (name) => {
+          const text = await readFile(join(folder, name, 'SKILL.md'), 'utf8').catch(() => '');
+          return {
+            file: `projects/${project.name}/.agents/skills/${name}/SKILL.md`,
+            name,
+            kind: 'skill' as const,
+            job: fieldOf(FRONT_MATTER.exec(text)?.[1] ?? '', 'description'),
+            origin: 'project' as const,
+            project: project.name,
+          };
+        }),
+      );
+    }),
+  );
+  return found.flat();
 }
 
 function fieldOf(header: string, field: string): string {

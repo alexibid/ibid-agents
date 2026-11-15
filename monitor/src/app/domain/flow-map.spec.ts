@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { eventsOf, flowDrawingOf, nameOf, NODE_GAP, NODE_WIDTH, type Flow, type Story } from './flow-map';
+import { agentOfFlow, eventsOf, flowDrawingOf, labelOf, nameOf, NODE_GAP, NODE_WIDTH, type Flow, type Story } from './flow-map';
 
 const node = (id: string, doneBy = 'langgraph') => ({ id, doneBy, task: '', contracts: [], contractsWhenNeeded: [] });
 const edge = (source: string, target: string) => ({ source, target, conditional: true });
@@ -46,9 +46,9 @@ describe('flowDrawingOf', () => {
   });
 
   it('should tell the steps LangGraph runs itself from the ones an agent does', () => {
-    const drawing = flowDrawingOf({ ...flow, nodes: [node('build'), node('review', 'reviewer')] }, undefined);
+    const drawing = flowDrawingOf({ ...flow, nodes: [node('build'), node('lint', 'LangGraph'), node('review', '/reviewer')] }, undefined);
 
-    expect(drawing.nodes.map((placed) => placed.byLangGraph)).toEqual([true, false]);
+    expect(drawing.nodes.map((placed) => placed.byLangGraph)).toEqual([true, true, false]);
   });
 });
 
@@ -64,5 +64,19 @@ describe('nameOf', () => {
   it('should name a known node in Portuguese and keep an unknown one as it is', () => {
     expect(nameOf('final-verification')).toBe('Verificação final');
     expect(nameOf('new-step')).toBe('new-step');
+  });
+});
+
+describe('labelOf', () => {
+  it('should prefer the name the agent flow gives its step', () => {
+    expect(labelOf({ id: 'classify', name: 'Classificar' })).toBe('Classificar');
+    expect(labelOf({ id: 'review' })).toBe('Revisão');
+  });
+});
+
+describe('agentOfFlow', () => {
+  it('should read the agent of an agent flow and nothing from the story flow', () => {
+    expect(agentOfFlow('agent:ev')).toBe('ev');
+    expect(agentOfFlow('story')).toBe('');
   });
 });

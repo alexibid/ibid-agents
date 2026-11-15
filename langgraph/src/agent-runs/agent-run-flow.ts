@@ -1,0 +1,92 @@
+import { randomUUID } from 'node:crypto';
+import { Command, type BaseCheckpointSaver } from '@langchain/langgraph';
+import type { AgentFlowDefinition } from './definition.js';
+import { buildAgentRunGraph, type AgentRunGraph, type RunInstruction } from './graph.js';
+import { NOT_RECORDING_RUNS, type RunJournal } from './run-journal.js';
+import type { AgentRunStateValue, RunHistoryEntry, RunStatus } from './state.js';
+
+export interface RunReport {
+  readonly runId: string;
+  readonly agent: string;
+  readonly status: RunStatus;
+  readonly next: RunInstruction | 'nothing';
+  readonly history: readonly RunHistoryEntry[];
+  readonly recorded: boolean;
+}
+
+export class UnknownAgentFlowError extends Error {
+  constructor(agent: string, known: readonly string[]) {
+    super(`"${agent}" has no LangGraph flow. Agents with a flow: ${known.join(', ')}.`);
+    this.name = 'UnknownAgentFlowError';
+  }
+}
+
+export class UnknownRunError extends Error {
+  constructor(runId: string) {
+    super(`No agent run with the id "${runId}" exists.`);
+    this.name = 'UnknownRunError';
+  }
+}
+
+const RECURSION_LIMIT = 200;
+const SEPARATOR = '~';
+
+export class AgentRunFlow {
+  readonly #graphs: ReadonlyMap<string, AgentRunGraph>;
+
+  constructor(
+    definitions: readonly AgentFlowDefinition[],
+    checkpointer: BaseCheckpointSaver,
+    private readonly journal: RunJournal = NOT_RECORDING_RUNS,
+  ) {
+    this.#graphs = new Map(definitions.map((definition) => [definition.agent, buildAgentRunGraph(definition, checkpointer)]));
+  }
+
+  async start(agent: string, request: string): Promise<RunReport> {
+    const runId = `${agent}${SEPARATOR}${randomUUID().slice(0, 8)}`;
+    await this.#graphOf(agent).invoke({ agent, request }, configOf(runId));
+    const recorded = await this.journal.started({ runId, agent, request });
+    return { ...(await this.report(runId)), recorded };
+  }
+
+  async submit(runId: string, handedBack: unknown): Promise<RunReport> {
+    const before = await this.report(runId);
+    if (before.next === 'nothing') {
+      return before;
+    }
+    await this.#graphOf(before.agent).invoke(new Command({ resume: handedBack }), configOf(runId));
+    const after = await this.report(runId);
+    const recorded = await this.journal.judged({ runId, status: after.status, entries: after.history.slice(before.history.length) });
+    return { ...after, recorded };
+  }
+
+  async report(runId: string): Promise<RunReport> {
+    const agent = runId.split(SEPARATOR)[0] ?? '';
+    const snapshot = await this.#graphOf(agent).getState(configOf(runId));
+    const state = snapshot.values as Partial<AgentRunStateValue>;
+    if (state.agent === undefined) {
+      throw new UnknownRunError(runId);
+    }
+    const pending = snapshot.tasks.flatMap((task) => task.interrupts).at(0);
+    return {
+      runId,
+      agent,
+      status: state.status ?? 'working',
+      next: pending === undefined ? 'nothing' : (pending.value as RunInstruction),
+      history: state.history ?? [],
+      recorded: false,
+    };
+  }
+
+  #graphOf(agent: string): AgentRunGraph {
+    const graph = this.#graphs.get(agent);
+    if (graph === undefined) {
+      throw new UnknownAgentFlowError(agent, [...this.#graphs.keys()]);
+    }
+    return graph;
+  }
+}
+
+function configOf(runId: string) {
+  return { configurable: { thread_id: runId }, recursionLimit: RECURSION_LIMIT };
+}

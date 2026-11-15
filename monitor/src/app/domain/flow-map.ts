@@ -1,9 +1,11 @@
 export interface FlowNode {
   readonly id: string;
+  readonly name?: string;
   readonly doneBy: string;
   readonly task: string;
   readonly contracts: readonly string[];
   readonly contractsWhenNeeded: readonly string[];
+  readonly calls?: readonly string[];
 }
 
 export interface FlowEdge {
@@ -19,7 +21,7 @@ export interface Flow {
   readonly edges: readonly FlowEdge[];
 }
 
-export type Origin = 'mine' | 'langgraph' | 'system';
+export type Origin = 'mine' | 'langgraph' | 'system' | 'project';
 
 export interface CatalogEntry {
   readonly file: string;
@@ -27,6 +29,7 @@ export interface CatalogEntry {
   readonly kind: 'agent' | 'skill';
   readonly job: string;
   readonly origin: Origin;
+  readonly project: string;
 }
 
 export interface FlowMap {
@@ -73,7 +76,8 @@ export const NODE_WIDTH = 150;
 export const NODE_GAP = 54;
 export const MARGIN = 24;
 
-const RUN_BY_LANGGRAPH = new Set(['langgraph']);
+const RUN_BY_LANGGRAPH = new Set(['langgraph', 'LangGraph']);
+const AGENT_FLOW = 'agent:';
 const EVENT_OF_NODE: Readonly<Record<string, string>> = { planning: 'plan' };
 
 export const NODE_NAMES: Readonly<Record<string, string>> = {
@@ -129,6 +133,14 @@ export function eventsOf(nodeId: string, story: Story | undefined): StoryStep[] 
 
 export function nameOf(nodeId: string): string {
   return NODE_NAMES[nodeId] ?? nodeId;
+}
+
+export function labelOf(node: Pick<FlowNode, 'id' | 'name'>): string {
+  return node.name ?? nameOf(node.id);
+}
+
+export function agentOfFlow(flowId: string): string {
+  return flowId.startsWith(AGENT_FLOW) ? flowId.slice(AGENT_FLOW.length) : '';
 }
 
 function stateOf(nodeId: string, story: Story | undefined): NodeState {

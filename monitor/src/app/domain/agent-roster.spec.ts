@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { groupedAgents, knownAgentsOf } from './agent-roster';
 import type { CatalogEntry } from './flow-map';
 
-const skill = (name: string, origin: CatalogEntry['origin'] = 'mine'): CatalogEntry => ({ file: `${name}/SKILL.md`, name, kind: 'skill', job: `${name} skill`, origin });
+const skill = (name: string, origin: CatalogEntry['origin'] = 'mine', project = ''): CatalogEntry => ({
+  file: `${name}/SKILL.md`,
+  name,
+  kind: 'skill',
+  job: `${name} skill`,
+  origin,
+  project,
+});
 const contract = (_file: string, name: string): CatalogEntry => skill(name.toLowerCase().replace(/ /g, '-'), 'langgraph');
 
 describe('knownAgentsOf', () => {
@@ -38,6 +45,18 @@ describe('knownAgentsOf', () => {
       ['Do LangGraph', ['reviewer']],
       ['Do sistema', ['nx-workspace']],
       ['Das ferramentas (fora do ibid-agents)', ['Explore']],
+    ]);
+  });
+
+  it('should keep a project agent apart from my agent of the same name', () => {
+    const agents = knownAgentsOf(
+      [skill('finance-agent'), skill('finance-agent', 'project', 'poupado-app')],
+      [{ agent: 'finance-agent', kind: 'skill', calls: 3, failures: 0, lastOn: '2026-11-13T10:00:00.000Z' }],
+    );
+
+    expect(agents.map(({ group, activityName, calls }) => ({ group, activityName, calls }))).toEqual([
+      { group: 'mine', activityName: 'finance-agent', calls: 3 },
+      { group: 'project', activityName: 'finance-agent@poupado-app', calls: 0 },
     ]);
   });
 

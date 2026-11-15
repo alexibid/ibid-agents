@@ -8,7 +8,7 @@
     </div>
     <div class="agents__activity">
       @if (store.agent(); as agent) {
-        <monitor-agent-activity [agent]="agent" [runs]="store.runs()" (removeAsked)="doomed.set(agent.name)" />
+        <monitor-agent-activity [agent]="agent" [runs]="store.runs()" [evals]="store.evals()" (removeAsked)="doomed.set(agent.name)" />
       } @else {
         <p class="o-empty">Escolhe um agente para ver o que fez.</p>
       }
@@ -22,13 +22,17 @@
       quando um passo falha. Escolhe uma user story para pintar os passos: verde passou, vermelho falhou.
     </p>
     <div class="o-row">
-      <monitor-choice-field label="Fluxo" [choices]="flowChoices()" [(value)]="store.flowId" />
-      @if (store.flowId() === 'story') {
-        <monitor-choice-field label="User story" [choices]="storyChoices()" [(value)]="store.storyId" />
-      }
+      <monitor-choice-field label="Fluxo" [choices]="flowChoices()" [value]="store.flowId()" (valueChange)="store.flowId.set($event); store.storyId.set('')" />
+      <monitor-choice-field [label]="store.flowId() === 'story' ? 'User story' : 'Execução'" [choices]="storyChoices()" [(value)]="store.storyId" />
     </div>
-    @if (store.flowId() === 'story' && store.stories().length === 0) {
-      <p class="u-muted">Ainda nenhuma user story passou pelo LangGraph: o mapa aparece sem cores.</p>
+    @if (store.runsOfFlow().length === 0) {
+      <p class="u-muted">
+        @if (store.flowId() === 'story') {
+          Ainda nenhuma user story passou pelo LangGraph: o mapa aparece sem cores.
+        } @else if (agentOfFlow(store.flowId())) {
+          Este agente ainda não correu pelo seu fluxo. Chama /{{ agentOfFlow(store.flowId()) }} no Claude ou no Antigravity.
+        }
+      </p>
     }
     @if (store.drawing(); as drawing) {
       <monitor-flow-diagram [drawing]="drawing" (nodePicked)="pickedNode.set($event)" />
@@ -50,7 +54,7 @@
   </div>
 </monitor-dialog>
 
-<monitor-dialog [heading]="nameOf(pickedNode())" [open]="pickedNode() !== ''" (closed)="pickedNode.set('')">
+<monitor-dialog [heading]="nodeLabel()" [open]="pickedNode() !== ''" (closed)="pickedNode.set('')">
   @if (node(); as shown) {
     <monitor-step-detail [node]="shown" [catalog]="store.catalog()" [events]="nodeEvents()" />
   }

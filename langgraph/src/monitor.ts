@@ -52,7 +52,7 @@ function reportOnce(fault: string): void {
   }
 }
 
-createMonitorApi({ queries: new MonitorQueries(database), archive: new PostgresNoteArchive(database), feed }).listen(PORT, '127.0.0.1', () => {
+createMonitorApi({ database, queries: new MonitorQueries(database), archive: new PostgresNoteArchive(database), feed }).listen(PORT, '127.0.0.1', () => {
   console.log(`The monitor serves http://127.0.0.1:${PORT}`);
 });
 repeatedly(sampleLimits, SAMPLE_LIMITS_EVERY_MS);

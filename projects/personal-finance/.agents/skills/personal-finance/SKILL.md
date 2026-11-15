@@ -1,0 +1,1 @@
+/Users/alexsantos/Projects/ibid-agents/projects/personal-finance/.gemini/agents/personal-finance.md

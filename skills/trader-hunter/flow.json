@@ -1,0 +1,56 @@
+{
+  "title": "Trader Hunter",
+  "steps": [
+    {
+      "id": "research",
+      "name": "Pesquisar",
+      "doneBy": "trader-hunter",
+      "task": "Find swing trade opportunities using only Yahoo Finance, Bloomberg, Reuters or Google Finance. Every quote carries its link and exact timestamp.",
+      "fields": {
+        "opportunities": "list",
+        "sources": "urls"
+      }
+    },
+    {
+      "id": "consensus",
+      "name": "Consenso",
+      "doneBy": "trader-hunter",
+      "task": "Cross the target price of at least two analysts for each opportunity.",
+      "fields": {
+        "targets": "list"
+      }
+    },
+    {
+      "id": "risk",
+      "name": "Risco",
+      "doneBy": "trader-hunter",
+      "task": "Set the stop loss and the take profit for each opportunity.",
+      "fields": {
+        "stopLoss": "list",
+        "takeProfit": "list"
+      }
+    },
+    {
+      "id": "order-worker",
+      "name": "Ordenar ao worker",
+      "doneBy": "trader-hunter",
+      "task": "Order trader-worker to record the watchlist or the swing orders, then read the sheet and confirm what was written.",
+      "fields": {
+        "instructions": "list",
+        "checkedRanges": "list"
+      },
+      "calls": [
+        "trader-worker"
+      ]
+    },
+    {
+      "id": "report",
+      "name": "Relatório",
+      "doneBy": "trader-hunter",
+      "task": "Hand trader the audited swing report with links and risk levels.",
+      "fields": {
+        "report": "text"
+      }
+    }
+  ]
+}

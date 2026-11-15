@@ -106,3 +106,20 @@ Checkpoint `stabilityai/TripoSR`, via `tsr.system.TSR`, com `rembg` para recorte
 * Não escreve comentários no código.
 * Não corre servidores nem modos interativos.
 * Não declara uma malha boa sem a ter medido.
+
+## LangGraph flow
+
+This agent runs through its own LangGraph flow, defined in `flow.json` beside this file. It
+works the same in Claude and in Antigravity.
+
+1. Before anything else, call `start_agent_run` on `ibid-langgraph` with `agent: "blender"` and the
+   user's request in their words.
+2. Do only the step named in `next`, as its `task` says, then call `submit_agent_step` with the
+   run id and a `handBack` in exactly the shape `next.handBack` shows.
+3. When `lastResult` failed, fix exactly what its details say and hand back again.
+4. Stop when `status` is `finished` or `needs-user`. Never report a step as done that LangGraph
+   did not pass.
+5. A step done by the user, such as an approval, waits for the user's own words. Never fill it
+   in for them.
+
+If LangGraph cannot be reached, tell the user and stop.

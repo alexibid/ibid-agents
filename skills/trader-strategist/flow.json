@@ -1,0 +1,50 @@
+{
+  "title": "Trader Strategist",
+  "steps": [
+    {
+      "id": "source-data",
+      "name": "Dados de origem",
+      "doneBy": "trader-strategist",
+      "task": "Take liquidity and exposure from trader-analyst. Never assume a value.",
+      "fields": {
+        "liquidity": "text",
+        "exposure": "text"
+      },
+      "calls": [
+        "trader-analyst"
+      ]
+    },
+    {
+      "id": "select-etfs",
+      "name": "Escolher ETFs",
+      "doneBy": "trader-strategist",
+      "task": "Recommend ETFs for the core portfolio from fundamentals (TER below 0.25%, high AUM), each with an institutional source link and the quote timestamp.",
+      "fields": {
+        "etfs": "list",
+        "sources": "urls"
+      }
+    },
+    {
+      "id": "order-worker",
+      "name": "Ordenar ao worker",
+      "doneBy": "trader-strategist",
+      "task": "Order trader-worker to update the targets in the Config sheet, then read the sheet and confirm what was written.",
+      "fields": {
+        "instructions": "list",
+        "checkedRanges": "list"
+      },
+      "calls": [
+        "trader-worker"
+      ]
+    },
+    {
+      "id": "report",
+      "name": "Relatório",
+      "doneBy": "trader-strategist",
+      "task": "Hand trader the audited core plan.",
+      "fields": {
+        "report": "text"
+      }
+    }
+  ]
+}

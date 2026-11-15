@@ -1,0 +1,26 @@
+{
+  "title": "Finance agent",
+  "steps": [
+    {
+      "id": "understand",
+      "name": "Perceber",
+      "doneBy": "finance-agent",
+      "task": "Restate the change wanted in Oh Save Me! in the user's terms.",
+      "fields": {
+        "request": "text"
+      }
+    },
+    {
+      "id": "hand-to-assistant",
+      "name": "Passar ao assistente",
+      "doneBy": "finance-agent",
+      "task": "Code changes in ibid-workspace run only as a user story. Start it through /assistente and report the story id.",
+      "fields": {
+        "storyId": "text"
+      },
+      "calls": [
+        "assistente"
+      ]
+    }
+  ]
+}

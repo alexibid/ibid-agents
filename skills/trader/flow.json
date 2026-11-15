@@ -1,0 +1,74 @@
+{
+  "title": "Trader",
+  "steps": [
+    {
+      "id": "interpret",
+      "name": "Interpretar",
+      "doneBy": "trader",
+      "task": "Describe how the request is understood and the plan of action.",
+      "fields": {
+        "interpretation": "text",
+        "plan": "list"
+      }
+    },
+    {
+      "id": "choose-specialists",
+      "name": "Escolher especialistas",
+      "doneBy": "trader",
+      "task": "Name the specialists needed (trader-analyst, trader-strategist, trader-hunter) and write the full prompt each will receive.",
+      "fields": {
+        "specialists": "list",
+        "prompts": "list"
+      }
+    },
+    {
+      "id": "approval",
+      "name": "Aprovação",
+      "doneBy": "user",
+      "task": "Show the plan and the prompts, and wait for an explicit yes before invoking any specialist. Quote the user's exact words in \"userWords\". Never infer a yes.",
+      "fields": {
+        "userApproved": "yes",
+        "userWords": "text"
+      }
+    },
+    {
+      "id": "delegate",
+      "name": "Delegar",
+      "doneBy": "trader",
+      "task": "Invoke each specialist through its own flow and collect its run id and result.",
+      "fields": {
+        "specialistRuns": "list",
+        "results": "list"
+      },
+      "calls": [
+        "trader-analyst",
+        "trader-hunter",
+        "trader-strategist"
+      ]
+    },
+    {
+      "id": "critique",
+      "name": "Crítica",
+      "doneBy": "trader",
+      "task": "Check every result: numbers make sense, every quote has a link and a timestamp, the specialist validated the worker. Send back anything weak.",
+      "fields": {
+        "verdict": "text",
+        "issues": "list"
+      },
+      "calls": [
+        "trader-analyst",
+        "trader-hunter",
+        "trader-strategist"
+      ]
+    },
+    {
+      "id": "deliver",
+      "name": "Entregar",
+      "doneBy": "trader",
+      "task": "Give the user only the final, verified result.",
+      "fields": {
+        "answer": "text"
+      }
+    }
+  ]
+}

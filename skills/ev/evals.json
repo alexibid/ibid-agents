@@ -1,0 +1,27 @@
+{
+  "cases": [
+    {
+      "id": "quote-type-a-no-meter",
+      "request": "Um instalador propõe uma wallbox de 7,4 kW monofásica com diferencial do tipo A e sem contador de energia. O orçamento está conforme?",
+      "expect": {
+        "stopsAt": "finished",
+        "mentions": [
+          "contador",
+          "tipo B"
+        ],
+        "avoids": []
+      }
+    },
+    {
+      "id": "charging-time",
+      "request": "Quanto tempo demora a carregar o carro de 20% a 80% a 3,7 kW?",
+      "expect": {
+        "stopsAt": "finished",
+        "mentions": [
+          "25,2 kWh"
+        ],
+        "avoids": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "title": "Casa",
+  "steps": [
+    {
+      "id": "understand",
+      "name": "Perceber o pedido",
+      "doneBy": "casa",
+      "task": "Restate what the user wants from the home system and name every device involved.",
+      "fields": {
+        "request": "text",
+        "devices": "list"
+      }
+    },
+    {
+      "id": "check-topology",
+      "name": "Confirmar a rede",
+      "doneBy": "casa",
+      "task": "Check the request against the current topology in the skill (router, Moes hub, Nest, IP range, Zigbee/Thread limits). List what constrains the answer.",
+      "fields": {
+        "constraints": "list"
+      }
+    },
+    {
+      "id": "propose",
+      "name": "Propor",
+      "doneBy": "casa",
+      "task": "Propose the change or automation step by step, compatible with Google Home and Matter, with its risks.",
+      "fields": {
+        "steps": "list",
+        "risks": "list"
+      }
+    },
+    {
+      "id": "approval",
+      "name": "Aprovação",
+      "doneBy": "user",
+      "task": "Before touching any device or network setting, ask the user to approve the proposal. Quote the user's exact words in \"userWords\". Never infer a yes.",
+      "fields": {
+        "userApproved": "yes",
+        "userWords": "text"
+      }
+    },
+    {
+      "id": "report",
+      "name": "Relatório",
+      "doneBy": "casa",
+      "task": "Report what was done or what the user must do, and what to check afterwards.",
+      "fields": {
+        "answer": "text"
+      }
+    }
+  ]
+}

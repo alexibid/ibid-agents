@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { AgentsStore } from '../../application/agents-store';
-import { eventsOf, nameOf } from '../../domain/flow-map';
+import { agentOfFlow, eventsOf, labelOf } from '../../domain/flow-map';
 import { Button } from '../atoms/button';
 import { ChoiceField, type Choice } from '../atoms/choice-field';
 import { Dialog } from '../atoms/dialog';
@@ -22,7 +22,7 @@ const NO_STORY: Choice = { value: '', label: 'Nenhuma: só o mapa' };
 export class AgentsPage {
   protected readonly store = inject(AgentsStore);
   protected readonly pickedNode = signal(NO_NODE);
-  protected readonly nameOf = nameOf;
+  protected readonly agentOfFlow = agentOfFlow;
   protected readonly doomed = signal('');
   protected readonly removalFailure = signal('');
 
@@ -44,9 +44,10 @@ export class AgentsPage {
   protected readonly flowChoices = computed<Choice[]>(() => this.store.map().flows.map((flow) => ({ value: flow.id, label: flow.title })));
   protected readonly storyChoices = computed<Choice[]>(() => [
     NO_STORY,
-    ...this.store.stories().map((story) => ({ value: story.id, label: `${story.project} · ${story.title}` })),
+    ...this.store.runsOfFlow().map((story) => ({ value: story.id, label: `${story.project} · ${story.title.slice(0, 60)}` })),
   ]);
   protected readonly node = computed(() => this.store.flow()?.nodes.find((node) => node.id === this.pickedNode()));
+  protected readonly nodeLabel = computed(() => labelOf(this.node() ?? { id: this.pickedNode() }));
   protected readonly nodeEvents = computed(() => eventsOf(this.pickedNode(), this.store.story()));
 
   constructor() {

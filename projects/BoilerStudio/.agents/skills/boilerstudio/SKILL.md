@@ -1,0 +1,1 @@
+/Users/alexsantos/Projects/ibid-agents/projects/BoilerStudio/.gemini/agents/boilerstudio.md

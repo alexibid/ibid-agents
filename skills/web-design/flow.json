@@ -1,0 +1,62 @@
+{
+  "title": "Web design",
+  "steps": [
+    {
+      "id": "prepare",
+      "name": "Preparar",
+      "doneBy": "web-design",
+      "task": "Read the Paper guides the skill names, the canvas information and the font families.",
+      "fields": {
+        "guidesRead": "list"
+      }
+    },
+    {
+      "id": "brief",
+      "name": "Brief",
+      "doneBy": "web-design",
+      "task": "Propose the brief: mood candidates, chosen mood, palette, type scale and direction.",
+      "fields": {
+        "brief": "text"
+      }
+    },
+    {
+      "id": "approval",
+      "name": "Aprovação do brief",
+      "doneBy": "user",
+      "task": "Wait for the user to approve the brief before drawing anything. Quote the user's exact words in \"userWords\". Never infer a yes.",
+      "fields": {
+        "userApproved": "yes",
+        "userWords": "text"
+      }
+    },
+    {
+      "id": "mobile",
+      "name": "Mobile",
+      "doneBy": "web-design",
+      "task": "Build the mobile artboard (390 x 844) one visual group at a time, and check it with a screenshot.",
+      "fields": {
+        "artboard": "text",
+        "screenshots": "list"
+      }
+    },
+    {
+      "id": "desktop",
+      "name": "Desktop",
+      "doneBy": "web-design",
+      "task": "Adapt the approved mobile design to desktop (1440 x 900) and check it with a screenshot.",
+      "fields": {
+        "artboard": "text",
+        "screenshots": "list"
+      }
+    },
+    {
+      "id": "finish",
+      "name": "Terminar",
+      "doneBy": "web-design",
+      "task": "Finish working on the nodes and explain the design decisions.",
+      "fields": {
+        "summary": "text"
+      }
+    }
+  ]
+}
