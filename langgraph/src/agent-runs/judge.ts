@@ -1,6 +1,7 @@
 import { stat } from 'node:fs/promises';
 import { isAbsolute } from 'node:path';
 import type { FieldKind, FlowStep } from './definition.js';
+import { existsForSignedInUser } from './github-link.js';
 
 export interface Verdict {
   readonly passed: boolean;
@@ -86,5 +87,8 @@ async function unreachableUrl(link: string): Promise<string> {
   if (response === undefined) {
     return `has "${link}", which could not be opened`;
   }
-  return GONE.has(response.status) ? `has "${link}", which no longer exists (${response.status})` : OK;
+  if (!GONE.has(response.status) || (await existsForSignedInUser(url))) {
+    return OK;
+  }
+  return `has "${link}", which no longer exists (${response.status})`;
 }

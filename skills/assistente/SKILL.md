@@ -41,16 +41,25 @@ Nothing is built until the user approves a story.
    differ, say so and let the user choose.
 3. Name the project. Each project has a sheet in `rules/projects/`. If the request touches a
    shared library and an app, split it into two stories and do the library first.
-4. Ask about the cases that break things: nothing to show, too much to show, a mistake by the
+4. Be critical of the size. When the request is bigger than one story (size `L`), it is an epic:
+   work with `/project-manager`, whose skill and flow say how to size and split it into user
+   stories and tasks. No story may be `L`.
+5. Ask about the cases that break things: nothing to show, too much to show, a mistake by the
    person using it, no connection, the same action twice.
-5. Write the story and show it to the user in their language:
+6. Always show the user every story in full, in their language, grouped by size, smallest
+   first:
    - One sentence: who wants what, and why.
+   - Its project and its size (`S`, `M`).
    - Acceptance criteria: each one is a single thing a person could watch happen and say
      yes or no to. No criterion describes how the code is written.
-6. Change it until the user is satisfied. Wait for an explicit go-ahead. A question or a
+   - Its tasks, and who does each one: an agent through LangGraph, or the user.
+7. Change it until the user is satisfied. Wait for an explicit go-ahead. A question or a
    comment is not a go-ahead.
+8. Once approved, `/project-manager` writes the epic, the stories and the tasks as GitHub issues,
+   after the user approves the exact text of every issue.
+9. Build one story at a time, in the order agreed. Each story goes through Part two on its own.
 
-Never write code, open a plan, or call LangGraph before the go-ahead.
+Never write code, open a plan, or call LangGraph's story tools before the go-ahead.
 
 ## Part two: the work
 
@@ -80,6 +89,7 @@ When `status` is `finished`:
 - Say in plain language what now works, in the user's terms.
 - Say what deserves their attention in code review, including every non-blocking finding the
   reviewer and the UX critic left in the history.
+- Name the GitHub issue of the story, so the user can close it after the commit.
 - Give the git commands exactly as the final verification returned them, each in its own
   `bash` block, in the order given: submodules first, the workspace root last. Each one
   changes to its repository, stages only this story's files and commits. Never rewrite them,
