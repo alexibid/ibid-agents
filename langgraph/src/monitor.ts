@@ -21,6 +21,19 @@ const usageSync = new UsageSync(new UsageLedger(database));
 const limitLedger = new LimitLedger(database);
 const claudeEstimate = new ClaudeEstimate(database);
 let lastFault = '';
+let writesInOrder: Promise<unknown> = Promise.resolve();
+let samplingNow: Promise<void> | undefined;
+
+function oneAtATime(task: () => Promise<void>): Promise<void> {
+  const turn = writesInOrder.then(task);
+  writesInOrder = turn.catch(() => undefined);
+  return turn;
+}
+
+function sampleLimitsNow(): Promise<void> {
+  samplingNow ??= oneAtATime(sampleLimits).finally(() => (samplingNow = undefined));
+  return samplingNow;
+}
 
 async function readActivity(): Promise<void> {
   await usageSync.readNewActivity();
@@ -52,8 +65,8 @@ function reportOnce(fault: string): void {
   }
 }
 
-createMonitorApi({ database, queries: new MonitorQueries(database), archive: new PostgresNoteArchive(database), feed }).listen(PORT, '127.0.0.1', () => {
+createMonitorApi({ database, queries: new MonitorQueries(database), archive: new PostgresNoteArchive(database), feed, refreshLimits: sampleLimitsNow }).listen(PORT, '127.0.0.1', () => {
   console.log(`The monitor serves http://127.0.0.1:${PORT}`);
 });
-repeatedly(sampleLimits, SAMPLE_LIMITS_EVERY_MS);
-repeatedly(readActivity, READ_ACTIVITY_EVERY_MS);
+repeatedly(sampleLimitsNow, SAMPLE_LIMITS_EVERY_MS);
+repeatedly(() => oneAtATime(readActivity), READ_ACTIVITY_EVERY_MS);

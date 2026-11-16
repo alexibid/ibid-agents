@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { currentWindowOf, samplesOfAntigravitySummary, samplesOfClaudeStatusLine, usedPercentOf } from './limit-sample.js';
+import { currentWindowOf, samplesOfAntigravitySummary, samplesOfClaudeStatusLine, samplesOfClaudeUsage, usedPercentOf } from './limit-sample.js';
 
 describe('usedPercentOf', () => {
   it.each([
@@ -67,6 +67,29 @@ describe('samplesOfClaudeStatusLine', () => {
 
   it('should read nothing when Claude sent no limits', () => {
     expect(samplesOfClaudeStatusLine({ model: {} })).toEqual([]);
+  });
+});
+
+describe('samplesOfClaudeUsage', () => {
+  it('should read the five hour and the weekly windows of the usage reply', () => {
+    const usage = {
+      five_hour: { utilization: 3.25, resets_at: '2026-11-16T15:49:59.860+00:00' },
+      seven_day: { utilization: 0, resets_at: '2026-11-22T15:59:59.860+00:00' },
+      seven_day_opus: null,
+    };
+
+    expect(samplesOfClaudeUsage(usage)).toEqual([
+      { tool: 'claude', pool: 'all models', window: '5h', usedPercent: 3.25, resetsOn: '2026-11-16T15:49:59.860Z' },
+      { tool: 'claude', pool: 'all models', window: 'weekly', usedPercent: 0, resetsOn: '2026-11-22T15:59:59.860Z' },
+    ]);
+  });
+
+  it('should skip a window without a reset time', () => {
+    expect(samplesOfClaudeUsage({ five_hour: { utilization: 0, resets_at: null } })).toEqual([]);
+  });
+
+  it.each([undefined, 'refused', { error: { type: 'authentication_error' } }])('should read nothing from %j', (usage) => {
+    expect(samplesOfClaudeUsage(usage)).toEqual([]);
   });
 });
 

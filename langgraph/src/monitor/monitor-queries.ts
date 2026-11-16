@@ -29,10 +29,19 @@ const CALLS = `
   from agent_calls where prompt_id = $1 order by called_at, id`;
 
 const LIMITS = `
-  select distinct on (tool, pool, time_window)
-    tool, pool, time_window as "window", used_percent::float8 as "usedPercent",
-    resets_at as "resetsOn", sampled_at as "sampledOn"
-  from limit_samples order by tool, pool, time_window, sampled_at desc`;
+  with latest as (
+    select distinct on (tool, pool, time_window)
+      tool, pool, time_window as "window", used_percent::float8 as "usedPercent",
+      resets_at as "resetsOn", sampled_at as "sampledOn"
+    from limit_samples order by tool, pool, time_window, sampled_at desc
+  )
+  select * from latest
+  where not exists (
+    select 1 from latest newer
+    where newer.tool = latest.tool and newer."window" = latest."window" and newer."sampledOn" > latest."sampledOn"
+      and 'estimate' in (newer.pool, latest.pool)
+  )
+  order by tool, pool, "window"`;
 
 const TOKENS_BY_DAY = `
   select to_char(date_trunc('day', asked_at), 'YYYY-MM-DD') as day, tool,

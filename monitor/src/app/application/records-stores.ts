@@ -17,6 +17,10 @@ export class LimitsStore {
     load: () => this.gateway.limits(),
     whileLoading: [],
   });
+
+  refresh(): Observable<LimitReading[]> {
+    return this.gateway.refreshLimits();
+  }
 }
 
 @Injectable({ providedIn: 'root' })

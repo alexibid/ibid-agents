@@ -12,6 +12,7 @@ export abstract class MonitorGateway {
   abstract prompts(limit: number): Observable<PromptSummary[]>;
   abstract promptsWithId(promptId: string): Observable<PromptDetail[]>;
   abstract limits(): Observable<LimitReading[]>;
+  abstract refreshLimits(): Observable<LimitReading[]>;
   abstract telemetry(days: number): Observable<Telemetry>;
   abstract problems(): Observable<Problem[]>;
   abstract plans(text: string): Observable<Note[]>;

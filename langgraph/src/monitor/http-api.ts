@@ -13,6 +13,7 @@ export interface MonitorParts {
   readonly queries: MonitorQueries;
   readonly archive: NoteArchive;
   readonly feed: ChangeFeed;
+  readonly refreshLimits: () => Promise<void>;
 }
 
 type Answer = (url: URL) => Promise<unknown>;
@@ -27,6 +28,7 @@ const ALLOWED_ORIGINS = new Set([
 const LARGEST_PAGE = 200;
 const FORGET_PLAN = '/api/plans/forget';
 const REMOVE_SKILL = '/api/skills/remove';
+const REFRESH_LIMITS = '/api/limits/refresh';
 const NOT_ALLOWED = 405;
 const FORBIDDEN = 403;
 const DEFAULT_PAGE = 50;
@@ -34,7 +36,7 @@ const DEFAULT_DAYS = 14;
 const NOT_FOUND = 404;
 const UNAVAILABLE = 503;
 
-export function createMonitorApi({ database, queries, archive, feed }: MonitorParts): Server {
+export function createMonitorApi({ database, queries, archive, feed, refreshLimits }: MonitorParts): Server {
   const answers: Readonly<Record<string, Answer>> = {
     '/api/prompts': (url) => queries.prompts(pageOf(url)),
     '/api/prompt': (url) => queries.prompt(url.searchParams.get('id') ?? ''),
@@ -62,6 +64,15 @@ export function createMonitorApi({ database, queries, archive, feed }: MonitorPa
         moveSkillToTrash(url.searchParams.get('name') ?? '', isOwnSkill).then((kept) => {
           feed.announce();
           return { removed: true, keptIn: kept };
+        }),
+      );
+      return;
+    }
+    if (url.pathname === REFRESH_LIMITS) {
+      postOnly(request, response, () =>
+        refreshLimits().then(() => {
+          feed.announce();
+          return queries.limits();
         }),
       );
       return;

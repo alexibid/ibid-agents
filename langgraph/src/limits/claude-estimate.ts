@@ -1,4 +1,5 @@
 import type { Database, Row } from '../store/database.js';
+import type { TimeWindow } from '../usage/prompt-record.js';
 import { currentWindowOf, ESTIMATE_POOL, roundedPercent, type LimitSample, type Spending } from './limit-sample.js';
 
 interface SpendingRow extends Row {
@@ -8,6 +9,12 @@ interface SpendingRow extends Row {
 
 interface WeekRow extends Row {
   readonly opensAt: Date;
+  readonly percent: number;
+}
+
+interface ReadingRow extends Row {
+  readonly window: TimeWindow;
+  readonly resetsOn: Date;
   readonly percent: number;
 }
 
@@ -80,6 +87,19 @@ const SINCE_WEEKLY_RESET = `
   from opening left join prompts on prompts.tool = 'claude' and prompts.finished_at > opening.opens_at
   group by opens_at`;
 
+const SINCE_LAST_READING = `
+  with reading as (
+    select distinct on (time_window) time_window, used_percent, resets_at, sampled_at
+    from limit_samples where tool = 'claude' and pool <> $1 and resets_at > now()
+    order by time_window, sampled_at desc
+  )
+  select reading.time_window as "window", reading.resets_at as "resetsOn",
+    (reading.used_percent + coalesce(sum(case reading.time_window
+      when '5h' then prompts.five_hour_percent else prompts.weekly_percent end), 0))::float8 as percent
+  from reading
+  left join prompts on prompts.tool = 'claude' and prompts.finished_at > reading.sampled_at
+  group by reading.time_window, reading.resets_at, reading.used_percent`;
+
 const MEASURED_RECENTLY = `
   select 1 from limit_samples
   where tool = 'claude' and pool <> $1 and sampled_at > now() - interval '10 minutes' limit 1`;
@@ -92,7 +112,21 @@ export class ClaudeEstimate {
     if ((await this.database.rows(MEASURED_RECENTLY, [ESTIMATE_POOL])).length > 0) {
       return [];
     }
-    return [...(await this.#fiveHours()), ...(await this.#week())];
+    const anchored = await this.#sinceLastReading();
+    const anchoredWindows = new Set(anchored.map((sample) => sample.window));
+    const fiveHours = anchoredWindows.has('5h') ? [] : await this.#fiveHours();
+    const week = anchoredWindows.has('weekly') ? [] : await this.#week();
+    return [...anchored, ...fiveHours, ...week];
+  }
+
+  async #sinceLastReading(): Promise<LimitSample[]> {
+    return (await this.database.rows<ReadingRow>(SINCE_LAST_READING, [ESTIMATE_POOL])).map((row) => ({
+      tool: 'claude',
+      pool: ESTIMATE_POOL,
+      window: row.window,
+      usedPercent: roundedPercent(Math.min(row.percent, 100)),
+      resetsOn: row.resetsOn.toISOString(),
+    }));
   }
 
   async #fiveHours(): Promise<LimitSample[]> {

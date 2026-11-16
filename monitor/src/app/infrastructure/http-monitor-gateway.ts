@@ -43,6 +43,10 @@ export class HttpMonitorGateway extends MonitorGateway {
     return this.http.get<LimitReading[]>(`${SERVICE}/limits`);
   }
 
+  override refreshLimits(): Observable<LimitReading[]> {
+    return this.http.post<LimitReading[]>(`${SERVICE}/limits/refresh`, null);
+  }
+
   override telemetry(days: number): Observable<Telemetry> {
     return this.http.get<Telemetry>(`${SERVICE}/telemetry`, { params: { days } });
   }

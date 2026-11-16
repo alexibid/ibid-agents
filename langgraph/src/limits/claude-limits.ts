@@ -1,5 +1,6 @@
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
+import { readClaudeUsage } from './claude-usage.js';
 import { samplesOfClaudeStatusLine, type LimitSample } from './limit-sample.js';
 
 const LAST_STATUS_LINE = join(resolve(import.meta.dirname, '..', '..'), 'state', 'claude-status-line.json');
@@ -11,6 +12,11 @@ export async function keepClaudeStatusLine(rawStatusLine: string): Promise<void>
 }
 
 export async function readClaudeLimits(): Promise<LimitSample[]> {
+  const fromUsage = await readClaudeUsage();
+  return fromUsage.length > 0 ? fromUsage : readLastStatusLine();
+}
+
+async function readLastStatusLine(): Promise<LimitSample[]> {
   const details = await stat(LAST_STATUS_LINE).catch(() => undefined);
   if (details === undefined || Date.now() - details.mtimeMs > FRESH_FOR_MS) {
     return [];

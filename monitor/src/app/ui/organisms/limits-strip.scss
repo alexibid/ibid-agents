@@ -22,3 +22,14 @@
     @include tools.small-label;
   }
 }
+
+.limits-refresh {
+  align-items: center;
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+
+  &__message {
+    @include tools.small-label;
+  }
+}

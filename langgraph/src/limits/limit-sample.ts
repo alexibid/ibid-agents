@@ -68,17 +68,24 @@ export function samplesOfClaudeStatusLine(statusLine: unknown): LimitSample[] {
   return CLAUDE_WINDOWS.flatMap(([key, window]) => {
     const reading = objectIn(limits, key);
     return typeof reading['used_percentage'] === 'number' && typeof reading['resets_at'] === 'number'
-      ? [
-          {
-            tool: 'claude' as const,
-            pool: CLAUDE_POOL,
-            window,
-            usedPercent: roundedPercent(reading['used_percentage']),
-            resetsOn: new Date(reading['resets_at'] * 1000).toISOString(),
-          },
-        ]
+      ? [claudeSample(window, reading['used_percentage'], new Date(reading['resets_at'] * 1000))]
       : [];
   });
+}
+
+export function samplesOfClaudeUsage(usage: unknown): LimitSample[] {
+  const windows = isObject(usage) ? usage : {};
+  return CLAUDE_WINDOWS.flatMap(([key, window]) => {
+    const reading = objectIn(windows, key);
+    const resetsOn = new Date(textIn(reading, 'resets_at'));
+    return typeof reading['utilization'] === 'number' && !Number.isNaN(resetsOn.getTime())
+      ? [claudeSample(window, reading['utilization'], resetsOn)]
+      : [];
+  });
+}
+
+function claudeSample(window: TimeWindow, usedPercent: number, resetsOn: Date): LimitSample {
+  return { tool: 'claude', pool: CLAUDE_POOL, window, usedPercent: roundedPercent(usedPercent), resetsOn: resetsOn.toISOString() };
 }
 
 function sampleOfBucket(bucket: JsonObject): LimitSample[] {
