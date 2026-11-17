@@ -7,6 +7,7 @@ export const routes: Routes = [
   { path: 'telemetria', loadComponent: () => import('./ui/pages/telemetry-page').then((page) => page.TelemetryPage) },
   { path: 'erros', loadComponent: () => import('./ui/pages/problems-page').then((page) => page.ProblemsPage) },
   { path: 'planos', loadComponent: () => import('./ui/pages/plans-page').then((page) => page.PlansPage) },
+  { path: 'backlog', loadComponent: () => import('./ui/pages/backlog-page').then((page) => page.BacklogPage) },
   { path: 'memoria', redirectTo: 'planos' },
   { path: '**', redirectTo: '' },
 ];

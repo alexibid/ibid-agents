@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Command, type BaseCheckpointSaver } from '@langchain/langgraph';
 import type { AgentFlowDefinition } from './definition.js';
 import { buildAgentRunGraph, type AgentRunGraph, type RunInstruction } from './graph.js';
+import { KEEPS_NOTHING, type ResultKeeper } from './result-keeper.js';
 import { NOT_RECORDING_RUNS, type RunJournal } from './run-journal.js';
 import type { AgentRunStateValue, RunHistoryEntry, RunStatus } from './state.js';
 
@@ -33,13 +34,16 @@ const SEPARATOR = '~';
 
 export class AgentRunFlow {
   readonly #graphs: ReadonlyMap<string, AgentRunGraph>;
+  readonly #definitions: ReadonlyMap<string, AgentFlowDefinition>;
 
   constructor(
     definitions: readonly AgentFlowDefinition[],
     checkpointer: BaseCheckpointSaver,
     private readonly journal: RunJournal = NOT_RECORDING_RUNS,
+    private readonly keeper: ResultKeeper = KEEPS_NOTHING,
   ) {
     this.#graphs = new Map(definitions.map((definition) => [definition.agent, buildAgentRunGraph(definition, checkpointer)]));
+    this.#definitions = new Map(definitions.map((definition) => [definition.agent, definition]));
   }
 
   async start(agent: string, request: string): Promise<RunReport> {
@@ -56,8 +60,20 @@ export class AgentRunFlow {
     }
     await this.#graphOf(before.agent).invoke(new Command({ resume: handedBack }), configOf(runId));
     const after = await this.report(runId);
-    const recorded = await this.journal.judged({ runId, status: after.status, entries: after.history.slice(before.history.length) });
-    return { ...after, recorded };
+    const entries = after.history.slice(before.history.length);
+    const recorded = await this.journal.judged({ runId, status: after.status, entries });
+    const kept = await this.#keepPassed(before, entries, handedBack);
+    return { ...after, recorded: recorded && kept };
+  }
+
+  async #keepPassed(before: RunReport, entries: readonly RunHistoryEntry[], handedBack: unknown): Promise<boolean> {
+    const passed = entries.find((entry) => entry.passed);
+    const step = this.#definitions.get(before.agent)?.steps.find((candidate) => candidate.id === passed?.step);
+    if (step === undefined || before.next === 'nothing' || typeof handedBack !== 'object' || handedBack === null) {
+      return true;
+    }
+    const given = Object.fromEntries(Object.entries(handedBack));
+    return this.keeper.keep({ runId: before.runId, step, handedBack: given, earlier: before.next.earlierResults });
   }
 
   async report(runId: string): Promise<RunReport> {

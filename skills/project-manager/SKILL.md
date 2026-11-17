@@ -41,12 +41,17 @@ for `/solution-architect` before it.
   tasks are sub-issues of their story.
 - Issues are written in the user's language. The acceptance criteria are written as they will
   be tested.
+- The backlog lives in the LangGraph database, never in a file. The draft is handed back to
+  LangGraph, which keeps it; `read_backlog` reads it back. Until the user approves, the text lives
+  only there. Once an issue is on GitHub, GitHub is the truth and the backlog keeps its link.
+- Issue type and labels come from the backlog (`issueType`, `labels`), never chosen by hand.
 - Never create, edit or close an issue before the user approves its exact text. Creating an
   issue publishes it; a public repository makes it visible to everyone.
 - Never put a credential, a key or personal data of anyone but the user in an issue.
 
 ## Tools
 
+- `read_backlog` on `ibid-langgraph`, for the stored draft and the links already published.
 - `gh issue create`, `gh api` for issue types and sub-issues, `gh issue view`, `gh issue list`.
 - Reading the project sheets in `rules/projects/`, `PRD.md`, `MVP.md` and the code, to size well.
 

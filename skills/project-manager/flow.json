@@ -6,7 +6,11 @@
       "name": "Dimensionar",
       "doneBy": "project-manager",
       "task": "Read the request, the project sheets and the product notes. Say how big the work is (S, M or L) and why, and what decisions nobody has taken yet.",
-      "fields": { "size": "text", "reasons": "list", "openDecisions": "list" },
+      "fields": {
+        "size": "text",
+        "reasons": "list",
+        "openDecisions": "list"
+      },
       "calls": []
     },
     {
@@ -14,31 +18,45 @@
       "name": "Partir",
       "doneBy": "project-manager",
       "task": "Write the epic and split it into user stories, each with its project, size and acceptance criteria, and each story into tasks with who does them. No story may be L.",
-      "fields": { "epic": "text", "stories": "list", "tasks": "list" },
-      "calls": ["solution-architect"]
+      "fields": {
+        "epic": "text",
+        "stories": "list",
+        "tasks": "list"
+      },
+      "calls": [
+        "solution-architect"
+      ]
     },
     {
       "id": "draft-issues",
       "name": "Escrever as issues",
       "doneBy": "project-manager",
-      "task": "Write the exact title, body, type, labels, repository and parent of every issue, in the user's language.",
-      "fields": { "issues": "list" },
+      "task": "Write every issue exactly as it will be published, in the user's language: one epic, its stories and their tasks. Give each a short key (S1, T1), its kind, title, body with the acceptance criteria, size, repository (owner/name) and the key of its parent. To change an issue that already exists, put its link in \"issue\"; to reshape an epic, reuse its id and keys. List in \"closedIssues\" the issues that stop making sense. LangGraph keeps the draft in the backlog.",
+      "fields": {
+        "backlog": "backlog",
+        "closedIssues": "optional-urls"
+      },
       "calls": []
     },
     {
       "id": "approval",
       "name": "Aprovação",
       "doneBy": "user",
-      "task": "Show the user every issue exactly as it will be written and wait for an explicit yes. Quote the user's exact words in \"userWords\". Never infer a yes.",
-      "fields": { "userApproved": "yes", "userWords": "text" },
+      "task": "Read the draft with read_backlog and show the user every issue exactly as it is stored, grouped by size, and the issues that will be closed. Wait for an explicit yes and quote the user's exact words in \"userWords\". Never infer a yes.",
+      "fields": {
+        "userApproved": "yes",
+        "userWords": "text"
+      },
       "calls": []
     },
     {
       "id": "create-issues",
       "name": "Criar as issues",
       "doneBy": "project-manager",
-      "task": "Create the approved issues with gh, link stories to the epic and tasks to their story as sub-issues, and give the link of each one.",
-      "fields": { "issueLinks": "urls" },
+      "task": "Read the approved draft with read_backlog. Create each issue with gh, or update the one in \"issue\", using exactly its stored title, body, issue type and labels. Link stories to the epic and tasks to their story as sub-issues, close the issues in \"closedIssues\", and hand back the link of every key. LangGraph records the links in the backlog.",
+      "fields": {
+        "issueLinks": "published-issues"
+      },
       "calls": []
     }
   ]

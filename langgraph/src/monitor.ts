@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { PostgresBacklogArchive } from './backlog/backlog-archive.js';
 import { readAntigravityLimits } from './limits/antigravity-limits.js';
 import { ClaudeEstimate } from './limits/claude-estimate.js';
 import { readClaudeLimits } from './limits/claude-limits.js';
@@ -65,7 +66,14 @@ function reportOnce(fault: string): void {
   }
 }
 
-createMonitorApi({ database, queries: new MonitorQueries(database), archive: new PostgresNoteArchive(database), feed, refreshLimits: sampleLimitsNow }).listen(PORT, '127.0.0.1', () => {
+createMonitorApi({
+  database,
+  queries: new MonitorQueries(database),
+  archive: new PostgresNoteArchive(database),
+  backlog: new PostgresBacklogArchive(database),
+  feed,
+  refreshLimits: sampleLimitsNow,
+}).listen(PORT, '127.0.0.1', () => {
   console.log(`The monitor serves http://127.0.0.1:${PORT}`);
 });
 repeatedly(sampleLimitsNow, SAMPLE_LIMITS_EVERY_MS);

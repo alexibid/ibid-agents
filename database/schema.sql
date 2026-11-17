@@ -159,3 +159,23 @@ create table if not exists eval_results (
 );
 
 create index if not exists eval_results_recent on eval_results (agent, case_id, ran_at desc);
+
+create table if not exists backlog_items (
+  epic_id text not null,
+  key text not null,
+  position integer not null,
+  kind text not null check (kind in ('epic', 'story', 'task')),
+  project text not null,
+  title text not null,
+  body text not null,
+  size text not null check (size in ('S', 'M', 'L')),
+  repository text not null,
+  parent_key text not null default '',
+  issue_url text not null default '',
+  state text not null check (state in ('draft', 'published')),
+  run_id text not null,
+  updated_at timestamptz not null default now(),
+  primary key (epic_id, key)
+);
+
+create index if not exists backlog_items_recent on backlog_items (updated_at desc);

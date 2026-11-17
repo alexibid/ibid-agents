@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import type { BacklogArchive } from '../backlog/backlog-archive.js';
 import { UnknownNoteError, type NoteArchive } from '../memory/note-archive.js';
 import { DatabaseNotInstalledError, DatabaseUnavailableError } from '../store/database-settings.js';
 import type { ChangeFeed } from './change-feed.js';
@@ -12,6 +13,7 @@ export interface MonitorParts {
   readonly database: Database;
   readonly queries: MonitorQueries;
   readonly archive: NoteArchive;
+  readonly backlog: BacklogArchive;
   readonly feed: ChangeFeed;
   readonly refreshLimits: () => Promise<void>;
 }
@@ -36,7 +38,7 @@ const DEFAULT_DAYS = 14;
 const NOT_FOUND = 404;
 const UNAVAILABLE = 503;
 
-export function createMonitorApi({ database, queries, archive, feed, refreshLimits }: MonitorParts): Server {
+export function createMonitorApi({ database, queries, archive, backlog, feed, refreshLimits }: MonitorParts): Server {
   const answers: Readonly<Record<string, Answer>> = {
     '/api/prompts': (url) => queries.prompts(pageOf(url)),
     '/api/prompt': (url) => queries.prompt(url.searchParams.get('id') ?? ''),
@@ -46,6 +48,7 @@ export function createMonitorApi({ database, queries, archive, feed, refreshLimi
     '/api/runs': (url) => queries.runs(url.searchParams.get('agent') ?? '', pageOf(url)),
     '/api/errors': (url) => queries.errors(pageOf(url)),
     '/api/plans': (url) => archive.plans(url.searchParams.get('text') ?? ''),
+    '/api/backlog': (url) => backlog.epics(url.searchParams.get('project') ?? ''),
     '/api/flow-map': () => flowMapOf(),
     '/api/evals': (url) => evalsReportOf(database, url.searchParams.get('agent') ?? ''),
     '/api/agents': () => queries.agentRoster(),

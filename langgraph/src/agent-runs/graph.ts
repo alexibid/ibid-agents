@@ -47,7 +47,7 @@ async function runStep(
   state: AgentRunStateValue,
 ): Promise<AgentRunStateUpdate> {
   const handedBack: unknown = interrupt(instructionFor(definition, step, state));
-  const verdict = await judgeHandBack(step, handedBack);
+  const verdict = await judgeHandBack(step, handedBack, state.results);
   if (verdict.passed) {
     const last = position === definition.steps.length - 1;
     return {

@@ -1,25 +1,26 @@
 # Job Suite — instruções para agentes
 
-Válido para Claude Code e Antigravity. Tudo vive em `/Users/alexsantos/Documents/cv`.
+Válido para Claude Code e Antigravity. Tudo vive em `/Users/alexsantos/Projects/cv`.
 
 ## O que é
 
-Pipeline pessoal de procura de emprego do Alexandre Santos: Scout (vagas), Tracker (Gmail e Calendar para o Excel) e Tailor (CV e carta em HTML). O xbar é a interface principal.
+Pipeline pessoal de procura de emprego do Alexandre Santos: Scout (vagas), Tracker (Gmail e Calendar para o Excel) e Tailor (CV e carta em HTML). A app `ibid cv` (Tauri e Angular, em `desktop/`) é a interface principal: janela e item na barra de menus.
 
 ## Estrutura do projeto
 
-Na raiz ficam `index.html` (o CV base), `package.json`, `package-lock.json`, `tsconfig.json`, `AGENTS.md`, `CLAUDE.md` e as pastas `resources/`, `reports/`, `exports/` e `simulators/`:
+Na raiz ficam `index.html` (o CV base), `package.json`, `package-lock.json`, `tsconfig.json`, `AGENTS.md`, `CLAUDE.md` e as pastas `resources/`, `reports/`, `exports/`, `simulators/` e `desktop/`:
 
 | Pasta | Conteúdo |
 | --- | --- |
 | `resources/app/src` | Código TypeScript (comandos, sync, scout, valores, prep) |
-| `resources/app/scripts`, `xbar`, `prompts` | Scripts do xbar e do agendamento, plugin do xbar, prompts dos agentes |
+| `resources/app/scripts`, `prompts` | Scripts das ações do menu e do agendamento, prompts dos agentes |
 | `resources/cv/styles.css` | Estilos do CV (o `index.html` e os CVs por vaga apontam para aqui) |
 | `resources/cv/generator` | Skill do gerador de CV (`SKILL.md`), referências (`profile.md`) e modelos antigos |
-| `resources/data` | Estado (`state.json`), notas manuais, expectativas salariais e o menu do xbar |
+| `resources/data` | Estado (`state.json`), notas manuais, expectativas salariais e o menu da app (`.xbar-menu.txt`) |
 | `reports` | Excel e Markdown (tracker, valores, rendimentos), dossiers de entrevista (`reports/prep`) e auditoria (`reports/audit`) |
 | `simulators` | Hub de simuladores técnicos e histórico de avaliações reais (`simulators/assessments`) |
-| `exports` | CVs e cartas por vaga (só `.html`) e outras exportações pontuais (não gerar PDFs: regra fixa) |
+| `exports` | CVs e cartas por vaga (só `.html`) e outras exportações pontuais (não gerar PDFs: regra fixa). Pasta real, seguida pelo git; a app `ibid cv` espelha-a a cada minuto para `My Drive/CV/developer/cv-developer` no Google Drive (`resources/app/scripts/sync-exports-to-drive.sh`) |
+| `desktop` | App `ibid cv`: `src/` (Angular, camadas `domain`, `application`, `infrastructure`, `ui`) e `src-tauri/` (Rust: atualização ao abrir, barra de menus, espelho do `exports`) |
 
 O `.env` e o `node_modules` ficam na raiz (ficheiros ocultos e dependências).
 
@@ -27,7 +28,7 @@ O `.env` e o `node_modules` ficam na raiz (ficheiros ocultos e dependências).
 
 | Comando | Faz |
 | --- | --- |
-| `npm run run` | Scout e Sync completos, atualiza Excel, Markdown e xbar |
+| `npm run run` | Scout e Sync completos, atualiza Excel, Markdown e o menu da app |
 | `npm run sync` | Só Gmail e Calendar |
 | `npm run scout` | Só vagas |
 | `npm run tailor -- --company X --role Y` | CV e carta em HTML |
@@ -65,7 +66,7 @@ O `.env` e o `node_modules` ficam na raiz (ficheiros ocultos e dependências).
 ## Preparação de entrevistas
 
 - `prep` usa o agente configurado em `AGENT` (`resources/app/src/config.ts`) com pesquisa web. Nunca inclui salário. Só usa experiência real de `resources/cv/generator/references/profile.md` e `index.html`.
-- O xbar tem "Preparar entrevistas" com um submenu por empresa: abrir o dossier, registar o que se passou, atualizar.
+- O menu da app tem "Preparar entrevistas" com um submenu por empresa: abrir o dossier, registar o que se passou, atualizar.
 
 ## Como o Scout funciona
 
@@ -76,7 +77,7 @@ O `.env` e o `node_modules` ficam na raiz (ficheiros ocultos e dependências).
 
 ## Como o tracker funciona
 
-- O sync reconstrói as candidaturas do zero a partir de 1 de janeiro do ano corrente (Gmail e Calendar). Se o Gmail ou o Calendar falhar, mantém as candidaturas anteriores e mostra o erro no xbar.
+- O sync reconstrói as candidaturas do zero a partir de 1 de janeiro do ano corrente (Gmail e Calendar). Se o Gmail ou o Calendar falhar, mantém as candidaturas anteriores e mostra o erro no menu da app.
 - A quota do Gmail é por minuto: o cliente pausa e repete quando a atinge. Evitar correr o sync várias vezes seguidas.
 - A resposta lê o corpo dos emails (sem o texto citado nas respostas). Os emails do LinkedIn classificam-se só pelo assunto, porque o rodapé engana.
 - "Resposta" por candidatura: rejeitada, proposta, entrevista marcada, em processo, ou "sem resposta há N dias".
@@ -88,8 +89,10 @@ O `.env` e o `node_modules` ficam na raiz (ficheiros ocultos e dependências).
 - Specs ao lado do código (`*.spec.ts`, `node:test`). Os agentes não correm specs sem ser pedido: passam o comando `npm test`.
 - Git só de leitura para agentes.
 
-## xbar
+## App ibid cv
 
-O menu tem a ação "Sincronizar agora" no topo e tudo o resto em submenus (Entrevistas, Preparar entrevistas com um submenu por empresa, Respostas, Sem resposta, Vagas de produto, Vagas de consultoria, Tracker, Negociação e valores, Ferramentas, Simuladores, Auditoria, Documentos, Conversar), gerado em `resources/app/src/export/xbar-menu.ts`.
-
-`resources/app/xbar/job-suite.12h.sh` só faz `cat` de `resources/data/.xbar-menu.txt`, que o código gera em cada execução. O `node` está em `~/.n/bin`: os scripts usam esse caminho absoluto, porque o xbar e o launchd não herdam o PATH da shell.
+- Vive em `desktop/`. `npm run desktop:install` (na raiz) compila e instala `ibid cv.app` em `/Applications`; `npm run desktop` corre-a em desenvolvimento. Substitui o SwiftBar/xbar, que já não se usa neste projeto.
+- Sempre que a app é aberta (ou reaberta pelo Dock), corre `cli.ts run` (Scout e Sync) e mostra o progresso na janela. Fechar a janela só a esconde; a app continua na barra de menus e sai por "Sair do ibid cv".
+- O item da barra de menus mostra o ícone `.i` / `cv` e o título do menu (vagas novas e entrevistas). O menu tem "Abrir janela" e "Atualizar agora" no topo e tudo o resto em submenus (Entrevistas, Preparar entrevistas com um submenu por empresa, Respostas, Sem resposta, Vagas, Tracker, Negociação, Ferramentas, Simuladores, Auditoria, Documentos, Conversar com contexto).
+- O menu continua a ser gerado pelo código em `resources/data/.xbar-menu.txt` (formato de linhas do xbar: `--` por nível, `href=` para abrir, `bash=` e `paramN=` para scripts). A app lê esse ficheiro (`desktop/src/app/domain/menu.ts`), relê-o a cada minuto e depois de cada ação, e só executa scripts de `resources/app/scripts`.
+- A app é compilada para esta máquina: os caminhos do Node e do projeto ficam fixos na compilação. Depois de mover o projeto ou mudar o Node, voltar a correr `npm run desktop:install`. O `node` está em `~/.n/bin`: os scripts usam esse caminho absoluto, porque a app e o launchd não herdam o PATH do terminal.

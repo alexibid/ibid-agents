@@ -15,7 +15,7 @@
       "id": "tailor",
       "name": "Adaptar o CV",
       "doneBy": "job",
-      "task": "Create the tailored HTML from index.html in /Users/alexsantos/Documents/cv/. Never invent experience; keep the word count of each block. No PDF.",
+      "task": "Create the tailored HTML from index.html in /Users/alexsantos/Projects/cv/. Never invent experience; keep the word count of each block. No PDF.",
       "fields": {
         "file": "file",
         "changes": "list"

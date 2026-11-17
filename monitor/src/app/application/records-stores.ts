@@ -1,5 +1,6 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import type { Observable } from 'rxjs';
+import type { Epic } from '../domain/backlog';
 import { matchesProblem, NO_TELEMETRY, type LimitReading, type Note, type Problem, type Telemetry } from '../domain/records';
 import { keptFresh } from './kept-fresh';
 import { MonitorGateway } from './monitor-gateway';
@@ -69,4 +70,16 @@ export class PlansStore {
   forget(planId: string): Observable<unknown> {
     return this.gateway.forgetPlan(planId);
   }
+}
+
+@Injectable({ providedIn: 'root' })
+export class BacklogStore {
+  private readonly gateway = inject(MonitorGateway);
+
+  readonly epics = keptFresh<boolean, readonly Epic[]>({
+    gateway: this.gateway,
+    choice: ALWAYS,
+    load: () => this.gateway.backlog(),
+    whileLoading: [],
+  });
 }

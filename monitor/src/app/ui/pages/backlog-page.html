@@ -1,0 +1,37 @@
+<section class="o-stack">
+  <h1>Backlog</h1>
+  <p class="u-muted">
+    Os épicos, as stories e as tarefas que o gestor de projeto preparou. O texto fica aqui até o aprovares; depois de ir
+    para o GitHub, é lá que manda e aqui fica o link.
+  </p>
+
+  @for (entry of epics(); track entry.epic.id) {
+    <article class="o-panel backlog">
+      <header class="backlog__header">
+        <h2>{{ entry.epic.title }}</h2>
+        <span class="u-muted">
+          {{ entry.epic.project }} · {{ entry.outline.published }} de {{ entry.outline.total }} no GitHub ·
+          {{ entry.epic.updatedOn | date: 'd MMM y, HH:mm' }}
+        </span>
+      </header>
+
+      <monitor-backlog-entry [item]="entry.outline.head" />
+      @for (task of entry.outline.epicTasks; track task.key) {
+        <monitor-backlog-entry [item]="task" />
+      }
+
+      @for (branch of entry.outline.stories; track branch.story.key) {
+        <monitor-backlog-entry [item]="branch.story" />
+        @if (branch.tasks.length > 0) {
+          <div class="backlog__tasks">
+            @for (task of branch.tasks; track task.key) {
+              <monitor-backlog-entry [item]="task" />
+            }
+          </div>
+        }
+      }
+    </article>
+  } @empty {
+    <p class="o-panel o-empty">Ainda não há nada no backlog.</p>
+  }
+</section>

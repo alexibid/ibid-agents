@@ -12,6 +12,7 @@ const SCREENS = [
   { path: '/telemetria', label: 'Telemetria', exact: false },
   { path: '/erros', label: 'Erros', exact: false },
   { path: '/planos', label: 'Planos', exact: false },
+  { path: '/backlog', label: 'Backlog', exact: false },
 ] as const;
 
 @Component({

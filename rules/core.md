@@ -31,6 +31,7 @@ memory.
 | `apps/boilerplate` | `boilerplate-` |
 | `apps/papikapi` | `papikapi-` |
 | `apps/papikapi-studio` | `papikapi-studio-` |
+| `apps/ibid-website` | `website-` |
 
 The `app-` prefix is banned.
 

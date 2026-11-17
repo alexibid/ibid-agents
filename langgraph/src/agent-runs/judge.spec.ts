@@ -5,7 +5,14 @@ import { describe, expect, it } from 'vitest';
 import type { FlowStep } from './definition.js';
 import { handBackShapeOf, judgeHandBack } from './judge.js';
 
-const step = (fields: FlowStep['fields']): FlowStep => ({ id: 'deliver', name: 'Entregar', doneBy: 'job', task: 'Deliver.', fields, calls: [] });
+const step = (fields: FlowStep['fields']): FlowStep => ({
+  id: 'deliver',
+  name: 'Entregar',
+  doneBy: 'job',
+  task: 'Deliver.',
+  fields,
+  calls: [],
+});
 
 describe('judgeHandBack', () => {
   it('should pass a hand-back that fills every field', async () => {
@@ -48,8 +55,25 @@ describe('judgeHandBack', () => {
 
   it('should accept an empty list of optional links and still check any link given', async () => {
     expect((await judgeHandBack(step({ legalSources: 'optional-urls' }), { legalSources: [] })).passed).toBe(true);
-    expect((await judgeHandBack(step({ legalSources: 'optional-urls' }), { legalSources: ['DL 93/2025'] })).details[0]).toContain('not a link');
+    expect((await judgeHandBack(step({ legalSources: 'optional-urls' }), { legalSources: ['DL 93/2025'] })).details[0]).toContain(
+      'not a link',
+    );
     expect((await judgeHandBack(step({ legalSources: 'optional-urls' }), {})).details[0]).toContain('empty when there is nothing to cite');
+  });
+
+  it('should accept an empty list of optional files and still check any file given', async () => {
+    expect((await judgeHandBack(step({ changed: 'optional-files' }), { changed: [] })).passed).toBe(true);
+    expect((await judgeHandBack(step({ changed: 'optional-files' }), { changed: ['relative.yml'] })).details[0]).toContain(
+      'not an absolute path',
+    );
+    expect((await judgeHandBack(step({ changed: 'optional-files' }), {})).details[0]).toContain('empty when nothing changed');
+  });
+
+  it('should refuse passing runs that are not GitHub Actions run links', async () => {
+    expect((await judgeHandBack(step({ greenRuns: 'passing-runs' }), { greenRuns: [] })).details[0]).toContain('run links');
+    expect((await judgeHandBack(step({ greenRuns: 'passing-runs' }), { greenRuns: ['https://example.com'] })).details[0]).toContain(
+      'not the link of a GitHub Actions run',
+    );
   });
 
   it('should refuse text that is not a web link without opening anything', async () => {
@@ -64,5 +88,27 @@ describe('handBackShapeOf', () => {
     expect(handBackShapeOf(step({ summary: 'text', sources: 'urls', userApproved: 'yes' }))).toBe(
       '{"summary":"<text>","sources":["https://<source that opens>"],"userApproved":true}',
     );
+  });
+
+  it('should refuse published issues when no earlier step handed back a backlog', async () => {
+    const verdict = await judgeHandBack(step({ issueLinks: 'published-issues' }), { issueLinks: [] }, {});
+
+    expect(verdict.details).toEqual(['"issueLinks" cannot be judged, because no earlier step handed back a backlog.']);
+  });
+
+  it('should name the keys of the backlog that have no link', async () => {
+    const backlog = {
+      id: 'drive',
+      project: 'papikapi',
+      items: [{ key: 'Épico', kind: 'epic', title: 'Drive', body: 'Texto', size: 'L', repository: 'alexibid/papikapi' }],
+    };
+
+    const verdict = await judgeHandBack(
+      step({ issueLinks: 'published-issues' }),
+      { issueLinks: [{ key: 'S1', url: 'https://github.com/alexibid/papikapi/issues/2' }] },
+      { 'draft-issues': { backlog } },
+    );
+
+    expect(verdict.details).toEqual(['"issueLinks" has no link for "Épico"; has "S1", which is not in the backlog.']);
   });
 });

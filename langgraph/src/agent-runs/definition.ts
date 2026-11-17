@@ -2,7 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 
-export const FIELD_KINDS = ['text', 'list', 'yes', 'urls', 'optional-urls', 'file', 'files'] as const;
+export const FIELD_KINDS = ['text', 'list', 'yes', 'urls', 'optional-urls', 'file', 'files', 'optional-files', 'passing-runs', 'backlog', 'published-issues'] as const;
 
 const stepSchema = z.object({
   id: z.string().regex(/^[a-z][a-z0-9-]*$/),

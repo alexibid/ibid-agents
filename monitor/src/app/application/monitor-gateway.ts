@@ -1,6 +1,7 @@
 import type { Signal } from '@angular/core';
 import type { Observable } from 'rxjs';
 import type { AgentRun, RosterEntry } from '../domain/agent-roster';
+import type { Epic } from '../domain/backlog';
 import type { CaseReport } from '../domain/evals';
 import type { FlowMap, Story } from '../domain/flow-map';
 import type { PromptDetail, PromptSummary } from '../domain/prompt';
@@ -17,6 +18,7 @@ export abstract class MonitorGateway {
   abstract problems(): Observable<Problem[]>;
   abstract plans(text: string): Observable<Note[]>;
   abstract forgetPlan(planId: string): Observable<unknown>;
+  abstract backlog(): Observable<Epic[]>;
   abstract flowMap(): Observable<FlowMap>;
   abstract stories(limit: number): Observable<Story[]>;
   abstract runs(agent: string): Observable<Story[]>;

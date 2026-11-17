@@ -1,0 +1,48 @@
+.backlog-entry {
+  border-top: 1px solid var(--color-line);
+  display: grid;
+  gap: var(--space-2);
+  padding-block: var(--space-2);
+
+  &__summary {
+    align-items: baseline;
+    cursor: pointer;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  &__key {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    min-width: 3.5rem;
+  }
+
+  &__title {
+    flex: 1 1 16rem;
+  }
+
+  &__size {
+    border: 1px solid currentcolor;
+    border-radius: 999px;
+    color: var(--color-muted);
+    font-size: var(--size-small);
+    font-weight: 600;
+    padding: 0 var(--space-2);
+  }
+
+  &__link {
+    color: var(--color-accent);
+    font-size: var(--size-small);
+  }
+
+  &__pending {
+    color: var(--color-warn);
+    font-size: var(--size-small);
+  }
+
+  &__body {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+}

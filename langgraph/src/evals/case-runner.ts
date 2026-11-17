@@ -17,6 +17,7 @@ const ALLOWED_TOOLS = [
   'mcp__ibid-langgraph__start_agent_run',
   'mcp__ibid-langgraph__submit_agent_step',
   'mcp__ibid-langgraph__agent_run_status',
+  'mcp__ibid-langgraph__read_backlog',
   'Skill',
   'Read',
   'Glob',

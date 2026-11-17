@@ -1,0 +1,65 @@
+{
+  "title": "DevOps CI/CD",
+  "steps": [
+    {
+      "id": "triage",
+      "name": "Triagem",
+      "doneBy": "devops",
+      "task": "Ask GitHub, never memory, which runs are failing in alexibid/ibid-workspace: gh run list --status failure for every workflow, and the state of the self-hosted runners. Keep only the latest failing run of each workflow and branch. Hand back their links and, for each, the job and step that failed.",
+      "fields": {
+        "failingRuns": "urls",
+        "failedSteps": "list",
+        "runners": "text"
+      },
+      "calls": []
+    },
+    {
+      "id": "diagnose",
+      "name": "Diagnóstico",
+      "doneBy": "devops",
+      "task": "Read each failing log with gh run view --log-failed down to the first real error. Give each failure its kind (pipeline, runner, dependency, secret, flaky, code), the log lines that prove it, and how you reproduced it locally through Nx or the same tools/ci script, or why it cannot run here.",
+      "fields": {
+        "causes": "list",
+        "evidence": "list",
+        "reproduction": "text"
+      },
+      "calls": []
+    },
+    {
+      "id": "fix",
+      "name": "Correção",
+      "doneBy": "devops",
+      "task": "Fix the cause in .github/ or tools/ci/ only, never by skipping, loosening or deleting a check. List every file you changed, or none. A code failure becomes a user story for the assistant, and a secret or anything on the runner machine becomes an exact instruction for the user. Run locally whatever the fix touches and say the result. Add a check that would catch the same failure earlier, or say why none fits.",
+      "fields": {
+        "changedFiles": "optional-files",
+        "handedOver": "list",
+        "localResult": "text",
+        "prevention": "text"
+      },
+      "calls": [
+        "assistente"
+      ]
+    },
+    {
+      "id": "approval",
+      "name": "Aprovação",
+      "doneBy": "user",
+      "task": "Show the user the diff of every changed file, the single commit line (fix(<scope>): <subject>), what you handed over, and the one remote action you need, such as a rerun. Wait for an explicit yes and quote the user's exact words in \"userWords\". The user commits and pushes; never change git state.",
+      "fields": {
+        "userApproved": "yes",
+        "userWords": "text"
+      },
+      "calls": []
+    },
+    {
+      "id": "confirm-green",
+      "name": "Confirmar verde",
+      "doneBy": "devops",
+      "task": "After the user pushed, follow the new runs with gh run watch. Hand back one run link per workflow that was failing, each one a run of the fixed commit. LangGraph asks GitHub and refuses any run that did not end in success; if one fails again, go back to the diagnosis with what it shows.",
+      "fields": {
+        "passingRuns": "passing-runs"
+      },
+      "calls": []
+    }
+  ]
+}

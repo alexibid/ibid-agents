@@ -31,6 +31,13 @@ are on LangGraph.
 - When a plan is carried out or abandoned, call `set_note_status`.
 - If the memory cannot be reached, tell the user once and carry on without it.
 
+## Broken pipelines
+
+When CI, a release, the versioning, the split or the runner fails, that is not a user story:
+hand it to `/devops`, which fixes the pipeline and stays on it until GitHub reports it green.
+When `/devops` finds the cause in the code of an app or a lib, it hands that back to you, and
+it becomes a user story like any other.
+
 ## Part one: the user story
 
 Nothing is built until the user approves a story.
@@ -57,7 +64,8 @@ Nothing is built until the user approves a story.
    comment is not a go-ahead.
 8. Once approved, `/project-manager` writes the epic, the stories and the tasks as GitHub issues,
    after the user approves the exact text of every issue.
-9. Build one story at a time, in the order agreed. Each story goes through Part two on its own.
+9. Build one story at a time, in the order agreed, taking its exact text from `read_backlog`. Each
+   story goes through Part two on its own.
 
 Never write code, open a plan, or call LangGraph's story tools before the go-ahead.
 
