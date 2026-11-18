@@ -15,18 +15,17 @@ that complements the CV. Static pages built from a content snapshot; the admin r
 
 | Step | When |
 | --- | --- |
-| `plan`, `implement`, `build`, `rule-checks`, `review`, `final-verification` | `always` |
+| `plan`, `implement`, `build`, `lint`, `rule-checks`, `unit-tests`, `review`, `final-verification` | `always` |
 | `browser-qa`, `ux-critique` | `ui` |
 
-The project has no lint or test target until story S2 adds them. From then on `lint`,
-`author-tests`, `unit-tests` and `validate-tests` join `always`, and `accessibility` and
-`performance` join `ui`. `journey` joins `ui` once story S9 adds the e2e target. Each of those
-stories updates this sheet.
+The project has lint and test targets configured. `accessibility`, `performance` and `journey` join `ui` once story S9 adds the e2e target.
 
 ## Checks
 
 | Step | Command |
 | --- | --- |
+| `lint` | `npx nx lint ibid-website` |
+| `unit-tests` | `npx nx test ibid-website` |
 | `build` | `npx nx build ibid-website` |
 
 ## Content

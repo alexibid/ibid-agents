@@ -15,12 +15,12 @@ const contract = (_file: string, name: string): CatalogEntry => skill(name.toLow
 describe('knownAgentsOf', () => {
   it('should list every agent of the repository, with its activity when it ran', () => {
     const agents = knownAgentsOf(
-      [contract('test-author.md', 'Test author'), skill('assistente')],
-      [{ agent: 'assistente', kind: 'skill', calls: 4, failures: 1, lastOn: '2026-11-13T10:00:00.000Z' }],
+      [contract('test-author.md', 'Test author'), skill('assistant')],
+      [{ agent: 'assistant', kind: 'skill', calls: 4, failures: 1, lastOn: '2026-11-13T10:00:00.000Z' }],
     );
 
     expect(agents.map(({ name, calls, inRepository }) => ({ name, calls, inRepository }))).toEqual([
-      { name: 'assistente', calls: 4, inRepository: true },
+      { name: 'assistant', calls: 4, inRepository: true },
       { name: 'test-author', calls: 0, inRepository: true },
     ]);
   });

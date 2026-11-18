@@ -21,7 +21,7 @@ Settled with the user. A decision here overrides any older rule file that says o
 | 2026-11-12 | The program is called LangGraph, in prose and in code (`langgraph/`, `ibid-langgraph`) | The name "referee" |
 | 2026-11-12 | The handover is a ready command per repository: `cd <absolute path> && git add -- <this story's files> && git commit -m <line>`. Files that already held earlier work are never staged | "No git commands" in the handover rules |
 | 2026-11-12 | `SavvyJar` is retired; the project is `oh-save-me` | The rule that protected the `SavvyJar` repository |
-| 2026-11-13 | A conversation opened inside the workspace starts as the assistant, with the core rules, without `/assistente` being typed (Claude) | Having to invoke the assistant in every conversation |
+| 2026-11-13 | A conversation opened inside the workspace starts as the assistant, with the core rules, without `/assistant` being typed (Claude) | Having to invoke the assistant in every conversation |
 | 2026-11-13 | One PostgreSQL database in Docker keeps the journal, the memory, the usage and the limits. TimescaleDB is not used at this volume | The SQLite-only state |
 | 2026-11-13 | The memory matches words, in Portuguese and English, inside the database. No outside service and no key | — |
 | 2026-11-13 | The dashboard lives in this repository, is a Tauri application, keeps state with signals and only observes: the user keeps talking in Claude Desktop and Antigravity | A dashboard inside `ibid-workspace`; NgRx |

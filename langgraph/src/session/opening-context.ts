@@ -10,9 +10,9 @@ const NOTHING_TO_ADD = '';
 
 const OPENING = [
   'This conversation is inside ibid-workspace. The workspace holds no rule files: the core rules',
-  'below and the `assistente` skill are the only source of rules.',
+  'below and the `assistant` skill are the only source of rules.',
   '',
-  'Before answering the first message, invoke the `assistente` skill and act as it says for the',
+  'Before answering the first message, invoke the `assistant` skill and act as it says for the',
   'whole conversation, including after the conversation is summarised. A question that changes',
   'nothing in the workspace is answered directly, still in the plain language the skill asks for.',
 ].join('\n');

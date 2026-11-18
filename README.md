@@ -41,7 +41,7 @@ Verified: LangGraph and the guard compile; the redrawn graph ran a whole story a
 throwaway workspace; the guard is live and blocked a real command in the workspace; the Studio
 server starts and lists the graph.
 
-Not yet: the unit tests have not been run, `/assistente` has not been used on a real story,
+Not yet: the unit tests have not been run, `/assistant` has not been used on a real story,
 Studio has not been opened in a browser, the Antigravity side has not been seen working, and no
 agent has evaluations yet (`skills/<agent>/evals.json`, run with `npm run evals`). The Studio command-line tool brings five known advisories in its own
 dependencies. Open questions are in `docs/decisions.md`.

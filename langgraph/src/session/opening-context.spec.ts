@@ -18,7 +18,7 @@ describe('openingContext', () => {
       const { hookSpecificOutput } = JSON.parse(opening(sessionDirectory));
 
       expect(hookSpecificOutput.hookEventName).toBe('SessionStart');
-      expect(hookSpecificOutput.additionalContext).toContain('`assistente` skill');
+      expect(hookSpecificOutput.additionalContext).toContain('`assistant` skill');
       expect(hookSpecificOutput.additionalContext).toContain(coreRules);
     },
   );

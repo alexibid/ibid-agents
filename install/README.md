@@ -61,7 +61,7 @@ It keeps three things that only work from inside the workspace and hold no rule:
 - In Claude, a conversation opened inside the workspace starts with the core rules and the
   instruction to act as the assistant. It is added again when the conversation is resumed or
   summarised. It has not yet been seen in a new conversation.
-- In Antigravity, a conversation that does not start with `/assistente` has no project rules,
+- In Antigravity, a conversation that does not start with `/assistant` has no project rules,
   only the user's own global instructions.
 - The guard does not yet deny edits made outside an active step, nor inline scripts (W41).
 - The Antigravity guard follows the documented format and has not been seen working inside

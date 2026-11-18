@@ -36,7 +36,7 @@ Every contract has the same six sections, in this order.
 
 None has been used on a real story yet.
 
-The assistant is not here. It is the skill `skills/assistente`, because the user invokes it.
+The assistant is not here. It is the skill `skills/assistant`, because the user invokes it.
 
 Every contract here also has a skill of the same name in `skills/`, which only points to the
 contract. It lets the role be invoked on its own with `/name`, in Claude and in Antigravity.

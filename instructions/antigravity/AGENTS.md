@@ -7,7 +7,7 @@
 All custom skills are defined natively in ~/.gemini/config/skills/ where each skill is a folder containing a SKILL.md file with YAML frontmatter.
 
 ## 2. Using Custom Skills in Conversations
-If the user mentions or asks to use a custom skill/agent (e.g., @casa, @ev, @trader, etc.) or requests to run a task using one of these:
+If the user mentions or asks to use a custom skill/agent (e.g., @home, @ev, @trader, etc.) or requests to run a task using one of these:
 1. **Locate the definition**: Read ~/.gemini/config/skills/{skill_name}/SKILL.md.
 2. **Execute/Adopt**:
    - You can adopt the role/prompt directly in the current chat.
@@ -27,5 +27,9 @@ Both the Antigravity desktop/web chat and the CLI `agy` natively load skills fro
 
 ## 6. Verification & Test Invariant
 - **Do Not Run `check:fast` Unprompted**: The agent is strictly forbidden from running `npm run check:fast` unless explicitly told to do so by the user. For build/compilation verification, use `npm run check:build` or `npm run build`.
+
+## 7. ibid-workspace English-Only & Zero-Agent-Reference Rule
+- **English Only**: All GitHub issues, issue comments, backlog drafts, documentation, and texts in `ibid-workspace` (root and all submodules) MUST be written exclusively in English.
+- **No Agent Workflow References**: Never mention agents, skills (such as `/solution-architect`), LangGraph, the agent workflow, or explanations about why the user rather than an agent must perform a task (such as "Only you can do this because it touches git/credentials") anywhere in `ibid-workspace` files or GitHub issues. Describe only the work itself.
 
 

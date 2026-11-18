@@ -14,12 +14,12 @@
       "id": "hand-to-assistant",
       "name": "Passar ao assistente",
       "doneBy": "finance-agent",
-      "task": "Code changes in ibid-workspace run only as a user story. Start it through /assistente and report the story id.",
+      "task": "Code changes in ibid-workspace run only as a user story. Start it through /assistant and report the story id.",
       "fields": {
         "storyId": "text"
       },
       "calls": [
-        "assistente"
+        "assistant"
       ]
     }
   ]

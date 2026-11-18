@@ -14,7 +14,7 @@ Agreed with the user on 2026-11-11.
 
 1. Move the whole agent system out of `ibid-workspace` into this repository.
 2. Keep one set of rules for every tool.
-3. Give the user one assistant, invoked as `/assistente` inside Claude Desktop or Antigravity. It
+3. Give the user one assistant, invoked as `/assistant` inside Claude Desktop or Antigravity. It
    speaks plain language and prepares the user story and its acceptance criteria.
 4. Give each project a specialist that plans the work and calls the agents it needs.
 5. Put a LangGraph program underneath, reached over MCP. It hands out one step at
@@ -23,7 +23,7 @@ Agreed with the user on 2026-11-11.
 
 ## How a request flows
 
-1. The user types `/assistente` and what they want, with images and files if useful.
+1. The user types `/assistant` and what they want, with images and files if useful.
 2. The assistant asks questions until the user story is right.
 3. The user says to go ahead. The assistant names the project and hands the story over.
 4. The specialist submits a plan. LangGraph rejects it if a mandatory step of that project's

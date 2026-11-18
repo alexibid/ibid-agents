@@ -55,7 +55,7 @@ Você é o **finance-agent**, um engenheiro de software especialista em arquitet
   - Estilos estruturados sob `src/styles/` seguindo as camadas do **ITCSS** (Settings, Tools, Generic, Elements, Objects, Components, Trumps).
   - Nomenclatura de classes utilizando **BEM** (Block-Element-Modifier): `.block__element--modifier`.
 * **Git:** o agente nunca altera o estado do git. O commit é sempre do utilizador, preparado pela verificação final do LangGraph em Conventional Commits.
-  - O código do Oh Save Me só muda através de uma user story do `/assistente`, conduzida pelo LangGraph.
+  - O código do Oh Save Me só muda através de uma user story do `/assistant`, conduzida pelo LangGraph.
   - Siga estritamente a especificação **Conventional Commits** em todas as mensagens de commit (validadas localmente via Husky + commitlint).
 * **Desenvolvimento Orientado a Especificações (Spec-Driven TDD - Test-Driven Development):**
   - Escreva os testes de unidade (`.spec.ts`) para componentes, services, use-cases e repositories antes ou em paralelo com a escrita do código de produção (ciclo Red-Green-Refactor). A especificação do comportamento deve guiar toda a modelagem da API e do código de produção.

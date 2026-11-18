@@ -62,7 +62,7 @@ describe('promptsOfClaudeTranscript', () => {
         [
           toolUse('t1', 'Agent', { subagent_type: 'Explore', prompt: 'find the service' }),
           toolUse('t2', 'mcp__ibid-langgraph__start_story', { project: 'papikapi' }),
-          toolUse('t3', 'Skill', { skill: 'assistente', args: 'go' }),
+          toolUse('t3', 'Skill', { skill: 'assistant', args: 'go' }),
           toolUse('t4', 'Bash', { command: 'ls' }),
         ],
         '2026-11-13T10:00:01.000Z',
@@ -73,7 +73,7 @@ describe('promptsOfClaudeTranscript', () => {
     expect(prompt?.agentCalls).toEqual([
       { id: 't1', kind: 'agent', agent: 'Explore', request: 'find the service', response: 'found it', failed: false, calledOn: '2026-11-13T10:00:01.000Z' },
       expect.objectContaining({ id: 't2', kind: 'langgraph', agent: 'LangGraph', response: 'unknown project', failed: true }),
-      expect.objectContaining({ id: 't3', kind: 'skill', agent: 'assistente', request: 'go', response: '' }),
+      expect.objectContaining({ id: 't3', kind: 'skill', agent: 'assistant', request: 'go', response: '' }),
       expect.objectContaining({ id: 't4', kind: 'tool', agent: 'Bash' }),
     ]);
     expect(prompt?.agentCalls[1]?.request).toContain('start_story');
@@ -123,12 +123,12 @@ describe('promptsOfClaudeTranscript, telling the user apart from the tool', () =
 
   it('should show a slash command as the user typed it', () => {
     const [prompt] = promptsOfClaudeTranscript([
-      written('p1', '<command-message>assistente</command-message>\n<command-name>/assistente</command-name>\n<command-args>check the workspace</command-args>', {
+      written('p1', '<command-message>assistant</command-message>\n<command-name>/assistant</command-name>\n<command-args>check the workspace</command-args>', {
         origin: { kind: 'human' },
       }),
     ]);
 
-    expect(prompt?.text).toBe('/assistente check the workspace');
+    expect(prompt?.text).toBe('/assistant check the workspace');
   });
 
   it('should show what the user wrote after a local command', () => {

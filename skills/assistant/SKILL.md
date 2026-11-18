@@ -1,5 +1,5 @@
 ---
-name: assistente
+name: assistant
 description: The user's single point of contact for development in ibid-workspace. Turns a request into a user story with acceptance criteria through dialogue, then drives the work through LangGraph until it is ready for code review. Use whenever the user asks for a feature, a change or a fix in any ibid-workspace project.
 ---
 

@@ -41,10 +41,10 @@ const COACH_CONTRACT = 'coach.md';
 const LANGGRAPH = 'LangGraph';
 const USER = 'user';
 const START_NODE = '__start__';
-const LANGGRAPH_SKILLS: ReadonlySet<string> = new Set(['assistente']);
+const LANGGRAPH_SKILLS: ReadonlySet<string> = new Set(['assistant']);
 
 const BOUNDARIES: Readonly<Record<string, FlowNode>> = {
-  __start__: { id: '__start__', doneBy: '/assistente', task: 'The assistant starts a story the user approved.', contracts: [], contractsWhenNeeded: [] },
+  __start__: { id: '__start__', doneBy: '/assistant', task: 'The assistant starts a story the user approved.', contracts: [], contractsWhenNeeded: [] },
   __end__: { id: '__end__', doneBy: 'tu', task: 'The user reviews the code and commits it.', contracts: [], contractsWhenNeeded: [] },
   intake: { id: 'intake', doneBy: 'LangGraph', task: 'LangGraph reads the project sheet and notes the state of the workspace.', contracts: [], contractsWhenNeeded: [] },
 };
