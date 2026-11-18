@@ -17,7 +17,7 @@
       "id": "split",
       "name": "Partir",
       "doneBy": "project-manager",
-      "task": "Write the epic and split it into user stories, each with its project, size and acceptance criteria, and each story into tasks with who does them. No story may be L.",
+      "task": "Write the epic and split it into user stories, each with its project, size and acceptance criteria, and each story into tasks. No story may be L.",
       "fields": {
         "epic": "text",
         "stories": "list",
@@ -31,7 +31,7 @@
       "id": "draft-issues",
       "name": "Escrever as issues",
       "doneBy": "project-manager",
-      "task": "Write every issue exactly as it will be published, in the user's language: one epic, its stories and their tasks. Give each a short key (S1, T1), its kind, title, body with the acceptance criteria, size, repository (owner/name) and the key of its parent. To change an issue that already exists, put its link in \"issue\"; to reshape an epic, reuse its id and keys. List in \"closedIssues\" the issues that stop making sense. LangGraph keeps the draft in the backlog.",
+      "task": "Write every issue in English exactly as it will be published: one epic, its stories and their tasks. Never mention agents, skills, LangGraph, or who does a task vs. an agent in the issue text. Give each a short key (Epic, S1, T1), its kind, title, body with the acceptance criteria, size, repository (owner/name) and the key of its parent. To change an issue that already exists, put its link in \"issue\"; to reshape an epic, reuse its id and keys. List in \"closedIssues\" the issues that stop making sense. LangGraph keeps the draft in the backlog.",
       "fields": {
         "backlog": "backlog",
         "closedIssues": "optional-urls"

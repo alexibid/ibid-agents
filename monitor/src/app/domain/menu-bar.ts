@@ -8,7 +8,7 @@ const WINDOWS: readonly (readonly [TimeWindow, string])[] = [
 ];
 const NOTHING_KNOWN = 'ibid';
 
-const PERCENT = new Intl.NumberFormat('pt-PT', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+const PERCENT = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 0 });
 
 function percentText(percent: number): string {
   return `${PERCENT.format(percent)}%`;

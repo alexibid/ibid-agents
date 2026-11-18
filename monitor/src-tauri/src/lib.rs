@@ -12,7 +12,7 @@ struct MonitorService(Mutex<Option<Child>>);
 #[tauri::command]
 fn show_limits(app: AppHandle, text: String) -> Result<(), String> {
   let tray = app.tray_by_id(TRAY).ok_or("The menu bar item is missing.")?;
-  tray.set_title(Some(text)).map_err(|error| error.to_string())
+  tray.set_tooltip(Some(text)).map_err(|error| error.to_string())
 }
 
 fn start_monitor_service() -> Option<Child> {
@@ -35,7 +35,7 @@ fn bring_forward(app: &AppHandle) {
 }
 
 fn add_menu_bar_item(app: &tauri::App) -> tauri::Result<()> {
-  let mut tray = TrayIconBuilder::with_id(TRAY).title("ibid").on_tray_icon_event(|tray, event| {
+  let mut tray = TrayIconBuilder::with_id(TRAY).tooltip("ibid").on_tray_icon_event(|tray, event| {
     if let TrayIconEvent::Click { .. } = event {
       bring_forward(tray.app_handle());
     }

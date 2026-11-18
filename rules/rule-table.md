@@ -80,7 +80,7 @@ way it will be guaranteed.
 | W58 | `tools/` stays out of the submodules | judgement | no | Reviewer |
 | W59 | The relevant skills are read before any code | process | no | LangGraph attaches them to the step |
 | W60 | The work state is read first and kept current | process | no | LangGraph's own state replaces `current.md` |
-| W61 | Code, documentation and rules are in English | judgement | no | Reviewer |
+| W61 | Code, documentation, rules and GitHub issues are in English; nothing in `ibid-workspace` or its issues mentions agents or the agent workflow | judgement | no | Reviewer |
 | W63 | Composition over inheritance, SOLID, DRY | judgement | no | Reviewer |
 
 ## oh-save-me

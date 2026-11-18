@@ -40,6 +40,7 @@ Settled with the user. A decision here overrides any older rule file that says o
 | 2026-11-15 | Flow steps check content where they can: links must open, files must exist | Checking only that fields are filled |
 | 2026-11-15 | Naming an agent with a flow makes the tool remind it to start the flow (Claude `UserPromptSubmit`, Antigravity `PreInvocation`) | Relying on the skill text alone |
 | 2026-11-15 | Agents are evaluated with cases in `evals.json`, run through the Claude command line and kept in the database. Agents that act on the user's accounts or files are not run automatically | Trials folders that were never written |
+| 2026-11-18 | All issues, comments, backlog items and texts of `ibid-workspace` and its repositories are written exclusively in English, and nothing in `ibid-workspace` or its issues ever mentions agents, skills, LangGraph or why the user vs. an agent does a task | Writing issues in the user's language or mentioning agents/git permissions in issues and workspace files |
 
 ## Deferred to the workspace
 

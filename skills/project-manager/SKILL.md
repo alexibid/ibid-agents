@@ -29,18 +29,18 @@ for `/solution-architect` before it.
   criteria. Each criterion is a single thing a person could watch happen and say yes or no to.
   Cover the cases that break things: nothing to show, too much, a mistake by the person, no
   connection, the same action twice.
-- **Task**: one piece of a story somebody must do, with who does it: an agent through LangGraph,
-  or the user (anything in a console, an account, a store, or with a credential).
+- **Task**: one piece of a story that must be done (for example an architecture design, a setup step in a console, an account, a store, or a repository configuration).
 
 ## Issues
 
 - One issue per epic, story and task, in the repository of the project it changes. An epic that
-  spans projects lives in the repository of the app.
+  spans projects lives in the repository of the app. Never create an issue for an internal agent file (such as a project sheet in `ibid-agents`).
 - GitHub issue types: epic and user story are `Feature`, task is `Task`. Labels: `epic`,
   `user-story`, `task`, and `size:S`, `size:M` or `size:L`. Stories are sub-issues of their epic,
   tasks are sub-issues of their story.
-- Issues are written in the user's language. The acceptance criteria are written as they will
+- Issues and all texts in `ibid-workspace` are written exclusively in English. The acceptance criteria are written as they will
   be tested.
+- Never mention agents, skills (such as `/solution-architect`), LangGraph, or why a person rather than an agent must do a task (such as "Only you can do this because it touches git/credentials") anywhere in an issue title, body or comment. Describe only the work itself.
 - The backlog lives in the LangGraph database, never in a file. The draft is handed back to
   LangGraph, which keeps it; `read_backlog` reads it back. Until the user approves, the text lives
   only there. Once an issue is on GitHub, GitHub is the truth and the backlog keeps its link.

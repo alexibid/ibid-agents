@@ -54,7 +54,8 @@ The `app-` prefix is banned.
 - Files stay under 300 lines. Functions do one thing and take at most three arguments.
 - Styles are SCSS in ITCSS layers with BEM class names, built from tokens and mixins.
 - Source never names a design tool.
-- Code, documentation and rules are in English. Product copy lives in translations.
+- Code, documentation, rules and GitHub issues are in English. Product copy lives in translations.
+- Nothing in `ibid-workspace` or its issues ever mentions agents, skills, LangGraph or the agent workflow.
 
 ## Talking to the user
 

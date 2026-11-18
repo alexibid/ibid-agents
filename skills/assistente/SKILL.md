@@ -62,8 +62,9 @@ Nothing is built until the user approves a story.
    - Its tasks, and who does each one: an agent through LangGraph, or the user.
 7. Change it until the user is satisfied. Wait for an explicit go-ahead. A question or a
    comment is not a go-ahead.
-8. Once approved, `/project-manager` writes the epic, the stories and the tasks as GitHub issues,
-   after the user approves the exact text of every issue.
+8. Once approved, `/project-manager` writes the epic, the stories and the tasks as GitHub issues
+   in English (with no mention of agents, skills, LangGraph, or why the user vs. an agent does a
+   task), after the user approves the exact text of every issue.
 9. Build one story at a time, in the order agreed, taking its exact text from `read_backlog`. Each
    story goes through Part two on its own.
 

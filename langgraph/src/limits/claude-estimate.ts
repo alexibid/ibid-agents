@@ -100,6 +100,11 @@ const SINCE_LAST_READING = `
   left join prompts on prompts.tool = 'claude' and prompts.finished_at > reading.sampled_at
   group by reading.time_window, reading.resets_at, reading.used_percent`;
 
+const ACTIVE_LIMIT_HIT = `
+  select resets_at as "resetsOn" from limit_hits
+  where tool = 'claude' and time_window = '5h' and resets_at > now() and hit_at > now() - interval '5 hours'
+  order by hit_at desc limit 1`;
+
 const MEASURED_RECENTLY = `
   select 1 from limit_samples
   where tool = 'claude' and pool <> $1 and sampled_at > now() - interval '10 minutes' limit 1`;
@@ -130,11 +135,30 @@ export class ClaudeEstimate {
   }
 
   async #fiveHours(): Promise<LimitSample[]> {
+    const activeHit = await this.#activeLimitHit();
+    if (activeHit !== undefined) {
+      return [activeHit];
+    }
     const spending: Spending[] = (await this.database.rows<SpendingRow>(SINCE_FIVE_HOUR_RESET)).map((row) => ({
       askedOn: row.askedOn,
       percent: row.percent,
     }));
     return currentWindowOf(spending, new Date());
+  }
+
+  async #activeLimitHit(): Promise<LimitSample | undefined> {
+    const rows = await this.database.rows<{ readonly resetsOn: Date }>(ACTIVE_LIMIT_HIT);
+    const hit = rows[0];
+    if (hit === undefined) {
+      return undefined;
+    }
+    return {
+      tool: 'claude',
+      pool: ESTIMATE_POOL,
+      window: '5h',
+      usedPercent: 100,
+      resetsOn: hit.resetsOn.toISOString(),
+    };
   }
 
   async #week(): Promise<LimitSample[]> {
