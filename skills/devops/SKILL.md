@@ -44,6 +44,11 @@ runner `docker-runner`, built from `tools/ci/runner/` (Docker, `compose.yaml`).
 - Read the logs to the first real error, not the last line.
 - Reproduce locally whenever the failing step can run on this machine, always through Nx or the
   same `node tools/ci/<script>.mjs` the workflow calls.
+- A pass in the working copy proves nothing about CI. Before calling a fix verified, run the
+  same steps in a clean clone with its submodules (`git clone --recurse-submodules` into a temp
+  folder, then `npm ci`), so no ignored file, local database, installed app or cache helps.
+  Whatever the runner lacks (Linux, no `/Applications`, no Blender, no local data) fails there
+  too; say so instead of reporting green.
 - Fix the cause, not the symptom. Never raise a timeout, skip a step, add `continue-on-error`,
   loosen `tools/ci/lint-budget.json` or `audit-allowlist.json`, or delete a test to make a run
   pass, unless the user agrees to that exact trade.
