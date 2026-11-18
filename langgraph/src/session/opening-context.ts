@@ -1,7 +1,9 @@
 export interface OpeningSession {
-  readonly rawPayload: string;
+  readonly sessionDirectory: string;
   readonly workspaceRoot: string;
+  readonly agentsRoot: string;
   readonly coreRules: string;
+  readonly pullNotice: string;
 }
 
 const NOTHING_TO_ADD = '';
@@ -15,17 +17,21 @@ const OPENING = [
   'nothing in the workspace is answered directly, still in the plain language the skill asks for.',
 ].join('\n');
 
-export function openingContext({ rawPayload, workspaceRoot, coreRules }: OpeningSession): string {
-  const sessionDirectory = sessionDirectoryOf(rawPayload);
-  if (!isInside(sessionDirectory, workspaceRoot)) {
+export function openingContext(session: OpeningSession): string {
+  const sections = sectionsFor(session).filter((section) => section !== '');
+  if (sections.length === 0) {
     return NOTHING_TO_ADD;
   }
   return JSON.stringify({
-    hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: `${OPENING}\n\n${coreRules}` },
+    hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: sections.join('\n\n') },
   });
 }
 
-function sessionDirectoryOf(rawPayload: string): string {
+export function watchesDirectory(session: Pick<OpeningSession, 'sessionDirectory' | 'workspaceRoot' | 'agentsRoot'>): boolean {
+  return isInside(session.sessionDirectory, session.workspaceRoot) || isInside(session.sessionDirectory, session.agentsRoot);
+}
+
+export function sessionDirectoryOf(rawPayload: string): string {
   try {
     const payload: unknown = JSON.parse(rawPayload);
     return hasDirectory(payload) ? payload.cwd : '';
@@ -34,10 +40,20 @@ function sessionDirectoryOf(rawPayload: string): string {
   }
 }
 
+function sectionsFor(session: OpeningSession): readonly string[] {
+  if (isInside(session.sessionDirectory, session.workspaceRoot)) {
+    return [session.pullNotice, OPENING, session.coreRules];
+  }
+  if (isInside(session.sessionDirectory, session.agentsRoot)) {
+    return [session.pullNotice];
+  }
+  return [];
+}
+
 function hasDirectory(payload: unknown): payload is { readonly cwd: string } {
   return typeof payload === 'object' && payload !== null && 'cwd' in payload && typeof payload.cwd === 'string';
 }
 
-function isInside(directory: string, workspaceRoot: string): boolean {
-  return workspaceRoot !== '' && (directory === workspaceRoot || directory.startsWith(`${workspaceRoot}/`));
+function isInside(directory: string, root: string): boolean {
+  return root !== '' && (directory === root || directory.startsWith(`${root}/`));
 }

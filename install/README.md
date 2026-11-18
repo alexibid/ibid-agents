@@ -47,7 +47,10 @@ A payload the guard cannot read is allowed, so a fault in the guard never locks 
 ## Clearing the workspace
 
 `clear-workspace.mjs` moves every agent file of the workspace to the Trash: the rule files at
-the root and in each project, `.agents/`, `.gemini/` and `.claude/settings.json`. It refuses to
+the root and in each project, `.agents/`, `.gemini/` and `.claude/settings.json`, plus what
+`nx configure-ai-agents` writes for other tools: `.opencode/`, `opencode.json` and
+`.github/agents/`, `.github/prompts/` and `.github/skills/`. Claude gets those Nx skills from the
+official Nx plugin instead. It refuses to
 run unless each of them already has a copy under `legacy/ibid-workspace/`.
 
 It keeps three things that only work from inside the workspace and hold no rule:

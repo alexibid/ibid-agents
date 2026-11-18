@@ -42,6 +42,8 @@ on the first try. The verifier never commits.
 
 - The subject says what changed for the product, in the imperative, in English.
 - No agent name, no co-author line, no attribution of any kind.
+- Before any line is handed back, DevOps validates the workspace: Dependabot and the tests. The
+  lines are shown only when DevOps reports green; otherwise the failure goes back instead. (W64)
 
 ## Tools
 

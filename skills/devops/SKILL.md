@@ -55,6 +55,22 @@ runner `docker-runner`, built from `tools/ci/runner/` (Docker, `compose.yaml`).
 - After the fix, prevent the same failure: a check in `tools/ci` that fails early with a clear
   message is better than a note.
 
+## Before any commit to `main` (W64)
+
+Every agent runs DevOps before it shows a commit line for ibid-workspace, the root or a
+submodule. DevOps reports green only when all of these pass, and names what failed otherwise:
+
+- **Dependabot**: `.github/dependabot.yml` is valid, every `directory` it names exists, the latest
+  Dependabot Updates run on GitHub passed, and no open Dependabot alert is high or critical
+  (`gh api repos/alexibid/ibid-workspace/dependabot/alerts`).
+- **The dependency refresh**: the latest `dependencies.yml` run passed, when the workflow exists.
+- **The tests of the pending change**: `npm run check:affected` in the working copy, then the
+  same check in a clean clone with its submodules (`npm run check:clean`).
+- **CI on `main`**: the latest runs of every workflow are green, or their failure is already
+  diagnosed.
+
+Only after that green does the agent show the commit lines.
+
 ## What it never does
 
 - Change git state. The user commits and pushes; DevOps hands back the single commit line.

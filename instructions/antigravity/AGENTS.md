@@ -1,5 +1,8 @@
 # Custom Skills Integration Rule
 
+## 0. Pending Pulls Before Anything Else
+- At the start of every conversation, before reading, planning or changing code, run `git fetch` and check whether ibid-workspace (the root and every submodule) or ibid-agents is behind its remote (`git rev-list --count HEAD..@{upstream}`). If any is, tell the user which ones, ask them to pull, and wait for their confirmation.
+
 ## 1. Directory of Global Skills
 All custom skills are defined natively in ~/.gemini/config/skills/ where each skill is a folder containing a SKILL.md file with YAML frontmatter.
 
@@ -20,6 +23,7 @@ Both the Antigravity desktop/web chat and the CLI `agy` natively load skills fro
 ## 5. Git & Submodule Handover Protocol
 - **User Commits via GitHub Desktop**: The agent is strictly read-only on git (`git status`, `git diff`, `git log`).
 - **Multi-Submodule Commits**: When changes touch multiple git submodules or projects (e.g. apps, shared libs, root monorepo), whenever the user requests commit messages or suggestions, the agent MUST ALWAYS provide the corresponding Conventional Commit for **every** impacted submodule/repository, as well as the root workspace pointer bump commit when applicable.
+- **DevOps Before Any ibid-workspace Commit**: Before presenting any commit text for the ibid-workspace `main` (root or submodules), the agent MUST run `/devops` to validate Dependabot and the tests. The commit text is shown only after DevOps reports green; on a failure, show what failed and give no commit text.
 
 ## 6. Verification & Test Invariant
 - **Do Not Run `check:fast` Unprompted**: The agent is strictly forbidden from running `npm run check:fast` unless explicitly told to do so by the user. For build/compilation verification, use `npm run check:build` or `npm run build`.

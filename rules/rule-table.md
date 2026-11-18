@@ -58,6 +58,8 @@ way it will be guaranteed.
 | W38 | One commit line per affected repository, plus the root pointer bump | process | no | Final verifier reads `git status` in every submodule |
 | W39 | The commit type is chosen for its version effect | judgement | no | Reviewer |
 | W40 | Agent files are never committed | machine | yes | `.gitignore`, plus a `git ls-files` check |
+| W64 | No commit line for ibid-workspace is shown before DevOps validates Dependabot and the tests | process | no | Final verifier and every agent run `/devops` first and show the lines only on green |
+| W65 | Every agent asks for the pending pulls before it starts | machine | yes | Claude's SessionStart hook lists the repositories behind their remote; the other tools read the rule in their instructions |
 | W41 | No inline heredocs or one-liners in the terminal | guard | no | Deny pattern |
 | W42 | Start from `git diff` and `git status` | process | no | LangGraph supplies the diff with each step |
 | W43 | The build passes before work is declared finished | process | no | LangGraph runs the build |

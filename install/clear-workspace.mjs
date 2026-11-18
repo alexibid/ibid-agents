@@ -4,7 +4,19 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
 const PROJECT_FOLDERS = ['apps', 'libs'];
-const AGENT_ENTRIES = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '.agents', '.gemini', '.claude'];
+const AGENT_ENTRIES = [
+  'AGENTS.md',
+  'CLAUDE.md',
+  'GEMINI.md',
+  '.agents',
+  '.gemini',
+  '.claude',
+  '.opencode',
+  'opencode.json',
+  '.github/agents',
+  '.github/prompts',
+  '.github/skills',
+];
 
 class UsageError extends Error {}
 

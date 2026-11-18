@@ -4,6 +4,13 @@ These rules are always on, in every tool. Everything else reaches you with the s
 given. If a rule you expect is missing here, ask LangGraph for the step; do not work from
 memory.
 
+## Before anything else
+
+- At the start of every conversation, before reading, planning or changing code, run
+  `git fetch` and check whether ibid-workspace (the root and every submodule) or ibid-agents is
+  behind its remote (`git rev-list --count HEAD..@{upstream}`). If any is, tell the user which
+  ones, ask them to pull, and wait for their confirmation.
+
 ## How work happens
 
 - Work starts from a user story with acceptance criteria, prepared by the assistant.
