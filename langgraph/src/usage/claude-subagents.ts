@@ -1,7 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { toolCallsOfSubagent } from './claude-transcript.js';
-import type { PromptRecord } from './prompt-record.js';
+import { tokensOfSubagent, toolCallsOfSubagent } from './claude-transcript.js';
+import { sumOf, type PromptRecord, type TokenCount } from './prompt-record.js';
 
 export interface SubagentTranscript {
   readonly calledBy: string;
@@ -13,18 +13,24 @@ const SUBAGENTS_FOLDER = 'subagents';
 const META_SUFFIX = '.meta.json';
 const TRANSCRIPT_SUFFIX = '.jsonl';
 
-export function withSubagentCalls(prompts: readonly PromptRecord[], subagents: readonly SubagentTranscript[]): PromptRecord[] {
+export function withSubagentWork(prompts: readonly PromptRecord[], subagents: readonly SubagentTranscript[]): PromptRecord[] {
   const callsByPrompt = new Map(prompts.map((prompt) => [prompt.id, [...prompt.agentCalls]]));
+  const tokensByPrompt = new Map<string, TokenCount[]>(prompts.map((prompt) => [prompt.id, [prompt.tokens]]));
   const promptOfCall = new Map(prompts.flatMap((prompt) => prompt.agentCalls.map((call) => [call.id, prompt.id] as const)));
   for (const subagent of [...subagents].sort((first, second) => first.depth - second.depth)) {
     const promptId = promptOfCall.get(subagent.calledBy);
     if (promptId !== undefined) {
       const calls = toolCallsOfSubagent(subagent.lines, subagent.calledBy);
       callsByPrompt.get(promptId)?.push(...calls);
+      tokensByPrompt.get(promptId)?.push(tokensOfSubagent(subagent.lines));
       calls.forEach((call) => promptOfCall.set(call.id, promptId));
     }
   }
-  return prompts.map((prompt) => ({ ...prompt, agentCalls: callsByPrompt.get(prompt.id) ?? prompt.agentCalls }));
+  return prompts.map((prompt) => ({
+    ...prompt,
+    agentCalls: callsByPrompt.get(prompt.id) ?? prompt.agentCalls,
+    tokens: sumOf(tokensByPrompt.get(prompt.id) ?? [prompt.tokens]),
+  }));
 }
 
 export async function subagentTranscriptsBeside(transcriptPath: string): Promise<SubagentTranscript[]> {

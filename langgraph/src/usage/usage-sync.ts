@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { promptsOfAntigravityTranscript } from './antigravity-transcript.js';
-import { subagentTranscriptsBeside, withSubagentCalls } from './claude-subagents.js';
+import { subagentTranscriptsBeside, withSubagentWork } from './claude-subagents.js';
 import { limitHitsOfClaudeTranscript, promptsOfClaudeTranscript } from './claude-transcript.js';
 import { transcriptsChangedWithin, type TranscriptFile } from './transcript-files.js';
 import type { TranscriptContent, UsageLedger } from './usage-ledger.js';
@@ -24,6 +24,6 @@ async function contentOf(file: TranscriptFile): Promise<TranscriptContent> {
   if (file.tool !== 'claude') {
     return { prompts: promptsOfAntigravityTranscript({ conversationId: file.conversationId, lines }), limitHits: [] };
   }
-  const prompts = withSubagentCalls(promptsOfClaudeTranscript(lines), await subagentTranscriptsBeside(file.path));
+  const prompts = withSubagentWork(promptsOfClaudeTranscript(lines), await subagentTranscriptsBeside(file.path));
   return { prompts, limitHits: limitHitsOfClaudeTranscript(lines) };
 }

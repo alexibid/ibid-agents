@@ -75,3 +75,13 @@ describe('stepInstruction', () => {
     expect(instruction.contracts).toEqual(['/repo/agents/developer.md']);
   });
 });
+
+describe('the model named in an instruction', () => {
+  it('should name the strongest model of each client for the plan', () => {
+    expect(planInstruction(state({})).models).toEqual({ claude: 'opus', antigravity: 'pro' });
+  });
+
+  it('should name the lighter model of each client for a review', () => {
+    expect(stepInstruction('review', state({ queue: ['review'] })).models).toEqual({ claude: 'sonnet', antigravity: 'flash' });
+  });
+});

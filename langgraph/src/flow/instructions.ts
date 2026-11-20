@@ -2,6 +2,7 @@ import { basename, join } from 'node:path';
 import type { Story } from '../domain/plan.js';
 import { agentsJoining, GENERIC_SPECIALIST, type TeamStep } from '../domain/project-team.js';
 import { conditionsUsedBy, isOutsideWorkspace, type ProjectSheet } from '../domain/sheet.js';
+import { modelsFor, type StepModels } from '../domain/step-models.js';
 import { ownerOf, type StepName } from '../domain/steps.js';
 import type { HistoryEntry, FlowStateValue } from './state.js';
 
@@ -9,6 +10,7 @@ export interface Instruction {
   readonly waitingFor: 'plan' | 'step';
   readonly step: StepName | 'plan';
   readonly doneBy: string;
+  readonly models: StepModels;
   readonly task: string;
   readonly handBack: string;
   readonly contracts: readonly string[];
@@ -71,6 +73,7 @@ export function planInstruction(state: FlowStateValue): Instruction {
     waitingFor: 'plan',
     step: 'plan',
     doneBy: specialistOf(state.sheet),
+    models: modelsFor('plan'),
     task: PLAN_TASK,
     handBack: planHandBack(state.sheet),
     contracts: [
@@ -98,6 +101,7 @@ export function stepInstruction(step: StepName, state: FlowStateValue): Instruct
     waitingFor: 'step',
     step,
     doneBy: ownerWithProjectAgents(step, state),
+    models: modelsFor(step),
     task: TASKS[step] ?? '',
     handBack: withFollowUps(HAND_BACK[step] ?? ''),
     contracts: [...contractPaths(contractsOf(step, state), state), ...joiningContracts(step, state)],

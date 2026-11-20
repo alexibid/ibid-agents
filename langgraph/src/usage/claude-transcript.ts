@@ -81,6 +81,15 @@ export function toolCallsOfSubagent(lines: readonly string[], calledBy: string):
   return [...calls.values()];
 }
 
+export function tokensOfSubagent(lines: readonly string[]): TokenCount {
+  const tokensByMessage = new Map<string, TokenCount>();
+  for (const line of parsedLines(lines).filter((entry) => entry['type'] === 'assistant')) {
+    const message = objectIn(line, 'message');
+    tokensByMessage.set(textIn(message, 'id'), tokensOf(objectIn(message, 'usage')));
+  }
+  return sumOf([...tokensByMessage.values()]);
+}
+
 function onceEach(lines: readonly JsonObject[]): JsonObject[] {
   const seen = new Set<string>();
   return lines.filter((line) => {

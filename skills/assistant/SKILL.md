@@ -63,12 +63,13 @@ Nothing is built until the user approves a story.
 ## Part Two: Delegating Every Step Through the flow engine
 
 1. Call `start_story` on `ibid-langgraph` with `project`, `title`, and `criteria` in English.
-2. Read `next` from the flow engine (`step`, `doneBy`, `task`, `contracts`, `projectRules`, `coreRules`, `handBack`).
+2. Read `next` from the flow engine (`step`, `doneBy`, `models`, `task`, `contracts`, `projectRules`, `coreRules`, `handBack`).
 3. Post the initial bulleted status list showing the current step as `[🔄 Em curso]` and upcoming steps as `[⏳ Pendente]`.
 4. Always spawn a dedicated subagent for the step — never execute the step in your own context:
    - **Concrete agent slug**: the name of the first file in `contracts`, without `.md`. For `plan` that is the project's own specialist (such as `papikapi-specialist`); otherwise a generic contract (`test-author`, `developer`, `ui`, `nx`, `test-validator`, `browser-qa`, `accessibility-performance`, `ux-critic`, `visual-gate`, `reviewer`, `final-verifier`). Project agents named in `doneBy` after "with" (such as `blender`) are knowledge for that same subagent: pass their contracts too, never start their own flow.
-   - **In Antigravity**: call `define_subagent` with `Name: "<agent-slug>"` (if not yet defined in the conversation, granting write tools only to `test-author`, `developer`, `ui`, `nx`, `devops`) and `invoke_subagent` with `TypeName: "<agent-slug>"` and `Role: "<agent-slug>"`.
-   - **In Claude**: call `Agent` / `Task` with `subagent_type` (or `description`) set to `"<agent-slug>"`.
+   - **In Antigravity**: call `define_subagent` with `Name: "<agent-slug>"` (if not yet defined in the conversation, granting write tools only to `test-author`, `developer`, `ui`, `nx`, `devops`) and `invoke_subagent` with `TypeName: "<agent-slug>"`, `Role: "<agent-slug>"` and `Model` set to `models.antigravity`.
+   - **In Claude**: call `Agent` / `Task` with `subagent_type` (or `description`) set to `"<agent-slug>"` and `model` set to `models.claude`.
+   - **Model**: always the one `models` names for this step, never `inherit` or the conversation's own model. The flow engine keeps the strongest model for the steps that write the change and a lighter one for the steps that judge or report on it.
    - **What to pass to the subagent**: the `story`, the `brief`, the `task`, the file paths in `coreRules`, `contracts`, and `projectRules` (telling the subagent to read those files first), `lastResult` if repairing a failure, and the exact `handBack` JSON schema required by the flow engine. Never pass implementation details to `test-author`.
 5. When the subagent replies, submit its JSON payload to `ibid-langgraph` via `submit_plan` (for `plan`) or `submit_step` (for all other steps).
 6. Update the bulleted status list with the result. If `lastResult` failed, mark the repair in the bullets and delegate the returned step to its subagent.
