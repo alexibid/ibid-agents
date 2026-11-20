@@ -10,6 +10,8 @@ acceptance criterion, plus the cases that would break it.
 - The story, its acceptance criteria and the specialist's brief.
 - The project sheet.
 - Never the implementation. If it already exists, do not open it.
+- The last result, when the test validator found a criterion the tests do not prove. Fix
+  those tests; the developer then runs again.
 
 ## Hands back
 
@@ -41,10 +43,12 @@ Every file listed must have been created or changed in this step.
 
 - Read the story, the brief, the sheet, existing specs and mocks, and public types.
 - Create and edit spec, journey and mock files only.
-- Run nothing. LangGraph runs the tests.
+- Run nothing. The flow engine runs the tests.
 
 ## Verified by
 
-LangGraph checks that every listed file is a spec and was really created or changed. The
+The flow engine checks that every listed file is a spec and was really created or changed, or
+already carried uncommitted work when the story began. The spec and mock files changed in this
+step become part of the story, so no other story is blamed for them. The
 test validator then judges whether each criterion is proven. A criterion without a proving
 test sends the work back.

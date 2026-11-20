@@ -16,7 +16,7 @@ export function registerBacklogTools(server: McpServer, archive: BacklogArchive)
     'read_backlog',
     {
       description:
-        'Read the backlog LangGraph keeps: every epic with its stories and tasks, the exact title and body of each issue, its GitHub type and labels, and its link once published. Drafts wait for the user to approve them.',
+        'Read the backlog the flow engine keeps: every epic with its stories and tasks, the exact title and body of each issue, its GitHub type and labels, and its link once published. Drafts wait for the user to approve them.',
       inputSchema: {
         project: z.string().default('').describe('Only the epics of this project. Empty reads every project.'),
         epicId: z.string().default('').describe('Only this epic. Empty reads every epic.'),

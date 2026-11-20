@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { conditionsOfFiles, judgePlan, stepQueue, type Plan } from './plan.js';
+import { judgePlan, stepQueue, type Plan } from './plan.js';
 import type { ProjectSheet } from './sheet.js';
 
 const sheet: ProjectSheet = {
@@ -7,6 +7,10 @@ const sheet: ProjectSheet = {
   path: 'apps/demo',
   commitScope: 'demo',
   sheetFile: 'demo.md',
+  reuses: ['ibid-ui'],
+  specialist: 'agents/specialist.md',
+  agents: [],
+  triggers: [],
   mandatorySteps: [
     { step: 'review', when: 'always' },
     { step: 'implement', when: 'always' },
@@ -23,18 +27,6 @@ const plan = (overrides: Partial<Plan>): Plan => ({
   reusedParts: [],
   brief: '',
   ...overrides,
-});
-
-describe('conditionsOfFiles', () => {
-  it('should always include the always condition', () => {
-    expect(conditionsOfFiles(['apps/demo/src/total.ts'])).toEqual(['always']);
-  });
-
-  it('should detect interface, figure and workflow files', () => {
-    const conditions = conditionsOfFiles(['apps/demo/src/a.html', 'apps/demo/figures/cat.glb', '.github/workflows/ci.yml']);
-
-    expect(conditions).toEqual(['always', 'ui', 'figures', 'workflows']);
-  });
 });
 
 describe('stepQueue', () => {
@@ -65,6 +57,15 @@ describe('judgePlan', () => {
     const verdict = judgePlan(plan({ files: ['apps/demo/src/a.html'], conditions: ['ui'] }), sheet);
 
     expect(verdict.problems).toHaveLength(2);
+  });
+
+  it('should not ask for a reuse search when the sheet names no library under Reuses', () => {
+    const verdict = judgePlan(plan({ files: ['apps/demo/src/a.html'], conditions: ['ui'], journey: '01-total' }), {
+      ...sheet,
+      reuses: [],
+    });
+
+    expect(verdict.accepted).toBe(true);
   });
 
   it('should accept an interface plan with a journey and a reuse search', () => {

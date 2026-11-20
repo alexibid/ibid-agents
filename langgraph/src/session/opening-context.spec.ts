@@ -5,9 +5,10 @@ const workspaceRoot = '/work/ibid-workspace';
 const agentsRoot = '/work/ibid-agents';
 const coreRules = '# core rules';
 const pullNotice = 'PENDING PULLS';
+const activeHandoff = 'ACTIVE HANDOFF';
 
-const opening = (sessionDirectory: string, notice = '') =>
-  openingContext({ sessionDirectory, workspaceRoot, agentsRoot, coreRules, pullNotice: notice });
+const opening = (sessionDirectory: string, notice = '', handoffNotice = '') =>
+  openingContext({ sessionDirectory, workspaceRoot, agentsRoot, coreRules, pullNotice: notice, handoffNotice });
 
 const contextOf = (output: string): string => JSON.parse(output).hookSpecificOutput.additionalContext;
 
@@ -25,6 +26,11 @@ describe('openingContext', () => {
 
   it('should put the pending pulls before everything else in the workspace', () => {
     expect(contextOf(opening(workspaceRoot, pullNotice)).startsWith(pullNotice)).toBe(true);
+  });
+
+  it('should include the active handoff notice in the workspace and agents repository', () => {
+    expect(contextOf(opening(workspaceRoot, '', activeHandoff))).toContain(activeHandoff);
+    expect(contextOf(opening(agentsRoot, '', activeHandoff))).toBe(activeHandoff);
   });
 
   it('should add only the pending pulls to a conversation opened in the agents repository', () => {

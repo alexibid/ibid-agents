@@ -7,6 +7,9 @@ export interface PromptSummary {
   readonly tool: Tool;
   readonly model: string;
   readonly workspace: string;
+  readonly conversationId?: string;
+  readonly threadId?: string;
+  readonly threadTitle?: string;
   readonly text: string;
   readonly askedOn: string;
   readonly finishedOn: string;
@@ -30,7 +33,10 @@ export interface AgentCall {
   readonly response: string;
   readonly failed: boolean;
   readonly calledOn: string;
+  readonly calledBy: string;
 }
+
+export const CALLED_BY_ASSISTANT = '';
 
 export interface PromptDetail extends Omit<PromptSummary, 'agents' | 'toolsUsed'> {
   readonly calls: readonly AgentCall[];

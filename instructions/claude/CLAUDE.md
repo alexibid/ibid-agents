@@ -117,6 +117,16 @@ No início de cada conversa, antes de ler, planear ou alterar código, faz `git 
 
 ---
 
+## 🤝 Passagem de testemunho (Claude ↔ Antigravity)
+
+O `ibid-langgraph` é o motor partilhado entre Claude e Antigravity:
+
+- **Retomar**: se o utilizador disser para continuar/retomar ou houver um aviso de handoff ativo no início da sessão, chama `resume_handoff` no `ibid-langgraph` antes de perguntar contexto.
+- **Passar o testemunho**: quando o utilizador pedir para guardar o ponto, mudar para o Antigravity, ou ao atingir um marco a meio de um trabalho sem story fechada, chama `save_handoff` (`client: "claude"`) com resumo, decisões, próximo passo, perguntas abertas e eventuais `activeStoryId` / `activeRunId` / `activeCoachId`.
+- **Fechar**: quando o tema ficar concluído, chama `close_handoff` para limpar a fila de retoma.
+
+---
+
 ## 📝 Texto de commit (todos os projetos, todos os agentes: Claude, Gemini e outros)
 
 Regra do utilizador, igual em qualquer projeto. O agente nunca faz `git add/commit/push`; só dá o texto, e só quando pedido.

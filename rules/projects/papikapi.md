@@ -8,6 +8,8 @@ Papercraft origami progression for parents and children. App-first and voice-fir
 | Nx project | `papikapi` |
 | Prefix | `papikapi-` |
 | Commit scope | `papikapi` |
+| Specialist | `agents/papikapi-specialist.md` |
+| Reuses | `ibid-ui` |
 | Delivery | iOS and Android through Capacitor, macOS through Tauri, with a browser fallback for development |
 
 ## Mandatory steps
@@ -17,6 +19,22 @@ Papercraft origami progression for parents and children. App-first and voice-fir
 | `plan`, `author-tests`, `implement`, `build`, `lint`, `rule-checks`, `unit-tests`, `validate-tests`, `review`, `final-verification` | `always` |
 | `journey`, `browser-qa`, `accessibility`, `performance`, `ux-critique` | `ui` |
 | `visual-gate` | `figures` |
+
+## Triggers
+
+| Condition | Files |
+| --- | --- |
+| `figures` | `.glb`, `.gltf`, `.blend`, `.obj`, `figures/` |
+
+A code model under `domain/models/` is not a figure and never triggers `figures`.
+
+## Agents
+
+Project agents the flow engine brings into a step, beside its generic agents.
+
+| Agent | Step | When | Contract |
+| --- | --- | --- | --- |
+| `blender` | `implement` | `figures` | `skills/blender/SKILL.md` |
 
 ## Checks
 

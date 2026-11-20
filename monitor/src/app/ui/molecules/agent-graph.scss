@@ -24,10 +24,6 @@
       cursor: default;
     }
 
-    &--langgraph {
-      --node-color: var(--color-langgraph);
-    }
-
     &--skill {
       --node-color: var(--color-antigravity);
     }
@@ -45,19 +41,10 @@
     }
   }
 
-  &__group {
-    --node-color: var(--color-accent);
-  }
-
   &__box {
     fill: var(--color-panel);
     stroke: var(--node-color);
     stroke-width: 2;
-  }
-
-  &__box--group {
-    fill: var(--color-surface);
-    stroke-width: 1.5;
   }
 
   &__node:focus-visible &__box,

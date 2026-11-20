@@ -54,6 +54,19 @@ describe('promptsOfClaudeTranscript', () => {
     expect(prompt?.tokens).toEqual({ input: 20, output: 40, cacheRead: 600, cacheWrite: 8 });
   });
 
+  it('should keep a line written twice in the transcript in its first prompt only', () => {
+    const repeated = JSON.stringify({ ...JSON.parse(answered('m1', [toolUse('t1', 'Bash', { command: 'ls' })], '2026-11-13T10:00:01.000Z')), uuid: 'line-1' });
+    const prompts = promptsOfClaudeTranscript([
+      asked('p1', 'first request', '2026-11-13T10:00:00.000Z'),
+      repeated,
+      asked('p2', 'second request', '2026-11-13T10:01:00.000Z'),
+      repeated,
+    ]);
+
+    expect(prompts.map((prompt) => prompt.agentCalls.map(({ id }) => id))).toEqual([['t1'], []]);
+    expect(prompts[1]?.tokens).toEqual({ input: 0, output: 0, cacheRead: 0, cacheWrite: 0 });
+  });
+
   it('should list the agents, skills, LangGraph calls and tools of a prompt with what came back', () => {
     const [prompt] = promptsOfClaudeTranscript([
       asked('p1', 'build it', '2026-11-13T10:00:00.000Z'),
@@ -71,7 +84,7 @@ describe('promptsOfClaudeTranscript', () => {
     ]);
 
     expect(prompt?.agentCalls).toEqual([
-      { id: 't1', kind: 'agent', agent: 'Explore', request: 'find the service', response: 'found it', failed: false, calledOn: '2026-11-13T10:00:01.000Z' },
+      { id: 't1', kind: 'agent', agent: 'Explore', request: 'find the service', response: 'found it', failed: false, calledOn: '2026-11-13T10:00:01.000Z', calledBy: '' },
       expect.objectContaining({ id: 't2', kind: 'langgraph', agent: 'LangGraph', response: 'unknown project', failed: true }),
       expect.objectContaining({ id: 't3', kind: 'skill', agent: 'assistant', request: 'go', response: '' }),
       expect.objectContaining({ id: 't4', kind: 'tool', agent: 'Bash' }),

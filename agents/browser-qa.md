@@ -45,5 +45,5 @@ agent exercises the product; it does not read the code to decide.
 
 ## Verified by
 
-LangGraph checks that every screenshot exists and takes the verdict. A failing verdict sends
+The flow engine checks that every screenshot exists and takes the verdict. A failing verdict sends
 the work back to the developer with the findings.

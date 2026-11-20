@@ -17,7 +17,10 @@ export interface AgentCall {
   readonly response: string;
   readonly failed: boolean;
   readonly calledOn: string;
+  readonly calledBy: string;
 }
+
+export const CALLED_BY_ASSISTANT = '';
 
 export interface PromptRecord {
   readonly id: string;

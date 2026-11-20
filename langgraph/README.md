@@ -3,7 +3,7 @@
 The program that owns the order of the work. It hands out one step at a time, verifies what
 comes back, runs its own checks, and only then gives the next step. It never writes code.
 
-Built with LangGraph. Claude and Antigravity reach it as an MCP server, so both follow the same
+The flow engine, implemented here with LangGraph. Claude and Antigravity reach it as an MCP server, so both follow the same
 steps and face the same checks.
 
 ## Tools it offers
@@ -20,8 +20,8 @@ steps and face the same checks.
 1. `start_story` records which files were already changed, so earlier work is never blamed on
    the story.
 2. The plan is accepted only when it names its files, declares what they trigger, names a
-   journey when one is mandatory, and lists the `ibid-ui` parts considered when it touches the
-   interface.
+   journey when one is mandatory, and lists the parts of the libraries under the sheet's `Reuses`
+   considered when it touches the interface.
 3. The mandatory steps of the project sheet that match the plan become the queue, in the order
    of `rules/steps.md`.
 4. A step done by an agent pauses the flow until its evidence arrives. A step done by the
@@ -90,7 +90,7 @@ The other `machine` rules of `rules/rule-table.md` are not implemented yet.
 | `domain/` | Steps, sheets and plans. No dependency on LangGraph or MCP |
 | `sheets/` | Reads a project sheet from its markdown tables |
 | `checks/` | Commands, changed files and rule checks |
-| `flow/` | The LangGraph graph, its state, the evidence judges and the instructions |
+| `flow/` | The flow graph, its state, the evidence judges and the instructions |
 | `story-flow.ts` | Starts stories and resumes them |
 | `server.ts` | The MCP server |
 | `studio.ts` | The graph as Studio loads it |

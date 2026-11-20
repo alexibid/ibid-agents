@@ -19,19 +19,21 @@ There is one specialist per project. What makes each one different is its projec
 ```json
 {
   "files": ["<workspace path>"],
-  "conditions": ["ui", "figures", "workflows"],
+  "conditions": ["<condition the sheet gives steps to>"],
   "journey": "<NN-feature, or empty>",
-  "reusedParts": ["<ibid-ui part>"],
+  "reusedParts": ["<part of a library under the sheet's Reuses>"],
   "brief": "<text>"
 }
 ```
 
-- `files`: every file to create or change, as a path from the workspace root. Spec files do
-  not need listing. A file left out cannot be changed later without a new plan.
-- `conditions`: `ui` when a template, style or component changes; `figures` when a figure,
-  model or the generation pipeline changes; `workflows` when `.github/` changes.
+- `files`: every file to create or change, as a path from the workspace root. Spec and mock
+  files (`.spec.ts`, `.mock.ts`, anything under `mocks/`) need no listing. A file left out cannot be changed later without a new plan.
+- `conditions`: only the conditions the sheet gives steps to under "Mandatory steps". `ui`
+  when a template, style or component changes; `workflows` when `.github/` changes; any other
+  condition when a file its sheet lists under "Triggers" changes.
 - `journey`: the journey that covers the story, when the sheet makes a journey mandatory.
-- `reusedParts`: the `ibid-ui` parts looked at before deciding to build anything.
+- `reusedParts`: the parts of the libraries under the sheet's `Reuses` looked at before
+  deciding to build anything. Empty when the sheet names none.
 - `brief`: see below.
 
 ## The brief
@@ -49,10 +51,10 @@ Written for agents that have not read the code. It states:
 
 - Read the project sheet first, then the code the story touches. Plan from what is there, not
   from what the sheet says should be there.
-- Look in `ibid-ui` before planning any interface element: use what exists, extend it second,
-  create it there third. (W10, W11)
-- A new or extended `ibid-ui` part is its own story in `ibid-ui`, done before the app story
-  that uses it. Say so instead of planning both at once.
+- When the sheet names `Reuses`, look there before planning any interface element: use what
+  exists, extend it second, create it there third. (W10, W11)
+- A new or extended part of a reused library is its own story in that library, done before the
+  app story that uses it. Say so instead of planning both at once.
 - Respect the dependency rule: an app imports libs, a lib never imports an app, and between
   libs only `utils`. (W01, W02)
 - Keep each planned file under 300 lines; plan a split when a change would cross it. (W13)
@@ -68,7 +70,7 @@ Written for agents that have not read the code. It states:
 
 ## Verified by
 
-LangGraph rejects a plan that names no file, omits a condition its files trigger, omits the
-journey when one is mandatory, or touches the interface without listing the `ibid-ui` parts
-considered. After `implement`, LangGraph compares the files that really changed with the
+The flow engine rejects a plan that names no file, omits a condition its files trigger, omits the
+journey when one is mandatory, or touches the interface without listing the reused parts
+considered when the sheet names `Reuses`. After `implement`, the flow engine compares the files that really changed with the
 plan: a change outside it fails the step.

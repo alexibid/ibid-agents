@@ -9,6 +9,8 @@ Storybook.
 | Nx project | `boilerplate` |
 | Prefix | `boilerplate-` |
 | Commit scope | `boilerplate` |
+| Specialist | `agents/boilerplate-specialist.md` |
+| Reuses | `ibid-ui` |
 
 ## Mandatory steps
 

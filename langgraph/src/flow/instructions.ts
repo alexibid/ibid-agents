@@ -1,5 +1,7 @@
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import type { Story } from '../domain/plan.js';
+import { agentsJoining, GENERIC_SPECIALIST, type TeamStep } from '../domain/project-team.js';
+import { conditionsUsedBy, isOutsideWorkspace, type ProjectSheet } from '../domain/sheet.js';
 import { ownerOf, type StepName } from '../domain/steps.js';
 import type { HistoryEntry, FlowStateValue } from './state.js';
 
@@ -41,6 +43,8 @@ const HAND_BACK: Readonly<Partial<Record<StepName, string>>> = {
   'final-verification': '{ "commitLines": [{ "repository": "<submodule path or .>", "line": "type(scope): subject" }] }',
 };
 
+const FOLLOW_UPS = '"followUps": ["<optional: work outside this story worth doing later>"]';
+
 const CONTRACTS: Readonly<Partial<Record<StepName, readonly string[]>>> = {
   'author-tests': ['test-author.md'],
   implement: ['developer.md'],
@@ -59,21 +63,33 @@ const WORKSPACE_FILE = /(?:^|\/)(?:nx\.json|project\.json|package\.json|tsconfig
 const SPECIALIST_CONTRACT = 'specialist.md';
 
 const PLAN_TASK =
-  'Read the story and the project sheet, then plan the change: every file to create or change, the conditions the change triggers, the journey that covers it, the ibid-ui parts considered for reuse, and a brief for the steps that follow.';
-
-const PLAN_HAND_BACK =
-  '{ "files": ["<workspace path>"], "conditions": ["ui" | "figures" | "workflows"], "journey": "<NN-feature or empty>", "reusedParts": ["<ibid-ui part>"], "brief": "<contracts, signatures, layers, edge cases>" }';
+  'Read the story and the project sheet, then plan the change: every file to create or change, the conditions the change triggers, the journey that covers it, the parts of the libraries the sheet names under "Reuses" considered for reuse, and a brief for the steps that follow.';
 
 export function planInstruction(state: FlowStateValue): Instruction {
   return {
     ...sharedFields(state),
     waitingFor: 'plan',
     step: 'plan',
-    doneBy: `${state.story.project} specialist`,
+    doneBy: specialistOf(state.sheet),
     task: PLAN_TASK,
-    handBack: PLAN_HAND_BACK,
-    contracts: contractPaths([SPECIALIST_CONTRACT, NX_CONTRACT], state),
+    handBack: planHandBack(state.sheet),
+    contracts: [
+      ...projectContracts([state.sheet.specialist], state),
+      ...contractPaths([SPECIALIST_CONTRACT, NX_CONTRACT], state),
+      ...joiningContracts('plan', state),
+    ],
   };
+}
+
+function specialistOf(sheet: ProjectSheet): string {
+  return sheet.specialist === GENERIC_SPECIALIST ? `${sheet.project} specialist` : basename(sheet.specialist, '.md');
+}
+
+function planHandBack(sheet: ProjectSheet): string {
+  const conditions = [...conditionsUsedBy(sheet)].filter((condition) => condition !== 'always');
+  const conditionList = conditions.length === 0 ? '' : conditions.map((condition) => `"${condition}"`).join(' | ');
+  const reusedPart = sheet.reuses.length === 0 ? '' : `"<${sheet.reuses.join(' or ')} part>"`;
+  return `{ "files": ["<workspace path>"], "conditions": [${conditionList}], "journey": "<NN-feature or empty>", "reusedParts": [${reusedPart}], "brief": "<contracts, signatures, layers, edge cases>", ${FOLLOW_UPS} }`;
 }
 
 export function stepInstruction(step: StepName, state: FlowStateValue): Instruction {
@@ -81,11 +97,30 @@ export function stepInstruction(step: StepName, state: FlowStateValue): Instruct
     ...sharedFields(state),
     waitingFor: 'step',
     step,
-    doneBy: ownerOf(step),
+    doneBy: ownerWithProjectAgents(step, state),
     task: TASKS[step] ?? '',
-    handBack: HAND_BACK[step] ?? '',
-    contracts: contractPaths(contractsOf(step, state), state),
+    handBack: withFollowUps(HAND_BACK[step] ?? ''),
+    contracts: [...contractPaths(contractsOf(step, state), state), ...joiningContracts(step, state)],
   };
+}
+
+function withFollowUps(handBack: string): string {
+  return handBack === '' ? '' : handBack.replace(/ }$/, `, ${FOLLOW_UPS} }`);
+}
+
+function ownerWithProjectAgents(step: StepName, state: FlowStateValue): string {
+  const agents = agentsJoining(step, state.plan.conditions, state.sheet.agents).map(({ agent }) => agent);
+  return agents.length === 0 ? ownerOf(step) : `${ownerOf(step)}, with ${agents.join(' and ')}`;
+}
+
+function joiningContracts(step: TeamStep, state: FlowStateValue): string[] {
+  const agents = agentsJoining(step, state.plan.conditions, state.sheet.agents);
+  return projectContracts(agents.map(({ contract }) => contract), state);
+}
+
+function projectContracts(paths: readonly string[], state: FlowStateValue): string[] {
+  const generic = join(state.contractsDirectory, SPECIALIST_CONTRACT);
+  return paths.map((path) => join(state.contractsDirectory, '..', path)).filter((path) => path !== generic);
 }
 
 function sharedFields(state: FlowStateValue) {
@@ -104,7 +139,7 @@ function contractsOf(step: StepName, state: FlowStateValue): readonly string[] {
     return contracts;
   }
   const touchesInterface = state.plan.conditions.includes('ui');
-  const touchesWorkspace = state.plan.files.some((file) => WORKSPACE_FILE.test(file));
+  const touchesWorkspace = state.plan.files.some((file) => !isOutsideWorkspace(file) && WORKSPACE_FILE.test(file));
   return [...contracts, ...(touchesInterface ? [UI_CONTRACT] : []), ...(touchesWorkspace ? [NX_CONTRACT] : [])];
 }
 
@@ -119,7 +154,7 @@ export interface StepDescription {
   readonly contractsWhenNeeded: readonly string[];
 }
 
-const RUN_BY_LANGGRAPH = 'LangGraph runs the command the project sheet names for this step and judges its result itself.';
+const RUN_BY_ENGINE = 'The flow engine runs the command the project sheet names for this step and judges its result itself.';
 
 export function describedStep(step: StepName | 'plan'): StepDescription {
   if (step === 'plan') {
@@ -127,7 +162,7 @@ export function describedStep(step: StepName | 'plan'): StepDescription {
   }
   return {
     doneBy: ownerOf(step),
-    task: TASKS[step] ?? RUN_BY_LANGGRAPH,
+    task: TASKS[step] ?? RUN_BY_ENGINE,
     contracts: CONTRACTS[step] ?? [],
     contractsWhenNeeded: step === 'implement' ? [UI_CONTRACT, NX_CONTRACT] : [],
   };

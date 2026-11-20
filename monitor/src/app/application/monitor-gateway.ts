@@ -2,6 +2,7 @@ import type { Signal } from '@angular/core';
 import type { Observable } from 'rxjs';
 import type { AgentRun, RosterEntry } from '../domain/agent-roster';
 import type { Epic } from '../domain/backlog';
+import type { EngineStatus } from '../domain/engine';
 import type { CaseReport } from '../domain/evals';
 import type { FlowMap, Story } from '../domain/flow-map';
 import type { PromptDetail, PromptSummary } from '../domain/prompt';
@@ -26,4 +27,6 @@ export abstract class MonitorGateway {
   abstract agentActivity(agent: string): Observable<AgentRun[]>;
   abstract removeSkill(name: string): Observable<unknown>;
   abstract evals(agent: string): Observable<CaseReport[]>;
+  abstract engine(): Observable<EngineStatus>;
+  abstract restartEngine(): Observable<EngineStatus>;
 }

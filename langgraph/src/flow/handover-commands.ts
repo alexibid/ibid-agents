@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import type { ChangedFile } from '../checks/workspace-changes.js';
+import { isOutsideWorkspace } from '../domain/sheet.js';
 
 export interface CommitLine {
   readonly repository: string;
@@ -14,7 +15,9 @@ export function handoverCommands(
   workspaceRoot: string,
 ): string[] {
   const ordered = [...lines].sort(submodulesFirst);
-  const submodules = ordered.map(({ repository }) => repository).filter((repository) => repository !== ROOT_REPOSITORY);
+  const submodules = ordered
+    .map(({ repository }) => repository)
+    .filter((repository) => repository !== ROOT_REPOSITORY && !isOutsideWorkspace(repository));
   return [
     ...ordered.map((commitLine) => commandFor(commitLine, changedFiles, submodules, workspaceRoot)),
     ...sharedFileWarnings(changedFiles),
@@ -37,7 +40,15 @@ function commandFor(
     .map(({ file }) => pathInside(repository, file));
   const paths = repository === ROOT_REPOSITORY ? [...own, ...submodules] : own;
   const directory = repository === ROOT_REPOSITORY ? workspaceRoot : join(workspaceRoot, repository);
+  const commit = `cd ${quoted(directory)} && git commit -m ${quoted(line)}`;
+  if (paths.length === 0) {
+    return `${nothingToStage(repository)} ${commit}`;
+  }
   return `cd ${quoted(directory)} && git add -- ${paths.map(quoted).join(' ')} && git commit -m ${quoted(line)}`;
+}
+
+function nothingToStage(repository: string): string {
+  return `Nothing in ${repository} can be staged for you: every file this story changed there already had uncommitted work. Stage the story's part by hand, then run:`;
 }
 
 function sharedFileWarnings(changedFiles: readonly ChangedFile[]): string[] {

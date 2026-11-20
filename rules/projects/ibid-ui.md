@@ -8,6 +8,7 @@ The shared design system. Every app consumes it.
 | Nx project | `ibid-ui` |
 | Prefix | `ibid-` for components, directives and pipes |
 | Commit scope | `ibid-ui` |
+| Reuses | `ibid-ui` |
 | May import from | `libs/utils` and Angular packages |
 
 ## Mandatory steps

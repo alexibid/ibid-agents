@@ -3,6 +3,7 @@ import type { BacklogArchive } from '../backlog/backlog-archive.js';
 import { UnknownNoteError, type NoteArchive } from '../memory/note-archive.js';
 import { DatabaseNotInstalledError, DatabaseUnavailableError } from '../store/database-settings.js';
 import type { ChangeFeed } from './change-feed.js';
+import type { EngineServers } from './engine-servers.js';
 import { evalsReportOf } from './evals-report.js';
 import { flowMapOf } from './flow-map.js';
 import { moveSkillToTrash, SkillNotRemovableError } from './skill-removal.js';
@@ -16,6 +17,7 @@ export interface MonitorParts {
   readonly backlog: BacklogArchive;
   readonly feed: ChangeFeed;
   readonly refreshLimits: () => Promise<void>;
+  readonly engine: EngineServers;
 }
 
 type Answer = (url: URL) => Promise<unknown>;
@@ -31,6 +33,7 @@ const LARGEST_PAGE = 200;
 const FORGET_PLAN = '/api/plans/forget';
 const REMOVE_SKILL = '/api/skills/remove';
 const REFRESH_LIMITS = '/api/limits/refresh';
+const RESTART_ENGINE = '/api/engine/restart';
 const NOT_ALLOWED = 405;
 const FORBIDDEN = 403;
 const DEFAULT_PAGE = 50;
@@ -38,7 +41,7 @@ const DEFAULT_DAYS = 14;
 const NOT_FOUND = 404;
 const UNAVAILABLE = 503;
 
-export function createMonitorApi({ database, queries, archive, backlog, feed, refreshLimits }: MonitorParts): Server {
+export function createMonitorApi({ database, queries, archive, backlog, feed, refreshLimits, engine }: MonitorParts): Server {
   const answers: Readonly<Record<string, Answer>> = {
     '/api/prompts': (url) => queries.prompts(pageOf(url)),
     '/api/prompt': (url) => queries.prompt(url.searchParams.get('id') ?? ''),
@@ -52,6 +55,7 @@ export function createMonitorApi({ database, queries, archive, backlog, feed, re
     '/api/flow-map': () => flowMapOf(),
     '/api/evals': (url) => evalsReportOf(database, url.searchParams.get('agent') ?? ''),
     '/api/agents': () => queries.agentRoster(),
+    '/api/engine': () => engine.status(),
     '/api/agent-activity': (url) => queries.agentActivity(url.searchParams.get('agent') ?? '', pageOf(url)),
   };
 
@@ -78,6 +82,10 @@ export function createMonitorApi({ database, queries, archive, backlog, feed, re
           return queries.limits();
         }),
       );
+      return;
+    }
+    if (url.pathname === RESTART_ENGINE) {
+      postOnly(request, response, () => engine.restartOutdated());
       return;
     }
     if (url.pathname === FORGET_PLAN) {

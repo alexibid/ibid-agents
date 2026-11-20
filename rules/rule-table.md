@@ -7,9 +7,9 @@ way it will be guaranteed.
 
 | Kind | Meaning | Guarantee |
 | --- | --- | --- |
-| `machine` | A program can verify it | Full: LangGraph runs the check |
+| `machine` | A program can verify it | Full: The flow engine runs the check |
 | `guard` | A forbidden action | Full: a hook denies it when attempted |
-| `process` | Step order or required evidence | Full: LangGraph owns it |
+| `process` | Step order or required evidence | Full: The flow engine owns it |
 | `judgement` | Needs reading and thinking | Partial: reviewer or UX critic, then code review |
 
 `Today` says whether anything other than the model's memory enforces the rule now.
@@ -23,11 +23,11 @@ way it will be guaranteed.
 | W03 | An app's `project.json` declares only what differs from `targetDefaults` | judgement | no | Reviewer |
 | W04 | `libs/utils` holds no workspace scripts | judgement | no | Reviewer |
 | W05 | Tasks run through Nx, never the underlying tool | guard | no | Deny direct `vitest`, `playwright`, `ng`, `tsc` commands |
-| W06 | `nx sync` after changing project dependencies | machine | no | LangGraph runs `nx sync:check` |
+| W06 | `nx sync` after changing project dependencies | machine | no | The flow engine runs `nx sync:check` |
 | W07 | Component and directive selectors carry the project prefix; `app-` is banned | machine | yes | `@angular-eslint` selector rules |
 | W08 | Pipes carry the project prefix | machine | no | Add `@angular-eslint/pipe-prefix` |
-| W09 | Native `button`, `input`, `select`, `dialog` only inside the atom that wraps them | machine | no | Template scan outside `atoms/` |
-| W10 | Look in `ibid-ui` before writing any interface element | process | no | The plan must list the `ibid-ui` parts considered |
+| W09 | Native `button`, `input`, `select`, `dialog` only inside the atom that wraps them, in projects whose sheet names `Reuses` | machine | no | Template scan outside `atoms/` |
+| W10 | Look in the libraries the sheet names under `Reuses` before writing any interface element | process | no | The plan must list the parts considered |
 | W11 | A new element is born in `ibid-ui`, with a story and a spec | machine | no | Sibling `.stories.ts` and `.spec.ts` check |
 | W12 | Tokens and mixins instead of literal values | machine | no | Stylelint strict-value |
 | W13 | Files of at most 300 lines | machine | no | ESLint `max-lines`, plus a scan for templates and styles |
@@ -58,12 +58,12 @@ way it will be guaranteed.
 | W38 | One commit line per affected repository, plus the root pointer bump | process | no | Final verifier reads `git status` in every submodule |
 | W39 | The commit type is chosen for its version effect | judgement | no | Reviewer |
 | W40 | Agent files are never committed | machine | yes | `.gitignore`, plus a `git ls-files` check |
-| W64 | No commit line for ibid-workspace is shown before DevOps validates Dependabot and the tests | process | no | Final verifier and every agent run `/devops` first and show the lines only on green |
+| W64 | No commit line for ibid-workspace is shown before DevOps validates Dependabot and the tests | process | no | After `final-verification` passes, the assistant runs `/devops` and shows the lines only on green |
 | W65 | Every agent asks for the pending pulls before it starts | machine | yes | Claude's SessionStart hook lists the repositories behind their remote; the other tools read the rule in their instructions |
 | W41 | No inline heredocs or one-liners in the terminal | guard | no | Deny pattern |
-| W42 | Start from `git diff` and `git status` | process | no | LangGraph supplies the diff with each step |
-| W43 | The build passes before work is declared finished | process | no | LangGraph runs the build |
-| W44 | Read only the failing window of a log | process | no | LangGraph returns only the failing slice |
+| W42 | Start from `git diff` and `git status` | process | no | The flow engine supplies the diff with each step |
+| W43 | The build passes before work is declared finished | process | no | The flow engine runs the build |
+| W44 | Read only the failing window of a log | process | no | The flow engine returns only the failing slice |
 | W45 | Zero lint warnings | machine | yes | `tools/ci/lint-budget.mjs` |
 | W46 | No credential in the repository | machine | yes | `secretlint` in pre-commit |
 | W47 | No high or critical advisory | machine | yes | `tools/ci/audit.mjs` |
@@ -71,15 +71,15 @@ way it will be guaranteed.
 | W49 | Never design a flow that ships a credential to a client | judgement | no | Reviewer; the specialist must stop and ask |
 | W50 | Never ask the user to paste a secret | judgement | no | Assistant contract |
 | W51 | Workflows pin the Node 24 action versions | machine | no | Workflow scan |
-| W52 | Workflows pass `actionlint` | machine | no | LangGraph runs it when `.github/` changes |
+| W52 | Workflows pass `actionlint` | machine | no | The flow engine runs it when `.github/` changes |
 | W53 | Workflows never hardcode the list of apps or platforms | judgement | no | Reviewer |
 | W54 | `NX_CACHE_DIRECTORY` and `NX_WORKSPACE_DATA_DIRECTORY` are set together | machine | no | Workflow scan |
 | W55 | `tsbuildinfo` and `dist/` are never tracked | machine | no | `git ls-files` check |
 | W56 | A platform is fully configured or explicitly skipped | machine | yes | `tools/ci/platforms.mjs` |
 | W57 | `Automatic versioning` stays on `workflow_run` | machine | no | Workflow scan |
 | W58 | `tools/` stays out of the submodules | judgement | no | Reviewer |
-| W59 | The relevant skills are read before any code | process | no | LangGraph attaches them to the step |
-| W60 | The work state is read first and kept current | process | no | LangGraph's own state replaces `current.md` |
+| W59 | The relevant skills are read before any code | process | no | The flow engine attaches them to the step |
+| W60 | The work state is read first and kept current | process | no | The flow engine's own state replaces `current.md` |
 | W61 | Code, documentation, rules and GitHub issues are in English; nothing in `ibid-workspace` or its issues mentions agents or the agent workflow | judgement | no | Reviewer |
 | W63 | Composition over inheritance, SOLID, DRY | judgement | no | Reviewer |
 
@@ -122,8 +122,8 @@ way it will be guaranteed.
 | Id | Rule | Kind | Today | How it is guaranteed |
 | --- | --- | --- | --- | --- |
 | S01 | Any failing detail on a figure rejects it | process | no | Visual gate verdict is all-or-nothing |
-| S02 | No verdict without the rendered image inspected in the same step | process | no | LangGraph requires the image as evidence |
-| S03 | The author is never the only judge of its own work | process | no | LangGraph assigns a different agent to judge |
+| S02 | No verdict without the rendered image inspected in the same step | process | no | The flow engine requires the image as evidence |
+| S03 | The author is never the only judge of its own work | process | no | The flow engine assigns a different agent to judge |
 
 ## ibid-ui
 
@@ -152,7 +152,7 @@ Rules that lived only inside a skill and were in no rule file.
 | K02 | A spec imports at most five mock references | machine | no | Import count scan |
 | K03 | No inline fallback inside `var()` | machine | no | Stylelint pattern |
 | K04 | A component stylesheet holds only its local structure | judgement | no | Reviewer |
-| K05 | A measured failure of the visual gate cannot be overruled by looking | process | no | LangGraph takes the measured result |
+| K05 | A measured failure of the visual gate cannot be overruled by looking | process | no | The flow engine takes the measured result |
 
 ## Totals
 

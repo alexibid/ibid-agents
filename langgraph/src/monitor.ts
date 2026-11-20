@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { join } from 'node:path';
 import { PostgresBacklogArchive } from './backlog/backlog-archive.js';
 import { readAntigravityLimits } from './limits/antigravity-limits.js';
 import { ClaudeEstimate } from './limits/claude-estimate.js';
@@ -6,6 +7,10 @@ import { readClaudeLimits } from './limits/claude-limits.js';
 import { LimitLedger } from './limits/limit-ledger.js';
 import { PostgresNoteArchive } from './memory/note-archive.js';
 import { ChangeFeed } from './monitor/change-feed.js';
+import { fileClock } from './monitor/engine-clock.js';
+import { EngineServers } from './monitor/engine-servers.js';
+import { PsServerProcesses } from './monitor/ps-server-processes.js';
+import { RESTART_SIGNAL } from './relay/restart-signal-file.js';
 import { createMonitorApi } from './monitor/http-api.js';
 import { MonitorQueries } from './monitor/monitor-queries.js';
 import { Database } from './store/database.js';
@@ -14,6 +19,8 @@ import { UsageSync } from './usage/usage-sync.js';
 
 const PORT = Number(process.env['IBID_MONITOR_PORT'] ?? 4710);
 const READ_ACTIVITY_EVERY_MS = 20_000;
+const SERVER_SCRIPTS = { relay: join(import.meta.dirname, 'server.js'), engine: join(import.meta.dirname, 'engine.js') };
+const STARTED_ON = new Date();
 const SAMPLE_LIMITS_EVERY_MS = 60_000;
 
 const database = new Database();
@@ -73,6 +80,7 @@ createMonitorApi({
   backlog: new PostgresBacklogArchive(database),
   feed,
   refreshLimits: sampleLimitsNow,
+  engine: new EngineServers(new PsServerProcesses(SERVER_SCRIPTS), fileClock(SERVER_SCRIPTS.engine, STARTED_ON), RESTART_SIGNAL),
 }).listen(PORT, '127.0.0.1', () => {
   console.log(`The monitor serves http://127.0.0.1:${PORT}`);
 });

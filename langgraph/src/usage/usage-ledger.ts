@@ -25,9 +25,11 @@ const SAVE_PROMPT = `
     errors = excluded.errors`;
 
 const SAVE_CALL = `
-  insert into agent_calls (id, prompt_id, agent, kind, request, response, failed, called_at)
-  values ($1, $2, $3, $4, $5, $6, $7, $8)
-  on conflict (id) do update set response = excluded.response, failed = excluded.failed`;
+  insert into agent_calls (id, prompt_id, agent, kind, request, response, failed, called_at, called_by)
+  values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+  on conflict (id) do update set
+    agent = excluded.agent, kind = excluded.kind, response = excluded.response, failed = excluded.failed,
+    called_by = excluded.called_by`;
 
 const SAVE_HIT = `
   insert into limit_hits (tool, time_window, hit_at, resets_at) values ($1, $2, $3, $4)
@@ -84,6 +86,6 @@ function promptStatement(prompt: PromptRecord): Statement {
 function callStatement(prompt: PromptRecord, call: AgentCall): Statement {
   return {
     text: SAVE_CALL,
-    values: [call.id, prompt.id, call.agent, call.kind, call.request, call.response, call.failed, call.calledOn || prompt.askedOn],
+    values: [call.id, prompt.id, call.agent, call.kind, call.request, call.response, call.failed, call.calledOn || prompt.askedOn, call.calledBy],
   };
 }

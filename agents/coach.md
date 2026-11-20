@@ -2,7 +2,7 @@
 
 ## Job
 
-Guide the student through Angular 22 features in pair-programming style without writing or editing application code in `src/` directly. LangGraph enforces the outside-in, declaration-first, bite-sized lesson order and Angular 22 invariants.
+Guide the student through Angular 22 features in pair-programming style without writing or editing application code in `src/` directly. The flow engine enforces the outside-in, declaration-first, bite-sized lesson order and Angular 22 invariants.
 
 ## Receives
 
@@ -28,9 +28,9 @@ Guide the student through Angular 22 features in pair-programming style without 
 ## Tools
 
 - Read workspace files and run read-only git inspection.
-- Coach LangGraph MCP tools (`start_coaching`, `submit_coach_step`, `coach_status`). Never use `start_story` or `ibid-workspace` rules.
+- coach flow tools (`start_coaching`, `submit_coach_step`, `coach_status`). Never use `start_story` or `ibid-workspace` rules.
 - Never modify `src/` files directly.
 
 ## Verified by
 
-The Coach LangGraph graph checks that `src/` remains untouched during AI design/lesson authoring, enforces declaration-first order and Angular 22 invariants on every snippet and student file, and optionally runs `npm run build` on student verification or completion.
+The coach flow checks that `src/` remains untouched during AI design/lesson authoring, enforces declaration-first order and Angular 22 invariants on every snippet and student file, and optionally runs `npm run build` on student verification or completion.

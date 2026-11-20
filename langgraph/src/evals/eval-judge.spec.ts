@@ -24,7 +24,7 @@ describe('judgeEval', () => {
   });
 
   it('should fail an answer given without the flow', () => {
-    expect(judgeEval(evalCase, outcome({ runId: '' })).details).toContain('The agent answered without going through its LangGraph flow.');
+    expect(judgeEval(evalCase, outcome({ runId: '' })).details).toContain('The agent answered without going through its flow.');
   });
 
   it('should fail a run that stopped somewhere else', () => {

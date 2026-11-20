@@ -20,7 +20,7 @@ A change here runs `unit-tests` for every project that imports the changed helpe
 ## Checks
 
 `project.json` declares no target; the commands below rely on inferred targets and are to be
-confirmed when LangGraph is built.
+confirmed when the flow engine is built.
 
 | Step | Command |
 | --- | --- |

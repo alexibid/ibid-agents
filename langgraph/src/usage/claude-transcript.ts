@@ -1,5 +1,7 @@
+import { delegatedAgentOf } from './delegated-agent.js';
 import { numberIn, objectIn, objectsIn, parsedLines, textIn, type JsonObject } from './json-reading.js';
 import {
+  CALLED_BY_ASSISTANT,
   clipped,
   clippedForTool,
   isLangGraphTool,
@@ -30,14 +32,14 @@ interface OpenPrompt {
 
 const SUBAGENT_TOOLS = new Set(['Agent', 'Task']);
 const SKILL_TOOL = 'Skill';
-const DEFAULT_AGENT = 'general-purpose';
+const HANDBACK_TOOLS: ReadonlySet<string> = new Set(['SubagentHandback']);
 const REFUSED = 'rejected';
 const HUMAN = 'human';
 const WINDOWS: Readonly<Record<string, TimeWindow>> = { five_hour: '5h', seven_day: 'weekly' };
 
 export function promptsOfClaudeTranscript(lines: readonly string[]): PromptRecord[] {
   const prompts: OpenPrompt[] = [];
-  for (const line of parsedLines(lines)) {
+  for (const line of onceEach(parsedLines(lines))) {
     if (line['isSidechain'] === true || line['isMeta'] === true) {
       continue;
     }
@@ -59,6 +61,33 @@ export function limitHitsOfClaudeTranscript(lines: readonly string[]): LimitHit[
     return limits['status'] === REFUSED && window !== undefined && resetsAt > 0
       ? [{ tool: 'claude' as const, window, hitOn: textIn(line, 'timestamp'), resetsOn: new Date(resetsAt * 1000).toISOString() }]
       : [];
+  });
+}
+
+export function toolCallsOfSubagent(lines: readonly string[], calledBy: string): AgentCall[] {
+  const calls = new Map<string, AgentCall>();
+  for (const line of parsedLines(lines)) {
+    const message = objectIn(line, 'message');
+    for (const block of objectsIn(message, 'content')) {
+      if (block['type'] === 'tool_use' && !HANDBACK_TOOLS.has(textIn(block, 'name'))) {
+        const call = { ...callOf(block, textIn(line, 'timestamp')), calledBy };
+        calls.set(call.id, call);
+      }
+    }
+    if (line['type'] === 'user') {
+      answeredCalls(calls, message);
+    }
+  }
+  return [...calls.values()];
+}
+
+function onceEach(lines: readonly JsonObject[]): JsonObject[] {
+  const seen = new Set<string>();
+  return lines.filter((line) => {
+    const uuid = textIn(line, 'uuid');
+    const repeated = uuid !== '' && seen.has(uuid);
+    seen.add(uuid);
+    return !repeated;
   });
 }
 
@@ -117,11 +146,15 @@ function readAnswer(prompt: OpenPrompt, line: JsonObject): void {
 }
 
 function readToolResults(prompt: OpenPrompt, line: JsonObject): void {
-  for (const block of objectsIn(objectIn(line, 'message'), 'content')) {
-    const call = prompt.calls.get(textIn(block, 'tool_use_id'));
+  answeredCalls(prompt.calls, objectIn(line, 'message'));
+}
+
+function answeredCalls(calls: Map<string, AgentCall>, message: JsonObject): void {
+  for (const block of objectsIn(message, 'content')) {
+    const call = calls.get(textIn(block, 'tool_use_id'));
     if (block['type'] === 'tool_result' && call !== undefined) {
       const response = call.kind === 'tool' ? clippedForTool(resultTextOf(block)) : clipped(resultTextOf(block));
-      prompt.calls.set(call.id, { ...call, response, failed: block['is_error'] === true });
+      calls.set(call.id, { ...call, response, failed: block['is_error'] === true });
     }
   }
 }
@@ -129,9 +162,9 @@ function readToolResults(prompt: OpenPrompt, line: JsonObject): void {
 function callOf(block: JsonObject, calledOn: string): AgentCall {
   const name = textIn(block, 'name');
   const input = objectIn(block, 'input');
-  const base = { id: textIn(block, 'id'), response: '', failed: false, calledOn };
+  const base = { id: textIn(block, 'id'), response: '', failed: false, calledOn, calledBy: CALLED_BY_ASSISTANT };
   if (SUBAGENT_TOOLS.has(name)) {
-    return { ...base, ...named('agent', textIn(input, 'subagent_type') || DEFAULT_AGENT), request: clipped(textIn(input, 'prompt')) };
+    return { ...base, ...named('agent', delegatedAgentOf(input)), request: clipped(textIn(input, 'prompt')) };
   }
   if (name === SKILL_TOOL) {
     return { ...base, ...named('skill', textIn(input, 'skill')), request: clipped(textIn(input, 'args')) };

@@ -13,7 +13,7 @@ workspace itself holds no agent file at all.
 | See what would leave the workspace | `node install/clear-workspace.mjs <workspace path>` |
 | Clear the workspace | `node install/clear-workspace.mjs <workspace path> --apply` |
 
-Build LangGraph first: `npm run build` inside `langgraph/`.
+Build the flow engine first: `npm run build` inside `langgraph/`.
 
 ## What the install adds
 
@@ -21,8 +21,8 @@ Build LangGraph first: `npm run build` inside `langgraph/`.
 | --- | --- | --- |
 | A link to every skill in `skills/` | `~/.claude/skills/` | Claude |
 | A link to every skill in `skills/` | `~/.gemini/config/skills/` | Antigravity |
-| LangGraph as a tool server | Claude's user configuration | Claude |
-| LangGraph as a tool server | `~/.gemini/config/mcp_config.json` | Antigravity |
+| Flow engine as a tool server | Claude's user configuration | Claude |
+| Flow engine as a tool server | `~/.gemini/config/mcp_config.json` | Antigravity |
 | The guard, before commands and file writes | `~/.claude/settings.json` | Claude |
 | The guard, before commands and file writes | `~/.gemini/config/hooks.json` | Antigravity |
 | The assistant and the core rules at the start of every conversation | `~/.claude/settings.json` | Claude |

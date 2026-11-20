@@ -7,7 +7,7 @@ description: Owns the health of the ibid-workspace CI/CD system. Finds every fai
 
 DevOps keeps the pipelines of `ibid-workspace` green. Its job is not finished when a fix is
 written; it is finished when GitHub reports a passing run of every workflow that was failing.
-LangGraph checks that with GitHub itself, so a run that did not pass cannot be handed back.
+The flow engine checks that with GitHub itself, so a run that did not pass cannot be handed back.
 
 It does not design new pipelines; that is `/deploy-agent`. It does not change product code; a
 failure caused by the code of an app or a lib goes to the assistant as a user story.
@@ -85,9 +85,12 @@ Only after that green does the agent show the commit lines.
 - Reading `.github/`, `tools/ci/`, `nx.json` and the project sheets in `rules/projects/`.
 - `npx nx` and `node tools/ci/<script>.mjs` in `~/Projects/ibid-workspace` to reproduce.
 
-## LangGraph flow
+## Flow
 
-This agent runs through its own LangGraph flow, defined in `flow.json` beside this file. It
+Inside a step of a user story the story's flow is already running: do not start this flow.
+Use this skill there only as knowledge for that step, and hand back what the step asks for.
+
+This agent runs through its own flow, defined in `flow.json` beside this file. It
 works the same in Claude and in Antigravity.
 
 1. Before anything else, call `start_agent_run` on `ibid-langgraph` with `agent: "devops"` and the
@@ -95,9 +98,9 @@ works the same in Claude and in Antigravity.
 2. Do only the step named in `next`, as its `task` says, then call `submit_agent_step` with the
    run id and a `handBack` in exactly the shape `next.handBack` shows.
 3. When `lastResult` failed, fix exactly what its details say and hand back again.
-4. Stop when `status` is `finished` or `needs-user`. Never report a step as done that LangGraph
+4. Stop when `status` is `finished` or `needs-user`. Never report a step as done that the flow engine
    did not pass.
 5. A step done by the user, such as an approval, waits for the user's own words. Never fill it
    in for them.
 
-If LangGraph cannot be reached, tell the user and stop.
+If the flow engine cannot be reached, tell the user and stop.

@@ -62,4 +62,37 @@ describe('handoverCommands', () => {
 
     expect(commands[0]).toContain(String.raw`git commit -m 'fix(tools): keep the user'\''s port'`);
   });
+
+  it('should commit a repository outside the workspace in its own folder and never stage it at the root', () => {
+    const commands = handoverCommands(
+      [
+        { repository: '.', line: 'chore(workspace): bump ibid-ui submodule' },
+        { repository: 'libs/ibid-ui', line: 'fix(ibid-ui): add the date chip' },
+        { repository: '../ibid-agents', line: 'fix(ibid-agents): scope figures to papikapi' },
+      ],
+      [changed('libs/ibid-ui', 'libs/ibid-ui/src/chip.ts'), changed('../ibid-agents', '../ibid-agents/langgraph/src/plan.ts')],
+      workspaceRoot,
+    );
+
+    expect(commands).toContain(
+      "cd '/work/ibid-agents' && git add -- 'langgraph/src/plan.ts' && git commit -m 'fix(ibid-agents): scope figures to papikapi'",
+    );
+    expect(commands.at(-1)).toBe(
+      "cd '/work/ibid-workspace' && git add -- 'libs/ibid-ui' && git commit -m 'chore(workspace): bump ibid-ui submodule'",
+    );
+  });
+
+  it('should never hand over a git add with no file when everything the story changed was already dirty', () => {
+    const commands = handoverCommands(
+      [{ repository: 'apps/ibid-website', line: 'fix(ibid-website): split the site into domains' }],
+      [changed('apps/ibid-website', 'apps/ibid-website/src/app/app.routes.ts', true)],
+      workspaceRoot,
+    );
+
+    expect(commands.some((command) => command.includes('git add -- &&') || command.includes('git add --  &&'))).toBe(false);
+    expect(commands[0]).toBe(
+      "Nothing in apps/ibid-website can be staged for you: every file this story changed there already had uncommitted work. Stage the story's part by hand, then run: cd '/work/ibid-workspace/apps/ibid-website' && git commit -m 'fix(ibid-website): split the site into domains'",
+    );
+  });
 });
+

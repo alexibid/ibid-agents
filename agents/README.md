@@ -1,7 +1,7 @@
 # Agents
 
 One contract per agent. A contract is everything an agent needs to do one job, and nothing
-about any other job. LangGraph names the contracts to read with every step it hands out.
+about any other job. The flow engine names the contracts to read with every step it hands out.
 
 ## Shape of a contract
 
@@ -11,7 +11,7 @@ Every contract has the same six sections, in this order.
 | --- | --- |
 | Job | The single thing this agent does, in one or two sentences |
 | Receives | What it is given: story, brief, files, earlier results |
-| Hands back | The exact shape LangGraph expects |
+| Hands back | The exact shape the flow engine expects |
 | Rules | Only the rules that bear on this job, with their ids from `rules/rule-table.md` |
 | Tools | What it may use, and what it may not |
 | Verified by | How its work is checked, and by whom |
@@ -33,8 +33,14 @@ Every contract has the same six sections, in this order.
 | `final-verifier.md` | `final-verification` | First version |
 | `nx.md` | `plan`, and `implement` when workspace files change | First version, from the Nx skills |
 | `archivist.md` | Before the story, and whenever something is concluded | First version |
+| `<project>-specialist.md` | `plan`, named by the sheet's `Specialist` field | One per app; composes `specialist.md` and names the project's team |
+| `flow-engineer.md` | Outside stories, on the flow engine itself | First version |
 
-None has been used on a real story yet.
+None of the project specialists has been used on a real story yet.
+
+A sheet's `Agents` table brings a project agent (such as `blender` or `finance-agent`) into a
+step beside the generic contracts, only when its condition holds. Inside a story step such an
+agent's skill is knowledge only; its own flow does not start.
 
 The assistant is not here. It is the skill `skills/assistant`, because the user invokes it.
 
@@ -46,11 +52,11 @@ contract. It lets the role be invoked on its own with `/name`, in Claude and in 
 - An agent that produces something never judges it.
 - The test author works from the story and never sees the implementation.
 - Where a tool can run separate agents, each step runs in its own. Where it cannot, the same
-  model takes one role at a time and LangGraph's checks carry the separation.
+  model takes one role at a time and the flow engine's checks carry the separation.
 
 ## Evaluations
 
-The user's own agents with a LangGraph flow keep their evaluation cases in
+The user's own agents with a flow keep their evaluation cases in
 `skills/<agent>/evals.json`: a request, the step the run must reach, and what the answer must
 and must not say. `npm run evals -- <agent>` in `langgraph/` runs each case through the Claude
 command line, checks that the agent went through its flow, and keeps the result, which the

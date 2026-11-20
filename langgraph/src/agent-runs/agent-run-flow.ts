@@ -17,7 +17,7 @@ export interface RunReport {
 
 export class UnknownAgentFlowError extends Error {
   constructor(agent: string, known: readonly string[]) {
-    super(`"${agent}" has no LangGraph flow. Agents with a flow: ${known.join(', ')}.`);
+    super(`"${agent}" has no flow. Agents with a flow: ${known.join(', ')}.`);
     this.name = 'UnknownAgentFlowError';
   }
 }
@@ -66,6 +66,17 @@ export class AgentRunFlow {
     return { ...after, recorded: recorded && kept };
   }
 
+  async abandon(runId: string): Promise<RunReport> {
+    const before = await this.report(runId);
+    if (before.status === 'finished' || before.status === 'abandoned') {
+      return before;
+    }
+    await this.#graphOf(before.agent).updateState(configOf(runId), { status: 'abandoned' });
+    const after = await this.report(runId);
+    const recorded = await this.journal.judged({ runId, status: after.status, entries: [] });
+    return { ...after, recorded };
+  }
+
   async #keepPassed(before: RunReport, entries: readonly RunHistoryEntry[], handedBack: unknown): Promise<boolean> {
     const passed = entries.find((entry) => entry.passed);
     const step = this.#definitions.get(before.agent)?.steps.find((candidate) => candidate.id === passed?.step);
@@ -84,11 +95,12 @@ export class AgentRunFlow {
       throw new UnknownRunError(runId);
     }
     const pending = snapshot.tasks.flatMap((task) => task.interrupts).at(0);
+    const status = state.status ?? 'working';
     return {
       runId,
       agent,
-      status: state.status ?? 'working',
-      next: pending === undefined ? 'nothing' : (pending.value as RunInstruction),
+      status,
+      next: pending === undefined || status === 'abandoned' ? 'nothing' : (pending.value as RunInstruction),
       history: state.history ?? [],
       recorded: false,
     };

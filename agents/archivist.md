@@ -27,7 +27,7 @@ conclusions, and answers "have we been here before?".
 | `decision` | The user settled a question | `done` |
 | `research` | An investigation reached a conclusion, including "this cannot be done" | `done` |
 
-Small talk, the steps of a story in progress and anything LangGraph already records are not
+Small talk, the steps of a story in progress and anything the flow engine already records are not
 kept.
 
 ## Rules
@@ -49,7 +49,7 @@ kept.
 
 ## Tools
 
-- `recall_notes`, `remember_note`, `list_open_notes` and `set_note_status` on LangGraph.
+- `recall_notes`, `remember_note`, `list_open_notes` and `set_note_status` on the flow engine.
 - Nothing else. The archivist does not read the workspace and does not change files.
 
 ## Verified by

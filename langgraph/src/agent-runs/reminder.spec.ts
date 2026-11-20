@@ -22,6 +22,8 @@ describe('invokedFlows', () => {
     ['/ev compara dois orçamentos', ['ev']],
     ['<command-name>/trader</command-name>', ['trader']],
     ['  /trader-worker grava isto', ['trader-worker']],
+    ['/assistente corrige tudo', ['assistant']],
+    ['/assistant resolve este bug', ['assistant']],
     ['pede ao /trader-worker e depois ao /trader', []],
     ['> node run-evals.js ev\n/ev quote-type-a-no-meter: a correr', []],
     ['vê em https://site.pt/ev/precos', []],
@@ -32,9 +34,9 @@ describe('invokedFlows', () => {
   });
 });
 
-describe('answerFor', () => {
+describe('reminderFor', () => {
   it('should add nothing when no agent with a flow was named', () => {
-    expect(answerFor('claude', reminderFor([]))).toBe('');
+    expect(reminderFor([])).toBe('');
   });
 
   it('should give Claude extra context and Antigravity an extra step', () => {
@@ -42,5 +44,13 @@ describe('answerFor', () => {
 
     expect(JSON.parse(answerFor('claude', reminder)).hookSpecificOutput.additionalContext).toContain('start_agent_run');
     expect(JSON.parse(answerFor('antigravity', reminder)).injectSteps[0].ephemeralMessage).toContain('agent "ev"');
+  });
+
+  it('should return a messenger and orchestrator reminder for assistant', () => {
+    const reminder = reminderFor(['assistant']);
+
+    expect(reminder).toContain('pure messenger');
+    expect(reminder).toContain('start_story');
+    expect(reminder).toContain('bulleted status list');
   });
 });

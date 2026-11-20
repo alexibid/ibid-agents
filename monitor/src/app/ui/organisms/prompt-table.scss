@@ -1,6 +1,52 @@
 @use 'tools';
 
 .prompts {
+  &__heading {
+    align-items: flex-start;
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  &__summary {
+    min-inline-size: 0;
+  }
+
+  &__toggle {
+    background: transparent;
+    border: 1px solid var(--color-line);
+    border-radius: 0.35rem;
+    color: var(--color-muted);
+    cursor: pointer;
+    flex-shrink: 0;
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-block-start: 0.1rem;
+    padding: 0;
+
+    &:hover {
+      color: var(--color-ink);
+      border-color: var(--color-muted);
+    }
+
+    &:focus-visible {
+      @include tools.focus-ring;
+    }
+  }
+
+  &__chevron {
+    display: inline-block;
+    font-size: 0.85rem;
+    line-height: 1;
+    transition: transform 120ms ease;
+
+    &--open {
+      transform: rotate(90deg);
+    }
+  }
+
   &__text {
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
@@ -20,9 +66,46 @@
     color: var(--color-bad);
   }
 
-  &__when,
-  &__more {
+  &__origin {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.35rem;
     white-space: nowrap;
+  }
+
+  &__arrow {
+    color: var(--color-muted);
+    font-size: var(--size-small);
+  }
+
+  &__when,
+  &__more,
+  &__expand-link {
+    white-space: nowrap;
+  }
+
+  &__expand-link {
+    background: transparent;
+    border: 0;
+    color: var(--color-accent);
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+
+    &:focus-visible {
+      @include tools.focus-ring;
+    }
+  }
+
+  &__entry {
+    background: color-mix(in srgb, var(--color-line) 24%, transparent);
+  }
+
+  &__entry-cell {
+    border-inline-start: 3px solid var(--color-line);
+    padding-inline-start: 2rem;
   }
 
   &__hidden {

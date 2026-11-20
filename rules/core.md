@@ -1,23 +1,29 @@
 # ibid-workspace — core rules
 
 These rules are always on, in every tool. Everything else reaches you with the step you are
-given. If a rule you expect is missing here, ask LangGraph for the step; do not work from
+given. If a rule you expect is missing here, ask the flow engine for the step; do not work from
 memory.
 
 ## Before anything else
 
-- At the start of every conversation, before reading, planning or changing code, run
-  `git fetch` and check whether ibid-workspace (the root and every submodule) or ibid-agents is
-  behind its remote (`git rev-list --count HEAD..@{upstream}`). If any is, tell the user which
+- At the start of every conversation with the user, before reading, planning or changing code,
+  run `git fetch` and check whether ibid-workspace (the root and every submodule) or ibid-agents
+  is behind its remote (`git rev-list --count HEAD..@{upstream}`). If any is, tell the user which
   ones, ask them to pull, and wait for their confirmation.
+- A subagent handed a step by the flow engine skips this check: the conversation that started the story
+  already did it.
+- When the user asks to resume work started in another interface (Claude or Antigravity) or when an
+  active handoff notice is shown at session start, call `resume_handoff` on `ibid-langgraph` first.
+  When pausing, switching interfaces, or reaching a checkpoint mid-conversation, call `save_handoff`
+  so the other interface can pick up without repeating context; call `close_handoff` once the work is done.
 
 ## How work happens
 
 - Work starts from a user story with acceptance criteria, prepared by the assistant.
-- LangGraph hands out one step at a time. Do that step and nothing else.
-- Hand the result back to LangGraph. Only LangGraph decides whether a step passed.
-- When LangGraph returns an error, fix that error. Do not move on and do not argue with it.
-- Never declare work finished. LangGraph does that after the final verification.
+- The flow engine hands out one step at a time. Do that step and nothing else.
+- Hand the result back to the flow engine. Only the flow engine decides whether a step passed.
+- When the flow engine returns an error, fix that error. Do not move on and do not argue with it.
+- Never declare work finished. The flow engine does that after the final verification.
 
 ## What you never do
 
@@ -31,21 +37,13 @@ memory.
 
 ## Where things come from
 
-| Origin | Prefix |
-| --- | --- |
-| `libs/ibid-ui` | `ibid-` |
-| `apps/oh-save-me` | `ohsaveme-` |
-| `apps/boilerplate` | `boilerplate-` |
-| `apps/papikapi` | `papikapi-` |
-| `apps/papikapi-studio` | `papikapi-studio-` |
-| `apps/ibid-website` | `website-` |
-
-The `app-` prefix is banned.
+Selectors and pipes carry the prefix named in the project sheet's `Prefix` field. The `app-`
+prefix is banned.
 
 - An app may import from any lib. A lib never imports from an app. Between libs, only `utils`.
-- An interface element is looked for in `ibid-ui` first, extended there second, created there
-  third. Native `button`, `input`, `select` and `dialog` exist only inside the atom that wraps
-  them.
+- In a project whose sheet names `ibid-ui` under `Reuses`, an interface element is looked for
+  in `ibid-ui` first, extended there second, created there third, and native `button`,
+  `input`, `select` and `dialog` exist only inside the atom that wraps them.
 
 ## Code
 

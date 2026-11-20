@@ -20,7 +20,7 @@ A change here runs `build` for every project, since all of them may depend on it
 ## Checks
 
 `project.json` declares no target; the commands below rely on inferred targets and are to be
-confirmed when LangGraph is built.
+confirmed when the flow engine is built.
 
 | Step | Command |
 | --- | --- |

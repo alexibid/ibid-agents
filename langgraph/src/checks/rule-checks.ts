@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import type { ProjectSheet } from '../domain/sheet.js';
 import { findComments } from './comment-scanner.js';
 
 export interface Violation {
@@ -7,6 +8,11 @@ export interface Violation {
   readonly file: string;
   readonly line: number;
   readonly message: string;
+}
+
+export interface RuleScope {
+  readonly workspaceRoot: string;
+  readonly sheet: ProjectSheet;
 }
 
 interface SourceFile {
@@ -25,11 +31,17 @@ const NATIVE_ELEMENT = /<(button|input|select|dialog|textarea)\b/;
 const HTML_COMMENT = /<!--/;
 const DESIGN_TOOL = /\bfigma\b|paper\.design|\bpaper mcp\b/i;
 
-const RULE_CHECKS: readonly RuleCheck[] = [fileLength, comments, templateComments, nativeElements, designTools];
+const GENERAL_CHECKS: readonly RuleCheck[] = [fileLength, comments, templateComments, designTools];
+const DESIGN_SYSTEM_CHECKS: readonly RuleCheck[] = [nativeElements];
 
-export async function checkRules(files: readonly string[], workspaceRoot: string): Promise<Violation[]> {
+export async function checkRules(files: readonly string[], { workspaceRoot, sheet }: RuleScope): Promise<Violation[]> {
+  const checks = checksFor(sheet);
   const sources = await Promise.all(files.filter((file) => CHECKED_FILE.test(file)).map((file) => load(file, workspaceRoot)));
-  return sources.flatMap((source) => (source.content === '' ? [] : RULE_CHECKS.flatMap((check) => check(source))));
+  return sources.flatMap((source) => (source.content === '' ? [] : checks.flatMap((check) => check(source))));
+}
+
+function checksFor(sheet: ProjectSheet): readonly RuleCheck[] {
+  return sheet.reuses.length > 0 ? [...GENERAL_CHECKS, ...DESIGN_SYSTEM_CHECKS] : GENERAL_CHECKS;
 }
 
 async function load(file: string, workspaceRoot: string): Promise<SourceFile> {

@@ -29,14 +29,14 @@ const COMMAND_STEPS: ReadonlySet<StepName> = new Set(['build', 'lint', 'unit-tes
 const STEP_OWNERS: Readonly<Record<StepName, string>> = {
   'author-tests': 'test author',
   implement: 'developer or UI agent',
-  build: 'langgraph',
-  lint: 'langgraph',
-  'rule-checks': 'langgraph',
-  'unit-tests': 'langgraph',
+  build: 'flow engine',
+  lint: 'flow engine',
+  'rule-checks': 'flow engine',
+  'unit-tests': 'flow engine',
   'validate-tests': 'test validator',
-  journey: 'langgraph',
+  journey: 'flow engine',
   'browser-qa': 'browser QA',
-  accessibility: 'langgraph',
+  accessibility: 'flow engine',
   performance: 'accessibility and performance agent',
   'ux-critique': 'UX critic',
   'visual-gate': 'visual gate',
@@ -67,11 +67,22 @@ export function ownerOf(step: StepName): string {
   return STEP_OWNERS[step];
 }
 
+const REPAIRED_BY: Readonly<Partial<Record<StepName, StepName>>> = { 'validate-tests': 'author-tests' };
+
+export function possibleRepairStepsFor(failedStep: StepName): StepName[] {
+  return [failedStep, ...repairersOf(failedStep)];
+}
+
+function repairersOf(failedStep: StepName): StepName[] {
+  const repairer = REPAIRED_BY[failedStep];
+  return repairer === undefined ? [REPAIR_STEP] : [repairer, REPAIR_STEP];
+}
+
 export function repairStepFor(failedStep: StepName, queue: readonly StepName[]): StepName {
-  if (SELF_REPAIRING_STEPS.has(failedStep) || !queue.includes(REPAIR_STEP)) {
+  if (SELF_REPAIRING_STEPS.has(failedStep)) {
     return failedStep;
   }
-  return REPAIR_STEP;
+  return repairersOf(failedStep).find((repairer) => queue.includes(repairer)) ?? failedStep;
 }
 
 export function inCanonicalOrder(steps: Iterable<StepName>): StepName[] {

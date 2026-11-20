@@ -1,6 +1,8 @@
 import { join, resolve } from 'node:path';
 import { agentFlowsIn, type AgentFlowDefinition } from '../agent-runs/definition.js';
 import { buildAgentRunGraph } from '../agent-runs/graph.js';
+import { changeTrackerOf } from '../checks/workspace-changes.js';
+import { NO_OTHER_STORIES } from '../domain/concurrent-stories.js';
 import { buildCoachGraph } from '../coach/graph.js';
 import { isStepName } from '../domain/steps.js';
 import { buildFlowGraph } from '../flow/graph.js';
@@ -38,15 +40,15 @@ const SYSTEM_SKILLS = join(AGENTS_ROOT, 'system-skills');
 const PROJECTS = join(AGENTS_ROOT, 'projects');
 const SHEETS = join(AGENTS_ROOT, 'rules', 'projects');
 const COACH_CONTRACT = 'coach.md';
-const LANGGRAPH = 'LangGraph';
+const FLOW_ENGINE = 'Flow engine';
 const USER = 'user';
 const START_NODE = '__start__';
-const LANGGRAPH_SKILLS: ReadonlySet<string> = new Set(['assistant']);
+const ENGINE_SKILLS: ReadonlySet<string> = new Set(['assistant']);
 
 const BOUNDARIES: Readonly<Record<string, FlowNode>> = {
   __start__: { id: '__start__', doneBy: '/assistant', task: 'The assistant starts a story the user approved.', contracts: [], contractsWhenNeeded: [] },
   __end__: { id: '__end__', doneBy: 'tu', task: 'The user reviews the code and commits it.', contracts: [], contractsWhenNeeded: [] },
-  intake: { id: 'intake', doneBy: 'LangGraph', task: 'LangGraph reads the project sheet and notes the state of the workspace.', contracts: [], contractsWhenNeeded: [] },
+  intake: { id: 'intake', doneBy: FLOW_ENGINE, task: 'The flow engine reads the project sheet and notes the state of the workspace.', contracts: [], contractsWhenNeeded: [] },
 };
 
 const COACH_TASKS: Readonly<Record<string, string>> = {
@@ -56,7 +58,10 @@ const COACH_TASKS: Readonly<Record<string, string>> = {
 };
 
 export async function flowMapOf(): Promise<FlowMap> {
-  const story = buildFlowGraph({ workspaceRoot: '', sheets: new SheetReader(SHEETS), contractsDirectory: CONTRACTS });
+  const sheets = new SheetReader(SHEETS);
+  const story = buildFlowGraph({ workspaceRoot: '', sheets, contractsDirectory: CONTRACTS, changesOf: changeTrackerOf(''),
+    activeStories: NO_OTHER_STORIES,
+  });
   const coach = buildCoachGraph({ contractsDirectory: CONTRACTS });
   const contractNames = new Set((await agentsIn(CONTRACTS)).map((entry) => entry.file.replace(/\.md$/, '')));
   const [storyDrawing, coachDrawing, agents, [ownSkills, systemSkills, projectSkills]] = await Promise.all([
@@ -104,7 +109,7 @@ async function agentFlowOf(definition: AgentFlowDefinition): Promise<Flow> {
 }
 
 function originOfOwnSkill(name: string, contractNames: ReadonlySet<string>): Origin {
-  return contractNames.has(name) || LANGGRAPH_SKILLS.has(name) ? 'langgraph' : 'mine';
+  return contractNames.has(name) || ENGINE_SKILLS.has(name) ? 'langgraph' : 'mine';
 }
 
 function storyNode(id: string): FlowNode {
@@ -130,11 +135,11 @@ function coachNode(id: string): FlowNode {
 }
 
 function concreteDoer(contracts: readonly string[]): string {
-  return contracts.length === 0 ? LANGGRAPH : contracts.map((contract) => `/${contract.replace(/\.md$/, '')}`).join(' + ');
+  return contracts.length === 0 ? FLOW_ENGINE : contracts.map((contract) => `/${contract.replace(/\.md$/, '')}`).join(' + ');
 }
 
 function emptyNode(id: string): FlowNode {
-  return { id, doneBy: LANGGRAPH, task: '', contracts: [], contractsWhenNeeded: [] };
+  return { id, doneBy: FLOW_ENGINE, task: '', contracts: [], contractsWhenNeeded: [] };
 }
 
 function edgeOf(edge: { readonly source: string; readonly target: string; readonly conditional?: boolean }) {

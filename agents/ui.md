@@ -8,7 +8,8 @@ together with `developer.md` whenever a story touches the interface.
 ## Receives
 
 - Everything the developer receives.
-- The `ibid-ui` parts the plan decided to reuse or extend.
+- The parts of the libraries the sheet names under `Reuses` that the plan decided to reuse or
+  extend.
 
 ## Hands back
 
@@ -19,8 +20,9 @@ The same shape as the developer.
 ### Structure
 
 - Design for the mobile viewport first, 390x844, then widen.
-- Build from `ibid-ui` parts. Native `button`, `input`, `select` and `dialog` appear only
-  inside the atom that wraps them. (W09)
+- When the sheet names `Reuses`, build from those parts, and native `button`, `input`,
+  `select` and `dialog` appear only inside the atom that wraps them. (W09) A project without
+  `Reuses` follows its own sheet.
 - Reach for what the platform already does before writing script: `dialog`, `popover`,
   `details`, form validation, container queries, `:has()`, scroll snap, view transitions.
   Modern Web Guidance is the reference, within the Baseline target of the core rules.
@@ -56,6 +58,6 @@ The same shape as the developer.
 
 ## Verified by
 
-LangGraph's rule checks, the accessibility target of the sheet, the performance step and the
+The flow engine's rule checks, the accessibility target of the sheet, the performance step and the
 UX critic. A severe UX finding, a dropped frame or a failed accessibility check sends the work
 back.

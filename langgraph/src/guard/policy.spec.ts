@@ -6,10 +6,11 @@ const workspaceRoot = '/work/ibid-workspace';
 const reservedPorts = [4200, 4201, 4400, 4401, 6006];
 
 const command = (commandLine: string) => ruleOn({ command: commandLine, filePath: '', workspaceRoot, reservedPorts });
-const write = (filePath: string) => ruleOn({ command: '', filePath, workspaceRoot, reservedPorts });
+const write = (filePath: string, activeFlow = true) =>
+  ruleOn({ command: '', filePath, workspaceRoot, reservedPorts, activeFlow });
 
 describe('ruleOn', () => {
-  it.each(['git status', 'git diff --stat', 'git log -5', 'git -C apps/papikapi status --porcelain', 'git branch', 'git show HEAD', 'git worktree list', 'git stash list'])(
+  it.each(['git status', 'git diff --stat', 'git log -5', 'git -C apps/papikapi status --porcelain', 'git branch', 'git show HEAD', 'git worktree list', 'git stash list', 'git fetch -q', 'git -C apps/ibid-website fetch'])(
     'should allow reading git with "%s"',
     (commandLine) => {
       expect(command(commandLine).allowed).toBe(true);
@@ -91,7 +92,18 @@ describe('ruleOn', () => {
     expect(command('cd /work/ibid-agents/langgraph && npx tsc -p tsconfig.json').allowed).toBe(true);
   });
 
-  it('should allow writing inside the workspace', () => {
-    expect(write('/work/ibid-workspace/apps/papikapi/src/app/diary.ts').allowed).toBe(true);
+  it('should allow writing inside the workspace when a flow is active', () => {
+    expect(write('/work/ibid-workspace/apps/papikapi/src/app/diary.ts', true).allowed).toBe(true);
+  });
+
+  it('should deny writing inside the workspace when no LangGraph flow is active', () => {
+    expect(write('/work/ibid-workspace/apps/papikapi/src/app/diary.ts', false)).toMatchObject({
+      allowed: false,
+      rule: 'W60',
+    });
+  });
+
+  it('should allow writing outside the workspace even when no LangGraph flow is active', () => {
+    expect(write('/work/ibid-agents/README.md', false).allowed).toBe(true);
   });
 });

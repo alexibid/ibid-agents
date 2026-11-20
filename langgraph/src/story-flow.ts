@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Command } from '@langchain/langgraph';
-import type { Story } from './domain/plan.js';
+import { stepQueue, type Story } from './domain/plan.js';
 import type { StepName } from './domain/steps.js';
 import type { FlowGraph } from './flow/graph.js';
 import type { Instruction } from './flow/instructions.js';
@@ -11,8 +11,9 @@ export interface StoryReport {
   readonly storyId: string;
   readonly status: StoryStatus;
   readonly next: Instruction | 'nothing';
-  readonly remainingSteps: readonly StepName[];
+  readonly remainingSteps: readonly (StepName | 'plan')[];
   readonly history: readonly HistoryEntry[];
+  readonly followUps: readonly string[];
   readonly recorded: boolean;
 }
 
@@ -51,6 +52,17 @@ export class StoryFlow {
     return { ...after, recorded };
   }
 
+  async abandon(storyId: string): Promise<StoryReport> {
+    const before = await this.report(storyId);
+    if (before.status === 'finished' || before.status === 'abandoned') {
+      return before;
+    }
+    await this.graph.updateState(configOf(storyId), { status: 'abandoned' });
+    const after = await this.report(storyId);
+    const recorded = await this.journal.stepsJudged({ storyId, status: after.status, entries: [] });
+    return { ...after, recorded };
+  }
+
   async report(storyId: string): Promise<StoryReport> {
     const snapshot = await this.graph.getState(configOf(storyId));
     const state = snapshot.values as Partial<FlowStateValue>;
@@ -58,15 +70,28 @@ export class StoryFlow {
       throw new UnknownStoryError(storyId);
     }
     const pending = snapshot.tasks.flatMap((task) => task.interrupts).at(0);
+    const status = state.status ?? 'planning';
     return {
       storyId,
-      status: state.status ?? 'planning',
-      next: pending === undefined ? 'nothing' : (pending.value as Instruction),
-      remainingSteps: (state.queue ?? []).slice(state.position ?? 0),
+      status,
+      next: pending === undefined || status === 'abandoned' ? 'nothing' : (pending.value as Instruction),
+      remainingSteps: remainingStepsOf(state),
       history: state.history ?? [],
+      followUps: state.followUps ?? [],
       recorded: false,
     };
   }
+}
+
+function remainingStepsOf(state: Partial<FlowStateValue>): (StepName | 'plan')[] {
+  if (state.status === 'abandoned') {
+    return [];
+  }
+  if ((state.status ?? 'planning') !== 'planning') {
+    return (state.queue ?? []).slice(state.position ?? 0);
+  }
+  const stepsEveryPlanRuns = state.sheet === undefined ? [] : stepQueue(state.sheet, []);
+  return ['plan', ...stepsEveryPlanRuns];
 }
 
 function configOf(storyId: string) {

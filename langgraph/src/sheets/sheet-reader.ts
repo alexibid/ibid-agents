@@ -1,12 +1,19 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { SheetError, type MandatoryStep, type ProjectSheet } from '../domain/sheet.js';
-import { isCondition, isStepName, kindOf, type StepName } from '../domain/steps.js';
+import { SheetError, type ConditionTrigger, type MandatoryStep, type ProjectSheet } from '../domain/sheet.js';
+import { GENERIC_SPECIALIST, type ProjectAgent, type TeamStep } from '../domain/project-team.js';
+import { isCondition, isStepName, kindOf, type Condition, type StepName } from '../domain/steps.js';
 import { codeSpans, rowsBeforeFirstHeading, rowsUnderHeading, type TableRow } from './markdown-tables.js';
 
 const PLAN_STEP = 'plan';
+const REUSES_FIELD = 'Reuses';
+const SPECIALIST_FIELD = 'Specialist';
 
-export class SheetReader {
+export interface SheetSource {
+  read(project: string): Promise<ProjectSheet>;
+}
+
+export class SheetReader implements SheetSource {
   constructor(private readonly projectsDirectory: string) {}
 
   async read(project: string): Promise<ProjectSheet> {
@@ -27,15 +34,22 @@ export class SheetReader {
 }
 
 export function parseSheet(markdown: string, sheetFile: string): ProjectSheet {
-  const fields = fieldsOf(rowsBeforeFirstHeading(markdown));
-  return {
+  const identityRows = rowsBeforeFirstHeading(markdown);
+  const fields = fieldsOf(identityRows);
+  const sheet: ProjectSheet = {
     project: requiredField(fields, 'Nx project', sheetFile),
     path: requiredField(fields, 'Path', sheetFile),
     commitScope: requiredField(fields, 'Commit scope', sheetFile),
     sheetFile,
+    reuses: reusedLibrariesOf(identityRows),
+    specialist: fields.get(SPECIALIST_FIELD) ?? GENERIC_SPECIALIST,
+    agents: agentsOf(rowsUnderHeading(markdown, 'Agents'), sheetFile),
+    triggers: triggersOf(rowsUnderHeading(markdown, 'Triggers'), sheetFile),
     mandatorySteps: mandatoryStepsOf(rowsUnderHeading(markdown, 'Mandatory steps'), sheetFile),
     commands: commandsOf(rowsUnderHeading(markdown, 'Checks'), sheetFile),
   };
+  assertAgentsJoinMandatorySteps(sheet);
+  return sheet;
 }
 
 function fieldsOf(rows: readonly TableRow[]): Map<string, string> {
@@ -57,15 +71,45 @@ function requiredField(fields: ReadonlyMap<string, string>, name: string, sheetF
   return value;
 }
 
+function reusedLibrariesOf(rows: readonly TableRow[]): string[] {
+  const reusesRow = rows.find(([name]) => name === REUSES_FIELD);
+  return codeSpans(reusesRow?.[1] ?? '');
+}
+
+function triggersOf(rows: readonly TableRow[], sheetFile: string): ConditionTrigger[] {
+  return rows.map(([conditionCell, filesCell]) => ({
+    condition: knownCondition(codeSpans(conditionCell ?? '')[0] ?? '', 'Triggers', sheetFile),
+    patterns: codeSpans(filesCell ?? ''),
+  }));
+}
+
+function agentsOf(rows: readonly TableRow[], sheetFile: string): ProjectAgent[] {
+  return rows.map(([agentCell, stepCell, whenCell, contractCell]) => ({
+    agent: requiredCode(agentCell, 'Agent', sheetFile),
+    step: knownTeamStep(requiredCode(stepCell, 'Step', sheetFile), sheetFile),
+    when: knownCondition(codeSpans(whenCell ?? '')[0] ?? '', 'Agents', sheetFile),
+    contract: requiredCode(contractCell, 'Contract', sheetFile),
+  }));
+}
+
+function requiredCode(cell: string | undefined, column: string, sheetFile: string): string {
+  const code = codeSpans(cell ?? '')[0];
+  if (code === undefined) {
+    throw new SheetError(sheetFile, `a row of "Agents" has no \`${column}\``);
+  }
+  return code;
+}
+
+function knownTeamStep(step: string, sheetFile: string): TeamStep {
+  return step === PLAN_STEP ? PLAN_STEP : knownStep(step, sheetFile);
+}
+
 function mandatoryStepsOf(rows: readonly TableRow[], sheetFile: string): MandatoryStep[] {
   if (rows.length === 0) {
     throw new SheetError(sheetFile, 'the "Mandatory steps" table is missing or empty');
   }
   return rows.flatMap(([stepsCell, whenCell]) => {
-    const when = codeSpans(whenCell ?? '')[0] ?? '';
-    if (!isCondition(when)) {
-      throw new SheetError(sheetFile, `unknown condition "${when}" in "Mandatory steps"`);
-    }
+    const when = knownCondition(codeSpans(whenCell ?? '')[0] ?? '', 'Mandatory steps', sheetFile);
     return codeSpans(stepsCell ?? '')
       .filter((step) => step !== PLAN_STEP)
       .map((step) => ({ step: knownStep(step, sheetFile), when }));
@@ -84,11 +128,27 @@ function commandsOf(rows: readonly TableRow[], sheetFile: string): Partial<Recor
   return commands;
 }
 
+function knownCondition(condition: string, table: string, sheetFile: string): Condition {
+  if (!isCondition(condition)) {
+    throw new SheetError(sheetFile, `unknown condition "${condition}" in "${table}"`);
+  }
+  return condition;
+}
+
 function knownStep(step: string, sheetFile: string): StepName {
   if (!isStepName(step)) {
     throw new SheetError(sheetFile, `unknown step "${step}"`);
   }
   return step;
+}
+
+function assertAgentsJoinMandatorySteps(sheet: ProjectSheet): void {
+  const steps = new Set(sheet.mandatorySteps.map(({ step }) => step));
+  for (const { agent, step } of sheet.agents) {
+    if (step !== PLAN_STEP && !steps.has(step)) {
+      throw new SheetError(sheet.sheetFile, `the agent "${agent}" joins "${step}", which is not a mandatory step`);
+    }
+  }
 }
 
 function assertCommandsCoverSteps(sheet: ProjectSheet): void {

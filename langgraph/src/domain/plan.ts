@@ -1,5 +1,6 @@
 import type { ProjectSheet } from './sheet.js';
 import { inCanonicalOrder, type Condition, type StepName } from './steps.js';
+import { conditionsOfFiles } from './triggers.js';
 
 export interface Story {
   readonly project: string;
@@ -20,30 +21,12 @@ export interface PlanVerdict {
   readonly problems: readonly string[];
 }
 
-const UI_FILE = /\.(html|scss|css|svg)$|\.stories\.ts$|\/ui\/|\/atoms\/|\/molecules\/|\/organisms\/|\/templates\//;
-const FIGURE_FILE = /\.(glb|gltf|blend|obj)$|\/figures?\/|\/models?\//;
-const WORKFLOW_FILE = /^\.github\//;
-
-export function conditionsOfFiles(files: readonly string[]): Condition[] {
-  const conditions: Condition[] = ['always'];
-  if (files.some((file) => UI_FILE.test(file))) {
-    conditions.push('ui');
-  }
-  if (files.some((file) => FIGURE_FILE.test(file))) {
-    conditions.push('figures');
-  }
-  if (files.some((file) => WORKFLOW_FILE.test(file))) {
-    conditions.push('workflows');
-  }
-  return conditions;
-}
-
 export function judgePlan(plan: Plan, sheet: ProjectSheet): PlanVerdict {
   const problems = [
     ...missingFiles(plan),
-    ...undeclaredConditions(plan),
+    ...undeclaredConditions(plan, sheet),
     ...missingJourney(plan, sheet),
-    ...missingReuseSearch(plan),
+    ...missingReuseSearch(plan, sheet),
   ];
   return { accepted: problems.length === 0, problems };
 }
@@ -58,9 +41,9 @@ function missingFiles(plan: Plan): string[] {
   return plan.files.length === 0 ? ['The plan names no file to create or change.'] : [];
 }
 
-function undeclaredConditions(plan: Plan): string[] {
+function undeclaredConditions(plan: Plan, sheet: ProjectSheet): string[] {
   const declared = new Set<Condition>(plan.conditions);
-  return conditionsOfFiles(plan.files)
+  return conditionsOfFiles(plan.files, sheet)
     .filter((condition) => condition !== 'always' && !declared.has(condition))
     .map((condition) => `The planned files require the condition "${condition}", which the plan does not declare.`);
 }
@@ -72,9 +55,10 @@ function missingJourney(plan: Plan, sheet: ProjectSheet): string[] {
     : [];
 }
 
-function missingReuseSearch(plan: Plan): string[] {
+function missingReuseSearch(plan: Plan, sheet: ProjectSheet): string[] {
   const touchesInterface = plan.conditions.includes('ui');
-  return touchesInterface && plan.reusedParts.length === 0
-    ? ['The plan touches the interface but lists no ibid-ui part that was considered for reuse.']
+  const mustReuse = sheet.reuses.length > 0;
+  return touchesInterface && mustReuse && plan.reusedParts.length === 0
+    ? [`The plan touches the interface but lists no ${sheet.reuses.join(' or ')} part that was considered for reuse.`]
     : [];
 }

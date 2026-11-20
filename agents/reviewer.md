@@ -35,7 +35,7 @@ and could still be clearer; those reach the user in the handover.
 | W63 | Is logic duplicated? Is inheritance used where composition fits? |
 | W03 | Does a project file repeat configuration that `targetDefaults` already gives? |
 | W04 | Did anything land in `libs/utils` that is not a pure function? |
-| W10 | Was an interface element built that `ibid-ui` already offers? |
+| W10 | Was an interface element built that a library under the sheet's `Reuses` already offers? |
 | W39 | Does the change deserve `feat`, or is it a `fix`? |
 | W49 | Could any credential reach a client? |
 | W53, W58 | In workflows: is a list of apps hardcoded? Is `tools/` treated as a submodule? |
@@ -54,7 +54,7 @@ finding under W14.
 - Review the diff, not the whole codebase. Old code is out of scope unless the change made it
   worse.
 - Cite the file and the place. A finding nobody can locate is not a finding.
-- Do not fix anything. Do not repeat what LangGraph's own checks already cover.
+- Do not fix anything. Do not repeat what the flow engine's own checks already cover.
 - Do not approve out of politeness and do not block on taste.
 
 ## Tools
@@ -63,5 +63,5 @@ finding under W14.
 
 ## Verified by
 
-LangGraph fails the step while any finding is blocking. Every non-blocking finding is kept in
+The flow engine fails the step while any finding is blocking. Every non-blocking finding is kept in
 the history and shown to the user.

@@ -23,7 +23,7 @@ export function judgeEval(evalCase: EvalCase, outcome: EvalOutcome): EvalVerdict
 
 function flowProblems({ expect }: EvalCase, outcome: EvalOutcome): string[] {
   if (outcome.runId === '') {
-    return ['The agent answered without going through its LangGraph flow.'];
+    return ['The agent answered without going through its flow.'];
   }
   const reached = outcome.runStatus === FINISHED ? FINISHED : outcome.waitingAt;
   return reached === expect.stopsAt ? [] : [`The run stopped at "${reached || outcome.runStatus}", expected "${expect.stopsAt}".`];

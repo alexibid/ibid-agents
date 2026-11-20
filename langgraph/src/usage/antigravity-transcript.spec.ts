@@ -63,6 +63,101 @@ describe('promptsOfAntigravityTranscript', () => {
     expect(prompt?.agentCalls[0]?.request).toContain('papikapi');
   });
 
+  it('should recognise call_mcp_tool on ibid-langgraph as LangGraph calls with parsed arguments', () => {
+    const [prompt] = read([
+      userInput(0, 'fix ci', '2026-11-13T10:00:00Z'),
+      planner(1, '2026-11-13T10:00:01Z', [
+        {
+          name: 'call_mcp_tool',
+          args: {
+            ServerName: '"ibid-langgraph"',
+            ToolName: '"start_agent_run"',
+            Arguments: '{"agent":"devops","request":"fix it"}',
+          },
+        },
+      ]),
+      step({ step_index: 2, source: 'MODEL', type: 'GENERIC', content: '{"status":"working"}', created_at: '2026-11-13T10:00:02Z' }),
+    ]);
+
+    expect(prompt?.agentCalls).toEqual([
+      expect.objectContaining({
+        kind: 'langgraph',
+        agent: 'LangGraph',
+        response: '{"status":"working"}',
+        failed: false,
+      }),
+    ]);
+    expect(prompt?.agentCalls[0]?.request).toContain('start_agent_run');
+    expect(prompt?.agentCalls[0]?.request).toContain('devops');
+  });
+
+  it('should recognise invoke_subagent with its concrete agent name', () => {
+    const [prompt] = read([
+      userInput(0, 'plan it', '2026-11-13T10:00:00Z'),
+      planner(1, '2026-11-13T10:00:01Z', [
+        {
+          name: 'invoke_subagent',
+          args: {
+            TypeName: 'specialist',
+            Role: 'Solution Specialist',
+            Prompt: 'Plan the story for papikapi',
+          },
+        },
+      ]),
+      step({ step_index: 2, source: 'MODEL', type: 'GENERIC', content: '{"plan":"ok"}', created_at: '2026-11-13T10:00:05Z' }),
+    ]);
+
+    expect(prompt?.agentCalls).toEqual([
+      expect.objectContaining({
+        kind: 'agent',
+        agent: 'specialist',
+        request: 'Plan the story for papikapi',
+        response: '{"plan":"ok"}',
+      }),
+    ]);
+  });
+
+  it('should name an unnamed invoke_subagent after the skill its prompt hands over', () => {
+    const [prompt] = read([
+      userInput(0, 'check the figure', '2026-11-13T10:00:00Z'),
+      planner(1, '2026-11-13T10:00:01Z', [
+        { name: 'invoke_subagent', args: { Prompt: 'Audit it with ~/.gemini/config/skills/visual-qa/SKILL.md' } },
+        { name: 'manage_subagents', args: { Action: 'list' } },
+      ]),
+    ]);
+
+    expect(prompt?.agentCalls.map(({ kind, agent }) => ({ kind, agent }))).toEqual([
+      { kind: 'agent', agent: 'visual-qa' },
+      { kind: 'tool', agent: 'manage_subagents' },
+    ]);
+  });
+
+  it('should recognise read_file of skills or contracts as skill or agent calls', () => {
+    const [prompt] = read([
+      userInput(0, 'load assistant and developer', '2026-11-13T10:00:00Z'),
+      planner(1, '2026-11-13T10:00:01Z', [
+        { name: 'read_file', args: { Path: '"/Users/alexsantos/.gemini/config/skills/assistant/SKILL.md"' } },
+        { name: 'read_file', args: { Path: '/Users/alexsantos/Projects/ibid-agents/agents/developer.md' } },
+      ]),
+      step({ step_index: 2, source: 'MODEL', type: 'GENERIC', content: 'skill loaded', created_at: '2026-11-13T10:00:02Z' }),
+      step({ step_index: 2, source: 'MODEL', type: 'GENERIC', content: 'contract loaded', created_at: '2026-11-13T10:00:03Z' }),
+    ]);
+
+    expect(prompt?.agentCalls).toEqual([
+      expect.objectContaining({ kind: 'skill', agent: 'assistant' }),
+      expect.objectContaining({ kind: 'agent', agent: 'developer' }),
+    ]);
+  });
+
+  it('should treat reading the contracts README as a tool call, not an agent', () => {
+    const [prompt] = read([
+      userInput(0, 'who does what', '2026-11-13T10:00:00Z'),
+      planner(1, '2026-11-13T10:00:01Z', [{ name: 'read_file', args: { Path: '/me/ibid-agents/agents/README.md' } }]),
+    ]);
+
+    expect(prompt?.agentCalls.map(({ kind, agent }) => ({ kind, agent }))).toEqual([{ kind: 'tool', agent: 'read_file' }]);
+  });
+
   it('should show only what the user wrote, without the wrapping the tool adds', () => {
     const wrapped = '<USER_REQUEST>\nnext lesson\n</USER_REQUEST>\n<ADDITIONAL_METADATA>cursor at line 4</ADDITIONAL_METADATA>';
 

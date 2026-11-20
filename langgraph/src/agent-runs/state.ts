@@ -1,6 +1,6 @@
 import { Annotation } from '@langchain/langgraph';
 
-export type RunStatus = 'working' | 'finished' | 'needs-user';
+export type RunStatus = 'working' | 'finished' | 'needs-user' | 'abandoned';
 
 export interface RunHistoryEntry {
   readonly step: string;

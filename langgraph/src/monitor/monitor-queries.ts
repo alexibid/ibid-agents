@@ -1,4 +1,5 @@
 import type { Database, Row } from '../store/database.js';
+import { attachThreads, type LangGraphCallRow } from './conversation-links.js';
 
 export type Percent = number | 'unknown';
 
@@ -19,21 +20,37 @@ const PROMPT_COLUMNS = `
 const PROMPTS = `
   select ${PROMPT_COLUMNS}, left(prompts.text, 400) as text,
     coalesce((select array_agg(distinct agent) from agent_calls where prompt_id = prompts.id and kind <> 'tool'), '{}') as agents,
-    (select count(distinct agent)::int from agent_calls where prompt_id = prompts.id and kind = 'tool') as "toolsUsed"
+    (select count(distinct agent)::int from agent_calls where prompt_id = prompts.id and kind = 'tool' and called_by = '') as "toolsUsed"
   from prompts order by prompts.asked_at desc limit $1 offset $2`;
 
 const PROMPT = `select ${PROMPT_COLUMNS}, prompts.text from prompts where prompts.id = $1`;
 
 const CALLS = `
-  select id, agent, kind, request, response, failed, called_at as "calledOn"
+  select id, agent, kind, request, response, failed, called_at as "calledOn", called_by as "calledBy"
   from agent_calls where prompt_id = $1 order by called_at, id`;
 
+const LANGGRAPH_CALLS_FOR_PROMPTS = `
+  select prompt_id as "promptId", request, response
+  from agent_calls
+  where prompt_id = any($1::text[]) and kind = 'langgraph'`;
+
 const LIMITS = `
-  with latest as (
-    select distinct on (tool, pool, time_window)
-      tool, pool, time_window as "window", used_percent::float8 as "usedPercent",
-      resets_at as "resetsOn", sampled_at as "sampledOn"
-    from limit_samples order by tool, pool, time_window, sampled_at desc
+  with recursive pools as (
+    (select tool, pool, time_window from limit_samples order by tool, pool, time_window limit 1)
+    union all
+    select following.tool, following.pool, following.time_window from pools, lateral (
+      select tool, pool, time_window from limit_samples
+      where (tool, pool, time_window) > (pools.tool, pools.pool, pools.time_window)
+      order by tool, pool, time_window limit 1
+    ) following
+  ), latest as (
+    select newest.* from pools, lateral (
+      select tool, pool, time_window as "window", used_percent::float8 as "usedPercent",
+        resets_at as "resetsOn", sampled_at as "sampledOn"
+      from limit_samples
+      where limit_samples.tool = pools.tool and limit_samples.pool = pools.pool and limit_samples.time_window = pools.time_window
+      order by sampled_at desc limit 1
+    ) newest
   )
   select * from latest
   where not exists (
@@ -105,8 +122,14 @@ const RUNS = `
 export class MonitorQueries {
   constructor(private readonly database: Database) {}
 
-  prompts({ limit, offset }: Page): Promise<Row[]> {
-    return this.database.rows(PROMPTS, [limit, offset]).then((rows) => rows.map(withPercents));
+  async prompts({ limit, offset }: Page): Promise<Row[]> {
+    const rows = (await this.database.rows(PROMPTS, [limit, offset])).map(withPercents);
+    const ids = rows.map((row) => String(row['id'] ?? '')).filter((id) => id !== '');
+    if (ids.length === 0) {
+      return rows;
+    }
+    const calls = await this.database.rows<LangGraphCallRow>(LANGGRAPH_CALLS_FOR_PROMPTS, [ids]);
+    return attachThreads(rows, calls);
   }
 
   async prompt(promptId: string): Promise<Row[]> {

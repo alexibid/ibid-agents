@@ -27,19 +27,30 @@ export function invokedFlows(prompt: string, agentsWithFlow: ReadonlySet<string>
   const typed = TYPED_FIRST.exec(prompt)?.[1];
   const tagged = [...prompt.matchAll(COMMAND_TAG)].map((match) => match[1] ?? NOTHING);
   const named = [...(typed === undefined ? [] : [typed]), ...tagged];
-  return [...new Set(named.filter((agent) => agentsWithFlow.has(agent)))];
+  const normalized = named.map((name) => (name === 'assistente' ? 'assistant' : name));
+  return [...new Set(normalized.filter((agent) => agentsWithFlow.has(agent) || agent === 'assistant'))];
 }
 
 export function reminderFor(agents: readonly string[]): string {
   if (agents.length === 0) {
     return NOTHING;
   }
+  if (agents[0] === 'assistant') {
+    return [
+      'The assistant is a pure messenger and orchestrator for ibid-workspace.',
+      'Never read or edit code directly.',
+      'Before doing anything else, call recall_notes or start_story on ibid-langgraph',
+      '(or call start_agent_run with agent "devops" if this is a CI/pipeline failure).',
+      'Delegate every step to its concrete subagent (define_subagent + invoke_subagent in Antigravity, or Agent in Claude),',
+      'and report task progress in a short bulleted status list.',
+    ].join(' ');
+  }
   const named = agents.map((agent) => `/${agent}`).join(', ');
   return [
-    `${named} runs through its own LangGraph flow.`,
+    `${named} runs through its own flow.`,
     `Before doing anything else, call start_agent_run on ibid-langgraph with agent "${agents[0]}" and the user's request,`,
     'then do one step at a time and hand each back with submit_agent_step until the status is finished or needs-user.',
-    'Do not answer from memory without the flow. If LangGraph cannot be reached, say so and stop.',
+    'Do not answer from memory without the flow. If the flow engine cannot be reached, say so and stop.',
   ].join(' ');
 }
 

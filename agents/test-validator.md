@@ -43,5 +43,5 @@ One entry per criterion, with the criterion copied exactly as the story gives it
 
 ## Verified by
 
-LangGraph passes the step only when every criterion of the story appears as proven. One
+The flow engine passes the step only when every criterion of the story appears as proven. One
 unproven criterion sends the work back.

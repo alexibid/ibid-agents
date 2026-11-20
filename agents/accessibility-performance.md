@@ -40,5 +40,5 @@ Every finding states the measure, the value found and the limit.
 
 ## Verified by
 
-LangGraph takes the verdict. The project's own accessibility target runs separately as the
+The flow engine takes the verdict. The project's own accessibility target runs separately as the
 `accessibility` step and is not replaced by this one.

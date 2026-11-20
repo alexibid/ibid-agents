@@ -1,7 +1,10 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { z } from 'zod';
 import { runCommand } from '../checks/shell.js';
 import type { ChangedFile } from '../checks/workspace-changes.js';
-import { failed, passed, type StepResult } from './evidence.js';
+import { isOutsideWorkspace } from '../domain/sheet.js';
+import { failed, malformed, passed, type StepResult } from './evidence.js';
 import { handoverCommands } from './handover-commands.js';
 
 const commitLines = z.object({
@@ -19,7 +22,7 @@ export async function verifyHandover(
 ): Promise<StepResult> {
   const parsed = commitLines.safeParse(evidence);
   if (!parsed.success) {
-    return failed(parsed.error.issues.map((issue) => `Evidence field "${issue.path.join('.')}": ${issue.message}`));
+    return malformed(parsed.error);
   }
   const lines = parsed.data.commitLines;
   const problems = [
@@ -36,10 +39,14 @@ function repositoriesWithoutLine(
 ): string[] {
   const covered = new Set(lines.map(({ repository }) => repository));
   const changed = new Set(changedFiles.map(({ repository }) => repository));
-  if ([...changed].some((repository) => repository !== ROOT_REPOSITORY)) {
+  if ([...changed].some(isSubmodule)) {
     changed.add(ROOT_REPOSITORY);
   }
   return [...changed].filter((repository) => !covered.has(repository)).map((repository) => `No commit line for ${repository}.`);
+}
+
+function isSubmodule(repository: string): boolean {
+  return repository !== ROOT_REPOSITORY && !isOutsideWorkspace(repository);
 }
 
 async function rejectedLines(
@@ -52,11 +59,16 @@ async function rejectedLines(
   );
 }
 
+export function scannableFiles(changedFiles: readonly ChangedFile[], workspaceRoot: string): string[] {
+  return changedFiles.map(({ file }) => file).filter((file) => existsSync(join(workspaceRoot, file)));
+}
+
 async function leakedSecrets(changedFiles: readonly ChangedFile[], workspaceRoot: string): Promise<string[]> {
-  if (changedFiles.length === 0) {
+  const present = scannableFiles(changedFiles, workspaceRoot);
+  if (present.length === 0) {
     return [];
   }
-  const files = changedFiles.map(({ file }) => `'${file.replaceAll("'", "'\\''")}'`).join(' ');
+  const files = present.map((file) => `'${file.replaceAll("'", "'\\''")}'`).join(' ');
   const outcome = await runCommand(`${SECRETLINT} ${files}`, workspaceRoot);
   return outcome.succeeded ? [] : [`secretlint found a credential:\n${outcome.outputTail}`];
 }

@@ -23,18 +23,17 @@
 
     <section class="o-panel o-stack">
       <h2>O que o assistente chamou neste pedido</h2>
-      @if (found.calls.length > 0) {
+      @if (delegated().length > 0) {
         <p class="u-muted">
           Clica num nó para ver o que lhe foi pedido e o que devolveu.
-          <span class="legend legend--langgraph">LangGraph</span>
           <span class="legend legend--agent">agente</span>
           <span class="legend legend--skill">skill</span>
           <span class="legend legend--tool">ferramenta</span>
         </p>
         @if (!orchestrated()) {
-          <p class="summary__warning">Neste pedido o assistente não passou pelo LangGraph nem chamou nenhum agente: trabalhou sozinho, só com ferramentas.</p>
+          <p class="summary__warning">Neste pedido o assistente não delegou em nenhum agente: trabalhou sozinho.</p>
         }
-        <monitor-agent-graph [calls]="found.calls" (agentPicked)="pickedAgent.set($event)" />
+        <monitor-agent-graph [calls]="delegated()" (agentPicked)="pickedAgent.set($event)" />
       } @else {
         <p class="o-empty">Neste pedido o assistente respondeu sem chamar nada.</p>
       }

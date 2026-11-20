@@ -11,6 +11,7 @@ const call = (id: string, agent: string, fields: Partial<AgentCall> = {}): Agent
   response: 'response',
   failed: false,
   calledOn: '2026-11-13T10:00:00.000Z',
+  calledBy: '',
   ...fields,
 });
 
@@ -19,49 +20,56 @@ describe('agentGraphOf', () => {
     const graph = agentGraphOf([]);
 
     expect(graph.agents).toEqual([]);
-    expect(graph.groups).toEqual([]);
+    expect(graph.links).toEqual([]);
     expect(graph.centre.calls).toBe(0);
   });
 
-  it('should draw one node per thing called, LangGraph and agents before tools', () => {
+  it('should draw one node per thing called, agents before tools', () => {
     const graph = agentGraphOf([
       call('1', 'Bash', { kind: 'tool' }),
-      call('2', 'Explore'),
-      call('3', 'LangGraph', { kind: 'langgraph' }),
-      call('4', 'Explore'),
+      call('2', 'specialist'),
+      call('3', 'developer'),
+      call('4', 'specialist'),
     ]);
 
     expect(graph.agents.map(({ agent, kind, calls }) => ({ agent, kind, calls }))).toEqual([
-      { agent: 'LangGraph', kind: 'langgraph', calls: 1 },
-      { agent: 'Explore', kind: 'agent', calls: 2 },
+      { agent: 'specialist', kind: 'agent', calls: 2 },
+      { agent: 'developer', kind: 'agent', calls: 1 },
       { agent: 'Bash', kind: 'tool', calls: 1 },
     ]);
-    expect(graph.groups.map((group) => group.label)).toEqual(['LangGraph', 'Agentes', 'Ferramentas']);
     expect(graph.centre.calls).toBe(4);
   });
 
-  it('should read from left to right: assistant, then groups, then what was called', () => {
-    const graph = agentGraphOf([call('1', 'Explore'), call('2', 'Bash', { kind: 'tool' })]);
+  it('should never draw LangGraph, which is software and not something the assistant delegates to', () => {
+    const graph = agentGraphOf([
+      call('1', 'LangGraph', { kind: 'langgraph' }),
+      call('2', 'specialist'),
+      call('3', 'LangGraph', { kind: 'langgraph' }),
+    ]);
 
-    for (const group of graph.groups) {
-      expect(group.x).toBeGreaterThan(graph.centre.x);
-    }
-    for (const node of graph.agents) {
-      expect(node.x).toBeGreaterThan(graph.groups[0]?.x ?? 0);
-    }
+    expect(graph.agents.map(({ agent }) => agent)).toEqual(['specialist']);
+    expect(graph.centre.calls).toBe(1);
   });
 
-  it('should mark a node and its group as failed when any call failed', () => {
+  it('should read from left to right: assistant, then what it called, with no grouping nodes', () => {
+    const graph = agentGraphOf([call('1', 'Explore'), call('2', 'Bash', { kind: 'tool' })]);
+
+    for (const node of graph.agents) {
+      expect(node.x).toBeGreaterThan(graph.centre.x);
+    }
+    expect(Object.keys(graph)).not.toContain('groups');
+  });
+
+  it('should mark a node as failed when any of its calls failed', () => {
     const graph = agentGraphOf([call('1', 'Explore'), call('2', 'Explore', { failed: true }), call('3', 'reviewer')]);
 
     expect(graph.agents.map((node) => node.failed)).toEqual([true, false]);
-    expect(graph.groups[0]?.failed).toBe(true);
   });
 
-  it('should link the assistant to each group and each group to its members', () => {
+  it('should link the assistant straight to each thing it called', () => {
     const graph = agentGraphOf([call('1', 'Explore'), call('2', 'Bash', { kind: 'tool' }), call('3', 'Read', { kind: 'tool' })]);
 
-    expect(graph.links.map((link) => link.id)).toEqual(['group:agent', 'group:tool', 'agent:Explore', 'agent:Bash', 'agent:Read']);
+    expect(graph.links.map((link) => link.id)).toEqual(['agent:Explore', 'agent:Bash', 'agent:Read']);
   });
 
   it('should keep every node inside the drawing, one per row', () => {
@@ -75,6 +83,65 @@ describe('agentGraphOf', () => {
       expect(node.y).toBeLessThan(graph.height);
       expect(node.x).toBeLessThan(graph.width);
     }
+  });
+});
+
+describe('agent tools', () => {
+  const calls = [
+    call('lg', 'LangGraph', { kind: 'langgraph' }),
+    call('ag1', 'specialist'),
+    call('ag2', 'developer'),
+    call('t1', 'Bash', { kind: 'tool', calledBy: 'ag1' }),
+    call('t2', 'Read', { kind: 'tool', calledBy: 'ag1' }),
+    call('t3', 'Bash', { kind: 'tool', calledBy: 'ag1' }),
+    call('t4', 'Edit', { kind: 'tool', calledBy: 'ag2' }),
+    call('t5', 'Read', { kind: 'tool' }),
+  ];
+
+  it('should draw the tools an agent used beside that agent, not beside the assistant', () => {
+    const graph = agentGraphOf(calls);
+
+    expect(graph.agents.map(({ key, calls: count }) => ({ key, count }))).toEqual([
+      { key: 'specialist', count: 1 },
+      { key: 'developer', count: 1 },
+      { key: 'Read', count: 1 },
+    ]);
+    expect(graph.agentTools.map(({ key, calls: count }) => ({ key, count }))).toEqual([
+      { key: 'specialist › Bash', count: 2 },
+      { key: 'specialist › Read', count: 1 },
+      { key: 'developer › Edit', count: 1 },
+    ]);
+    expect(graph.centre.calls).toBe(3);
+  });
+
+  it('should draw assistant, then agent, then the tools of that agent', () => {
+    const graph = agentGraphOf(calls);
+
+    expect(graph.links.map(({ id }) => id)).toEqual([
+      'agent:specialist',
+      'agent:developer',
+      'agent:Read',
+      'tool:specialist › Bash',
+      'tool:specialist › Read',
+      'tool:developer › Edit',
+    ]);
+  });
+
+  it('should place each agent tool to the right of its agent, inside the drawing', () => {
+    const graph = agentGraphOf(calls);
+    const specialist = graph.agents.find(({ key }) => key === 'specialist');
+
+    for (const tool of graph.agentTools) {
+      expect(tool.x).toBeGreaterThan(specialist?.x ?? 0);
+      expect(tool.x).toBeLessThan(graph.width);
+      expect(tool.y).toBeLessThan(graph.height);
+    }
+    expect(graph.links.map(({ id }) => id)).toContain('tool:specialist › Bash');
+  });
+
+  it('should open the calls an agent made to a tool, apart from the assistant own calls to it', () => {
+    expect(callsTo('specialist › Bash', calls).map(({ id }) => id)).toEqual(['t1', 't3']);
+    expect(callsTo('Read', calls).map(({ id }) => id)).toEqual(['t5']);
   });
 });
 

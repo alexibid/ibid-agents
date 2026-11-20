@@ -11,19 +11,21 @@ type JsonObject = Readonly<Record<string, unknown>>;
 interface Surroundings {
   readonly workspaceRoot: string;
   readonly reservedPorts: readonly number[];
+  readonly activeFlow?: boolean;
 }
 
-export function readPayload(rawPayload: string, workspaceRoot: string, reservedPorts: readonly number[]): ToolDialect {
+export function readPayload(rawPayload: string, workspaceRoot: string, reservedPorts: readonly number[], activeFlow = true): ToolDialect {
   const payload = parse(rawPayload);
-  const surroundings = { workspaceRoot, reservedPorts };
+  const surroundings = { workspaceRoot, reservedPorts, activeFlow };
   return isObject(payload['toolCall']) ? antigravity(payload, payload['toolCall'], surroundings) : claude(payload, surroundings);
 }
 
 function claude(payload: JsonObject, surroundings: Surroundings): ToolDialect {
   const input = isObject(payload['tool_input']) ? payload['tool_input'] : {};
+  const filePath = text(input['file_path']);
   return {
-    attempt: { command: text(input['command']), filePath: text(input['file_path']), ...surroundings },
-    sessionDirectories: [text(payload['cwd'])],
+    attempt: { command: text(input['command']), filePath, ...surroundings },
+    sessionDirectories: [text(payload['cwd']), filePath],
     answer: (ruling) =>
       ruling.allowed
         ? ''
@@ -39,9 +41,10 @@ function claude(payload: JsonObject, surroundings: Surroundings): ToolDialect {
 
 function antigravity(payload: JsonObject, toolCall: JsonObject, surroundings: Surroundings): ToolDialect {
   const args = isObject(toolCall['args']) ? toolCall['args'] : {};
+  const filePath = text(args['Path']) || text(args['TargetFile']);
   return {
-    attempt: { command: text(args['CommandLine']), filePath: text(args['TargetFile']), ...surroundings },
-    sessionDirectories: [...texts(payload['workspacePaths']), text(args['Cwd'])],
+    attempt: { command: text(args['CommandLine']), filePath, ...surroundings },
+    sessionDirectories: [...texts(payload['workspacePaths']), text(args['Cwd']), filePath],
     answer: (ruling) =>
       JSON.stringify(
         ruling.allowed ? { decision: 'allow' } : { decision: 'deny', reason: `${ruling.rule}: ${ruling.reason}` },

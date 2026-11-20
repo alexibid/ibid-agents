@@ -102,7 +102,11 @@ create table if not exists agent_calls (
 alter table agent_calls drop constraint if exists agent_calls_kind_check;
 alter table agent_calls add constraint agent_calls_kind_check check (kind in ('agent', 'langgraph', 'skill', 'tool'));
 
+alter table agent_calls add column if not exists called_by text not null default '';
+
 create index if not exists agent_calls_prompt on agent_calls (prompt_id, called_at);
+create index if not exists agent_calls_agents on agent_calls (agent, called_at desc) where kind <> 'tool';
+create index if not exists agent_calls_failures on agent_calls (called_at desc) where failed;
 
 create table if not exists limit_samples (
   id bigint generated always as identity primary key,
@@ -179,3 +183,23 @@ create table if not exists backlog_items (
 );
 
 create index if not exists backlog_items_recent on backlog_items (updated_at desc);
+
+create table if not exists handoffs (
+  id uuid primary key default gen_random_uuid(),
+  workspace text not null,
+  client text not null check (client in ('claude', 'antigravity', 'other')),
+  topic text not null,
+  summary text not null,
+  decisions text[] not null default '{}',
+  next_action text not null default '',
+  open_questions text[] not null default '{}',
+  active_story_id text not null default '',
+  active_run_id text not null default '',
+  active_coach_id text not null default '',
+  status text not null check (status in ('open', 'closed')) default 'open',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists handoffs_open_topic on handoffs (workspace, lower(topic)) where status = 'open';
+create index if not exists handoffs_recent on handoffs (status, updated_at desc);

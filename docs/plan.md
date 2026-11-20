@@ -17,7 +17,7 @@ Agreed with the user on 2026-11-11.
 3. Give the user one assistant, invoked as `/assistant` inside Claude Desktop or Antigravity. It
    speaks plain language and prepares the user story and its acceptance criteria.
 4. Give each project a specialist that plans the work and calls the agents it needs.
-5. Put a LangGraph program underneath, reached over MCP. It hands out one step at
+5. Put a the flow engine program underneath, reached over MCP. It hands out one step at
    a time, runs the checks itself, and only advances when they pass.
 6. Leave the user with code review and the commit, with the commit line already prepared.
 
@@ -26,10 +26,10 @@ Agreed with the user on 2026-11-11.
 1. The user types `/assistant` and what they want, with images and files if useful.
 2. The assistant asks questions until the user story is right.
 3. The user says to go ahead. The assistant names the project and hands the story over.
-4. The specialist submits a plan. LangGraph rejects it if a mandatory step of that project's
+4. The specialist submits a plan. The flow engine rejects it if a mandatory step of that project's
    sheet is missing.
-5. One agent works on each step. LangGraph verifies it and returns the exact error on failure.
-6. At the end LangGraph runs the same gates as Husky and matches every acceptance criterion to
+5. One agent works on each step. The flow engine verifies it and returns the exact error on failure.
+6. At the end the flow engine runs the same gates as Husky and matches every acceptance criterion to
    a test that proves it.
 7. The assistant reports back in plain language with one commit line per repository.
 8. The user reviews the code and commits.
@@ -56,9 +56,9 @@ Agreed with the user on 2026-11-11.
 
 | Kind | Guarantee | Mechanism |
 | --- | --- | --- |
-| Machine-checkable | Full | LangGraph runs the check on every step |
+| Machine-checkable | Full | The flow engine runs the check on every step |
 | Forbidden action | Full | A guard denies it when attempted |
-| Step order | Full | LangGraph owns the order and the evidence required |
+| Step order | Full | The flow engine owns the order and the evidence required |
 | Judgement | Partial | Reviewer and UX critic, then the user's code review |
 
 ## Build order
@@ -66,7 +66,7 @@ Agreed with the user on 2026-11-11.
 1. The repository exists. Done.
 2. Rule table: every rule, its kind, and how it is guaranteed.
 3. Rules reorganised: a small always-on core under both tools' limits, and one sheet per project.
-4. LangGraph, with the flow and the checks.
+4. The flow engine, with the flow and the checks.
 5. The assistant and the `papikapi` specialist.
 6. Guards in both tools, tested in both.
 7. The remaining agents, one at a time, each with its own trials.
@@ -82,7 +82,7 @@ Agreed with the user on 2026-11-11.
 
 ## Decisions
 
-- LangGraph is a requirement.
+- The flow engine is a requirement.
 - The user works inside Claude Desktop and Antigravity. No command line and no new chat app.
 - In this system unit and browser tests run without the user launching them.
 - The commit is always the user's.
@@ -94,7 +94,7 @@ Agreed with the user on 2026-11-11.
 - Judgement rules are never fully guaranteed.
 - Voice input is whatever each tool offers.
 - Each tool uses its own model. One model does not judge another within a task.
-- LangGraph is the user's own code and needs maintenance.
+- The flow engine is the user's own code and needs maintenance.
 
 ## To confirm while building
 

@@ -1,5 +1,7 @@
+import { agentNamedIn } from './delegated-agent.js';
 import { numberIn, objectIn, objectsIn, parsedLines, textIn, type JsonObject } from './json-reading.js';
 import {
+  CALLED_BY_ASSISTANT,
   clipped,
   clippedForTool,
   isLangGraphTool,
@@ -31,6 +33,10 @@ const USER_INPUT = 'USER_INPUT';
 const PLANNER_RESPONSE = 'PLANNER_RESPONSE';
 const FAILED = 'ERROR';
 const SUBAGENT_TOOL = /agent/i;
+const CONTRACTS_INDEX = 'README';
+const SUBAGENT_MANAGEMENT: ReadonlySet<string> = new Set(['manage_subagents']);
+const SKILL_FILE = /(?:skills|\.agents\/skills)\/([a-z0-9-]+)\/SKILL\.md$/i;
+const AGENT_CONTRACT_FILE = /(?:^|\/)agents\/([a-z0-9-]+)\.md$/i;
 
 export function promptsOfAntigravityTranscript({ conversationId, lines }: AntigravityConversation): PromptRecord[] {
   const prompts: OpenPrompt[] = [];
@@ -99,13 +105,64 @@ function answerOldestCall(prompt: OpenPrompt, line: JsonObject): void {
 function callOf(toolCall: JsonObject, id: string, calledOn: string): AgentCall {
   const name = textIn(toolCall, 'name');
   const args = objectIn(toolCall, 'args');
-  const base = { id, response: '', failed: false, calledOn };
+  const base = { id, response: '', failed: false, calledOn, calledBy: CALLED_BY_ASSISTANT };
+
+  if (name === 'call_mcp_tool' || name === 'mcp_tool') {
+    const server = clean(textIn(args, 'ServerName'));
+    const tool = clean(textIn(args, 'ToolName'));
+    if (isLangGraphTool(server) || isLangGraphTool(tool)) {
+      const parsedArgs = parsePayload(args['Arguments']);
+      return { ...base, kind: 'langgraph', agent: 'LangGraph', request: langGraphRequest(tool || server, parsedArgs) };
+    }
+  }
+
   if (isLangGraphTool(name)) {
     return { ...base, kind: 'langgraph', agent: 'LangGraph', request: langGraphRequest(name, args) };
   }
-  return SUBAGENT_TOOL.test(name)
-    ? { ...base, kind: 'agent', agent: name, request: clipped(JSON.stringify(args, null, 2)) }
-    : { ...base, kind: 'tool', agent: name, request: clippedForTool(JSON.stringify(args, null, 2)) };
+
+  if (name === 'invoke_subagent' || name === 'define_subagent') {
+    const typeName = clean(textIn(args, 'TypeName'));
+    const role = clean(textIn(args, 'Role'));
+    const agentName = clean(textIn(args, 'Name'));
+    const prompt = clean(textIn(args, 'Prompt'));
+    const agent = typeName || role || agentName || agentNamedIn(prompt) || 'subagent';
+    const request = prompt !== '' ? clipped(prompt) : clipped(JSON.stringify(args, null, 2));
+    return { ...base, kind: 'agent', agent, request };
+  }
+
+  if (SUBAGENT_TOOL.test(name) && !SUBAGENT_MANAGEMENT.has(name)) {
+    return { ...base, kind: 'agent', agent: name, request: clipped(JSON.stringify(args, null, 2)) };
+  }
+
+  if (name === 'read_file') {
+    const path = clean(textIn(args, 'Path'));
+    const skillMatch = SKILL_FILE.exec(path);
+    if (skillMatch?.[1] !== undefined) {
+      return { ...base, kind: 'skill', agent: skillMatch[1], request: clippedForTool(path) };
+    }
+    const agentMatch = AGENT_CONTRACT_FILE.exec(path);
+    if (agentMatch?.[1] !== undefined && agentMatch[1] !== CONTRACTS_INDEX) {
+      return { ...base, kind: 'agent', agent: agentMatch[1], request: clippedForTool(path) };
+    }
+  }
+
+  return { ...base, kind: 'tool', agent: name, request: clippedForTool(JSON.stringify(args, null, 2)) };
+}
+
+function clean(value: string): string {
+  return value.replace(/^["']|["']$/g, '').trim();
+}
+
+function parsePayload(value: unknown): unknown {
+  if (typeof value !== 'string') {
+    return value;
+  }
+  try {
+    const first = JSON.parse(value);
+    return typeof first === 'string' ? JSON.parse(first) : first;
+  } catch {
+    return value;
+  }
 }
 
 function recordOf(prompt: OpenPrompt, conversationId: string): PromptRecord {

@@ -4,6 +4,7 @@ import { Observable, share } from 'rxjs';
 import { MonitorGateway } from '../application/monitor-gateway';
 import type { AgentRun, RosterEntry } from '../domain/agent-roster';
 import type { Epic } from '../domain/backlog';
+import type { EngineStatus } from '../domain/engine';
 import type { CaseReport } from '../domain/evals';
 import type { FlowMap, Story } from '../domain/flow-map';
 import type { PromptDetail, PromptSummary } from '../domain/prompt';
@@ -94,5 +95,13 @@ export class HttpMonitorGateway extends MonitorGateway {
 
   override evals(agent: string): Observable<CaseReport[]> {
     return this.http.get<CaseReport[]>(`${SERVICE}/evals`, { params: { agent } });
+  }
+
+  override engine(): Observable<EngineStatus> {
+    return this.http.get<EngineStatus>(`${SERVICE}/engine`);
+  }
+
+  override restartEngine(): Observable<EngineStatus> {
+    return this.http.post<EngineStatus>(`${SERVICE}/engine/restart`, null);
   }
 }

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { isOutsideWorkspace, type ProjectSheet } from '../domain/sheet.js';
 import { readCommand } from './shell.js';
 
 export interface DirtyFile {
@@ -14,12 +15,20 @@ export interface ChangedFile extends DirtyFile {
 
 export type Fingerprint = Readonly<Record<string, string>>;
 
+export interface ChangeTracker {
+  fingerprint(): Promise<Fingerprint>;
+  changedSince(baseline: Fingerprint): Promise<ChangedFile[]>;
+}
+
 const ROOT_REPOSITORY = '.';
 const DELETED = 'deleted';
 const SUBMODULE_PATH = /^\s*path\s*=\s*(.+)$/gm;
 
-export class WorkspaceChanges {
-  constructor(private readonly root: string) {}
+export class WorkspaceChanges implements ChangeTracker {
+  constructor(
+    private readonly root: string,
+    private readonly separateRepositories: readonly string[] = [],
+  ) {}
 
   async fingerprint(): Promise<Fingerprint> {
     const dirtyFiles = await this.dirtyFiles();
@@ -38,7 +47,7 @@ export class WorkspaceChanges {
   }
 
   private async dirtyFiles(): Promise<DirtyFile[]> {
-    const repositories = [ROOT_REPOSITORY, ...(await this.submodulePaths())];
+    const repositories = [ROOT_REPOSITORY, ...(await this.submodulePaths()), ...this.separateRepositories];
     const perRepository = await Promise.all(repositories.map((repository) => this.dirtyFilesOf(repository)));
     return perRepository.flat().filter(({ file }) => !repositories.includes(file));
   }
@@ -62,6 +71,10 @@ export class WorkspaceChanges {
     const content = await readFile(join(this.root, file)).catch(() => DELETED);
     return content === DELETED ? DELETED : createHash('sha1').update(content).digest('hex');
   }
+}
+
+export function changeTrackerOf(root: string): (sheet: ProjectSheet) => ChangeTracker {
+  return (sheet) => new WorkspaceChanges(root, isOutsideWorkspace(sheet.path) ? [sheet.path] : []);
 }
 
 function pathOfStatusLine(line: string): string {

@@ -4,7 +4,7 @@ import type { Plan, Story } from '../domain/plan.js';
 import type { ProjectSheet } from '../domain/sheet.js';
 import type { StepName } from '../domain/steps.js';
 
-export type StoryStatus = 'planning' | 'working' | 'finished' | 'needs-user';
+export type StoryStatus = 'planning' | 'working' | 'finished' | 'needs-user' | 'abandoned';
 
 export interface HistoryEntry {
   readonly step: StepName | 'plan';
@@ -20,6 +20,8 @@ export const FlowState = Annotation.Root({
   baseline: Annotation<Fingerprint>(),
   contractsDirectory: Annotation<string>(),
   plan: Annotation<Plan>({ reducer: (_previous, next) => next, default: () => EMPTY_PLAN }),
+  followUps: Annotation<string[]>({ reducer: (previous, next) => [...new Set([...previous, ...next])], default: () => [] }),
+  testFiles: Annotation<string[]>({ reducer: (_previous, next) => next, default: () => [] }),
   queue: Annotation<StepName[]>({ reducer: (_previous, next) => next, default: () => [] }),
   position: Annotation<number>({ reducer: (_previous, next) => next, default: () => 0 }),
   attempts: Annotation<Record<string, number>>({ reducer: (_previous, next) => next, default: () => ({}) }),

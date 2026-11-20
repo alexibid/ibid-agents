@@ -23,7 +23,7 @@ const GUARD_NAME = 'ibid-guard';
 const NX_MARKETPLACE = 'nx-claude-plugins';
 const NX_PLUGIN = `nx@${NX_MARKETPLACE}`;
 const CLAUDE_MATCHER = 'Bash|Write|Edit|MultiEdit|NotebookEdit';
-const ANTIGRAVITY_MATCHER = 'run_command|write_to_file|replace_file_content|multi_replace_file_content';
+const ANTIGRAVITY_MATCHER = 'run_command|write_to_file|replace_file_content|multi_replace_file_content|edit_file|write_file';
 
 class UsageError extends Error {}
 

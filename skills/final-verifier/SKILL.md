@@ -1,6 +1,6 @@
 ---
 name: final-verifier
-description: Prepare the commit lines for the finished story, so that the user's commit passes every gate on the first try. LangGraph hands this role out in the final-verification step of a user story. Invoke /final-verifier to run the role on its own.
+description: Prepare the commit lines for the finished story, so that the user's commit passes every gate on the first try. The flow engine hands this role out in the final-verification step of a user story. Invoke /final-verifier to run the role on its own.
 ---
 
 # Final verifier
@@ -9,4 +9,4 @@ Read and follow the contract at `/Users/alexsantos/Projects/ibid-agents/agents/f
 what it receives, what it hands back, its rules and its tools.
 
 When the work belongs to a user story in ibid-workspace, it runs through `/assistant` and
-LangGraph, which hand this contract out at the right step.
+the flow engine, which hands this contract out at the right step.

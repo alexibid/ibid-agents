@@ -1,144 +1,27 @@
 #!/usr/bin/env node
-import { mkdir } from 'node:fs/promises';
-import { dirname } from 'node:path';
-import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { z } from 'zod';
-import { registerAgentRunTools } from './agent-runs/agent-run-tools.js';
-import { PostgresBacklogArchive } from './backlog/backlog-archive.js';
-import { registerBacklogTools } from './backlog/backlog-tools.js';
-import { agentRunFlowOf } from './agent-runs/setup.js';
-import { buildCoachGraph } from './coach/graph.js';
-import { CoachFlow, type CoachReport } from './coach-flow.js';
-import { readConfiguration } from './configuration.js';
-import { buildFlowGraph } from './flow/graph.js';
-import { PostgresFlowJournal } from './journal/flow-journal.js';
-import { registerMemoryTools } from './memory/memory-tools.js';
-import { PostgresNoteArchive } from './memory/note-archive.js';
-import { Database } from './store/database.js';
-import { StoryFlow, type StoryReport } from './story-flow.js';
-import { SheetReader } from './sheets/sheet-reader.js';
+import { join } from 'node:path';
+import { createInterface } from 'node:readline';
+import { engineProcess } from './relay/engine-process.js';
+import { RESTART_SIGNAL } from './relay/restart-signal-file.js';
+import { whenAnyChanges } from './relay/restart-signals.js';
+import { StdioRelay } from './relay/stdio-relay.js';
 
-const DEFAULT_COACH_WORKSPACE = '/Users/alexsantos/Projects/lemon-mart';
-const database = new Database();
+const ENGINE_SCRIPT = join(import.meta.dirname, 'engine.js');
+const RELAUNCH_AFTER_CRASH_MS = 2000;
 
-async function createFlows(): Promise<{ readonly storyFlow: StoryFlow; readonly coachFlow: CoachFlow }> {
-  const { workspaceRoot, projectsDirectory, contractsDirectory, stateFile, coachStateFile } = readConfiguration();
-  await mkdir(dirname(stateFile), { recursive: true });
-  await mkdir(dirname(coachStateFile), { recursive: true });
-  const sheets = new SheetReader(projectsDirectory);
-  const storyGraph = buildFlowGraph({ workspaceRoot, sheets, contractsDirectory }, SqliteSaver.fromConnString(stateFile));
-  const storyFlow = new StoryFlow(storyGraph, new PostgresFlowJournal(database));
-  const coachFlow = new CoachFlow(buildCoachGraph({ contractsDirectory }, SqliteSaver.fromConnString(coachStateFile)));
-  return { storyFlow, coachFlow };
+const relay = new StdioRelay(
+  engineProcess(ENGINE_SCRIPT),
+  { send: (line) => process.stdout.write(`${line}\n`) },
+  (relaunch) => setTimeout(relaunch, RELAUNCH_AFTER_CRASH_MS),
+);
+
+function shutDown(): void {
+  relay.shutDown();
+  setTimeout(() => process.exit(0), 200);
 }
 
-function answer(report: StoryReport | CoachReport) {
-  return { content: [{ type: 'text' as const, text: JSON.stringify(report, null, 2) }] };
-}
-
-function refusal(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  return { content: [{ type: 'text' as const, text: message }], isError: true };
-}
-
-function registerTools(server: McpServer, storyFlow: StoryFlow, coachFlow: CoachFlow): void {
-  server.registerTool(
-    'start_story',
-    {
-      description:
-        'Start a user story the user has approved. Returns the story id and the first thing LangGraph is waiting for.',
-      inputSchema: {
-        project: z.string().describe('The Nx project name, as in its project sheet'),
-        title: z.string().describe('The user story in one sentence'),
-        criteria: z.array(z.string()).min(1).describe('The acceptance criteria, one per entry'),
-      },
-    },
-    async (story) => storyFlow.startStory(story).then(answer, refusal),
-  );
-
-  server.registerTool(
-    'submit_plan',
-    {
-      description: 'Hand the specialist plan to LangGraph. A rejected plan comes back with the problems to fix.',
-      inputSchema: {
-        storyId: z.string(),
-        files: z.array(z.string()).describe('Every workspace path to create or change'),
-        conditions: z.array(z.enum(['ui', 'figures', 'workflows'])).describe('What the change touches'),
-        journey: z.string().default('').describe('The journey that covers the story, or empty'),
-        reusedParts: z.array(z.string()).default([]).describe('The ibid-ui parts considered for reuse'),
-        brief: z.string().default('').describe('What each later step needs to know: contracts, signatures, layers, edge cases'),
-      },
-    },
-    async ({ storyId, ...plan }) => storyFlow.submit(storyId, plan).then(answer, refusal),
-  );
-
-  server.registerTool(
-    'submit_step',
-    {
-      description:
-        'Hand the result of the current step to LangGraph, in the shape its instruction asked for. LangGraph verifies it, runs its own checks, and returns the next step or the exact failure.',
-      inputSchema: {
-        storyId: z.string(),
-        handBack: z.record(z.string(), z.unknown()).describe('The evidence the current instruction asked for'),
-      },
-    },
-    async ({ storyId, handBack }) => storyFlow.submit(storyId, handBack).then(answer, refusal),
-  );
-
-  server.registerTool(
-    'story_status',
-    {
-      description: 'Read where a story stands: what LangGraph is waiting for, the remaining steps and the history.',
-      inputSchema: { storyId: z.string() },
-    },
-    async ({ storyId }) => storyFlow.report(storyId).then(answer, refusal),
-  );
-
-  server.registerTool(
-    'start_coaching',
-    {
-      description:
-        'Start a pair-programming coaching session (separate from ibid-workspace stories). Returns the sessionId and the first step LangGraph is waiting for.',
-      inputSchema: {
-        goal: z.string().describe('What the student wants to learn or build in this session'),
-        workspaceRoot: z
-          .string()
-          .default(DEFAULT_COACH_WORKSPACE)
-          .describe('Absolute path of the coaching workspace (defaults to lemon-mart)'),
-      },
-    },
-    async (goal) => coachFlow.startCoaching(goal).then(answer, refusal),
-  );
-
-  server.registerTool(
-    'submit_coach_step',
-    {
-      description:
-        'Hand the result of the current coaching step to the Coach LangGraph. Validates outside-in design, bite-sized Angular 22 lessons, and student code.',
-      inputSchema: {
-        sessionId: z.string(),
-        handBack: z.record(z.string(), z.unknown()).describe('The payload expected by the current coaching step'),
-      },
-    },
-    async ({ sessionId, handBack }) => coachFlow.submit(sessionId, handBack).then(answer, refusal),
-  );
-
-  server.registerTool(
-    'coach_status',
-    {
-      description: 'Read where a coaching session stands: what step LangGraph is waiting for, validated lesson blocks, and history.',
-      inputSchema: { sessionId: z.string() },
-    },
-    async ({ sessionId }) => coachFlow.report(sessionId).then(answer, refusal),
-  );
-}
-
-const server = new McpServer({ name: 'ibid-langgraph', version: '0.1.0' });
-const { storyFlow, coachFlow } = await createFlows();
-registerTools(server, storyFlow, coachFlow);
-registerMemoryTools(server, new PostgresNoteArchive(database));
-registerAgentRunTools(server, await agentRunFlowOf(database));
-registerBacklogTools(server, new PostgresBacklogArchive(database));
-await server.connect(new StdioServerTransport());
+createInterface({ input: process.stdin })
+  .on('line', (line) => relay.fromClient(line))
+  .on('close', shutDown);
+process.on('SIGTERM', shutDown);
+whenAnyChanges([ENGINE_SCRIPT, RESTART_SIGNAL], () => relay.restart());

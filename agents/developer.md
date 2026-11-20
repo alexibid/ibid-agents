@@ -19,7 +19,10 @@ Make the planned change so that the tests already written pass. Nothing more.
 
 ## Rules
 
-- Change only the files the plan names. A file outside the plan fails the step.
+- Change only the files the plan names. A file outside the plan fails the step; spec and mock
+  files (`.spec.ts`, `.mock.ts`, anything under `mocks/`) never count as outside it.
+- When an earlier attempt of the story already left the planned change in the tree and nothing
+  is left to do, change nothing and say so in the summary.
 - Never weaken, skip or delete a test to make it pass. A test that looks wrong is reported in
   the summary, not edited.
 - Follow the layers of the project sheet. Domain code is pure TypeScript with no framework.
@@ -41,10 +44,10 @@ Make the planned change so that the tests already written pass. Nothing more.
 
 - Read anything in the workspace. Edit the planned files.
 - The Angular CLI MCP server and the Nx skills, for generators and modern patterns.
-- Run nothing that validates. LangGraph runs build, lint, rule checks and tests.
+- Run nothing that validates. The flow engine runs build, lint, rule checks and tests.
 - Never change git state.
 
 ## Verified by
 
-LangGraph compares the changed files with the plan, then runs the build, the lint, the rule
+The flow engine compares the changed files with the plan, then runs the build, the lint, the rule
 checks and the unit tests. Any failure comes back with the exact output.

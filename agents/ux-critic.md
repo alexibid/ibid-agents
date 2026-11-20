@@ -61,5 +61,5 @@ Only `high` sends the work back. The others reach the user in the handover.
 
 ## Verified by
 
-LangGraph checks that every screenshot exists and fails the step while any `high` finding
+The flow engine checks that every screenshot exists and fails the step while any `high` finding
 remains.

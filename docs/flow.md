@@ -1,6 +1,6 @@
 # Flow
 
-The LangGraph graph, drawn from the code. Regenerate it after changing `langgraph/src/flow/graph.ts`.
+The flow graph, drawn from the code. Regenerate it after changing `langgraph/src/flow/graph.ts`.
 
 ```mermaid
 %%{init: {'flowchart': {'curve': 'linear'}}}%%

@@ -9,6 +9,8 @@ are involved.
 | Nx project | `papikapi-studio` |
 | Prefix | `papikapi-studio-` |
 | Commit scope | `papikapi-studio` |
+| Specialist | `agents/papikapi-studio-specialist.md` |
+| Reuses | `ibid-ui` |
 | Delivery | Web. Never reaches a phone |
 
 ## Mandatory steps
@@ -21,6 +23,22 @@ are involved.
 
 The project declares no test target today. `author-tests`, `unit-tests` and `validate-tests`
 become mandatory once it has one.
+
+## Triggers
+
+| Condition | Files |
+| --- | --- |
+| `figures` | `.glb`, `.gltf`, `.blend`, `.obj`, `figures/` |
+
+A code model under `domain/models/` is not a figure and never triggers `figures`.
+
+## Agents
+
+Project agents the flow engine brings into a step, beside its generic agents.
+
+| Agent | Step | When | Contract |
+| --- | --- | --- | --- |
+| `blender` | `implement` | `figures` | `skills/blender/SKILL.md` |
 
 ## Checks
 
@@ -35,8 +53,8 @@ become mandatory once it has one.
   from the reference image first.
 - Stance, plinth, background, facets, shadows, camera and child-safety constraints live in the
   system prompt.
-- `scripts/common/prompt-guard.ts` enforces the separation and
-  `scripts/common/prompt-enricher.spec.ts` tests it. (P05)
+- `apps/papikapi-api/scripts/shared/common/prompt-guard.ts` enforces the separation and
+  `prompt-enricher.spec.ts` beside it tests it. (P05)
 
 ## Visual gate
 

@@ -7,8 +7,8 @@ The desktop dashboard of ibid-agents. It only observes: nothing here sends a pro
 | Screen | Shows |
 | --- | --- |
 | Pedidos | Every prompt, with its date, tokens, share of the 5-hour and weekly limits, and tool. "Ver mais" opens the agents that prompt invoked; clicking an agent opens what it was asked and what it returned |
-| Telemetria | Tokens per day and tool, the agents called most, and the LangGraph steps with their failures and average time |
-| Erros | Failures of prompts, agents and LangGraph steps, filtered by origin and text |
+| Telemetria | Tokens per day and tool, the agents called most, and the flow steps with their failures and average time |
+| Erros | Failures of prompts, agents and flow steps, filtered by origin and text |
 | Memória | The notes the archivist keeps; empty search lists what is still to be done |
 
 The strip at the top and the menu bar item show the 5-hour and weekly limits of both tools.

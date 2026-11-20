@@ -10,29 +10,19 @@
     <text class="graph__count" y="15">{{ drawing.centre.calls }} {{ drawing.centre.calls === 1 ? 'chamada' : 'chamadas' }}</text>
   </g>
 
-  @for (group of drawing.groups; track group.kind) {
-    <g
-      [class]="'graph__group graph__node--' + group.kind"
-      [class.graph__node--failed]="group.failed"
-      [attr.transform]="'translate(' + group.x + ' ' + group.y + ')'"
-    >
-      <rect class="graph__box graph__box--group" [attr.x]="-groupHalfWidth" y="-18" [attr.width]="groupHalfWidth * 2" height="36" rx="18" />
-      <text class="graph__name" y="5">{{ group.label }}</text>
-    </g>
-  }
-
-  @for (node of drawing.agents; track node.agent) {
+  @for (node of drawing.agents.concat(drawing.agentTools); track node.key) {
     <g
       [class]="'graph__node graph__node--' + node.kind"
       [class.graph__node--failed]="node.failed"
       [attr.transform]="'translate(' + node.x + ' ' + node.y + ')'"
       role="button"
       tabindex="0"
-      [attr.aria-label]="'Ver o que foi pedido a ' + node.agent + ' e o que devolveu'"
-      (click)="agentPicked.emit(node.agent)"
-      (keydown.enter)="agentPicked.emit(node.agent)"
+      [attr.aria-label]="'Ver o que foi pedido a ' + node.key + ' e o que devolveu'"
+      (click)="agentPicked.emit(node.key)"
+      (keydown.enter)="agentPicked.emit(node.key)"
     >
-      <rect class="graph__box" [attr.x]="-nodeHalfWidth" y="-24" [attr.width]="nodeHalfWidth * 2" height="48" rx="10" />
+      @let halfWidth = node.key === node.agent ? nodeHalfWidth : toolHalfWidth;
+      <rect class="graph__box" [attr.x]="-halfWidth" y="-24" [attr.width]="halfWidth * 2" height="48" rx="10" />
       <text class="graph__name" y="-3">{{ node.agent }}</text>
       <text class="graph__count" y="14">{{ node.calls }} {{ node.calls === 1 ? 'chamada' : 'chamadas' }}{{ node.failed ? ' · falhou' : '' }}</text>
     </g>

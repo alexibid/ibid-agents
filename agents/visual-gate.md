@@ -51,11 +51,13 @@ One entry in `details` per mandatory part. A part that could not be inspected is
 - There are two gates. The base gate approves only the shape of the raw model: pose,
   proportions, tail, paws, mesh. The final gate approves the textured model the user would
   see. Only a final pass lets a figure through.
-- Change no project file.
+- Change no project file. Every file the gate writes, the regions file included, goes in the
+  `--out` folder of the audit, outside the workspace (for example `/tmp/visual-gate/<figure>/`),
+  so no later step finds it in the diff.
 
 ## Method
 
-1. Read the art and name every mandatory part. Create or revise the regions file: for each
+1. Read the art and name every mandatory part. Create or revise the regions file in the `--out` folder: for each
    part, a box `[x, y, width, height]` in art pixels, with `kind` (`eye`, `mark`, `ear`,
    `paw`, `tail`, `default`), `mandatory`, and `visibility` (`visible`, or `hidden` when the
    art does not show it). Eye boxes fit the iris. `scripts/regions.example.json` shows the
@@ -98,5 +100,5 @@ art does, pass `--art-floor-y <row>` and `--camera` so the art is aligned withou
 
 ## Verified by
 
-LangGraph checks that every listed image exists and fails the step while any part is `fail`.
+The flow engine checks that every listed image exists and fails the step while any part is `fail`.
 The agent that produced the figure is never the one that runs this gate. (S03)

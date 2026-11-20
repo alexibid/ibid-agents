@@ -4,6 +4,7 @@ import { MonitorGateway } from './application/monitor-gateway';
 import { LimitsStore } from './application/records-stores';
 import { menuBarTextOf } from './domain/menu-bar';
 import { MenuBar } from './infrastructure/menu-bar';
+import { EngineStrip } from './ui/organisms/engine-strip';
 import { LimitsStrip } from './ui/organisms/limits-strip';
 
 const SCREENS = [
@@ -17,7 +18,7 @@ const SCREENS = [
 
 @Component({
   selector: 'monitor-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, LimitsStrip],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, EngineStrip, LimitsStrip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app.html',
   styleUrl: './app.scss',

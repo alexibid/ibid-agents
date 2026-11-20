@@ -27,9 +27,10 @@ on the first try. The verifier never commits.
   `chore(workspace): bump <names> submodule` or `submodules`.
 - The format is `type(scope): subject`: lower case, no final full stop, at most 100 characters,
   no body and no footer. (W37)
-- `scope` is the Nx project name of that repository: `oh-save-me`, `papikapi`,
-  `papikapi-studio`, `boilerplate`, `ibid-ui`, `services`, `testing`, `utils`, `tools`,
-  `workspace`.
+- `scope` is the `Commit scope` field of that repository's project sheet; `workspace` for the
+  workspace root and `tools` for `tools/`.
+- A repository outside the workspace, such as `../ibid-agents`, gets its own line and never a
+  workspace root line.
 - The type decides the version, so choose it for its effect. (W39)
 
 | Type | Effect | Use for |
@@ -42,8 +43,10 @@ on the first try. The verifier never commits.
 
 - The subject says what changed for the product, in the imperative, in English.
 - No agent name, no co-author line, no attribution of any kind.
-- Before any line is handed back, DevOps validates the workspace: Dependabot and the tests. The
-  lines are shown only when DevOps reports green; otherwise the failure goes back instead. (W64)
+- The final verifier never runs DevOps. After this step passes, the assistant runs `/devops`
+  for any line of ibid-workspace (the root or a submodule) and shows those lines only when DevOps
+  reports green; otherwise it shows what failed and no line. A repository outside the
+  workspace, such as `../ibid-agents`, is verified by its own sheet's checks, not by DevOps. (W64)
 
 ## Tools
 
@@ -52,11 +55,11 @@ on the first try. The verifier never commits.
 
 ## Verified by
 
-LangGraph requires a line for every changed repository, runs the workspace's commitlint on
+The flow engine requires a line for every changed repository, runs the workspace's commitlint on
 each line, and scans the changed files for credentials. A rejected line comes back with the
 linter's own message.
 
-When the lines pass, LangGraph itself writes the commands the user will run, one per
+When the lines pass, the flow engine itself writes the commands the user will run, one per
 repository, submodules first and the workspace root last:
 
 ```bash
@@ -65,4 +68,5 @@ cd '<absolute path of the repository>' && git add -- '<file>' '<file>' && git co
 
 Only files this story created or changed are staged. A file that already carried uncommitted
 work before the story began is left out and reported, because it mixes two pieces of work. The
-verifier never writes these commands by hand.
+verifier never writes these commands by hand. When nothing in a repository can be staged that
+way, the flow engine says so and gives only the commit command, to run after staging by hand.

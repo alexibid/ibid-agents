@@ -4,6 +4,7 @@ export interface OpeningSession {
   readonly agentsRoot: string;
   readonly coreRules: string;
   readonly pullNotice: string;
+  readonly handoffNotice?: string;
 }
 
 const NOTHING_TO_ADD = '';
@@ -41,11 +42,12 @@ export function sessionDirectoryOf(rawPayload: string): string {
 }
 
 function sectionsFor(session: OpeningSession): readonly string[] {
+  const handoff = session.handoffNotice ?? '';
   if (isInside(session.sessionDirectory, session.workspaceRoot)) {
-    return [session.pullNotice, OPENING, session.coreRules];
+    return [session.pullNotice, handoff, OPENING, session.coreRules];
   }
   if (isInside(session.sessionDirectory, session.agentsRoot)) {
-    return [session.pullNotice];
+    return [session.pullNotice, handoff];
   }
   return [];
 }

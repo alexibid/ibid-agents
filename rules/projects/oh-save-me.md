@@ -8,6 +8,8 @@ Personal finance, local-first. **Oh Save Me!** in English, **Oh poupa-me!** in P
 | Nx project | `oh-save-me` |
 | Prefix | `ohsaveme-` |
 | Commit scope | `oh-save-me` |
+| Specialist | `agents/oh-save-me-specialist.md` |
+| Reuses | `ibid-ui` |
 | Scope of work | Web only. `platforms/` is on standby until the user says otherwise |
 
 ## Mandatory steps
@@ -16,6 +18,15 @@ Personal finance, local-first. **Oh Save Me!** in English, **Oh poupa-me!** in P
 | --- | --- |
 | `plan`, `author-tests`, `implement`, `build`, `lint`, `rule-checks`, `unit-tests`, `validate-tests`, `review`, `final-verification` | `always` |
 | `journey`, `browser-qa`, `accessibility`, `performance`, `ux-critique` | `ui` |
+
+## Agents
+
+Project agents the flow engine brings into a step, beside its generic agents.
+
+| Agent | Step | When | Contract |
+| --- | --- | --- | --- |
+| `finance-agent` | `plan` | `always` | `skills/finance-agent/SKILL.md` |
+| `finance-agent` | `implement` | `always` | `skills/finance-agent/SKILL.md` |
 
 ## Checks
 

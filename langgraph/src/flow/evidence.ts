@@ -4,9 +4,11 @@ import { z } from 'zod';
 import type { ChangedFile } from '../checks/workspace-changes.js';
 import type { Plan, Story } from '../domain/plan.js';
 import type { StepName } from '../domain/steps.js';
+import { isTestSupportFile } from '../domain/test-files.js';
 
 export interface StepResult {
   readonly passed: boolean;
+  readonly malformed: boolean;
   readonly details: readonly string[];
 }
 
@@ -14,6 +16,7 @@ export interface EvidenceContext {
   readonly story: Story;
   readonly plan: Plan;
   readonly changedFiles: readonly ChangedFile[];
+  readonly dirtyAtStart: ReadonlySet<string>;
   readonly workspaceRoot: string;
 }
 
@@ -41,6 +44,8 @@ const reviewed = z.object({
 });
 
 const SPEC_FILE = /\.spec\.ts$/;
+const MALFORMED_LEAD =
+  'The hand-back does not have the shape the instruction asks for, so nothing was judged. Send it again:';
 
 const JUDGES: Readonly<Partial<Record<StepName, Judge>>> = {
   'author-tests': judgeAuthoredTests,
@@ -62,41 +67,48 @@ export async function judgeEvidence(step: StepName, evidence: unknown, context: 
 }
 
 export function passed(details: readonly string[] = []): StepResult {
-  return { passed: true, details };
+  return { passed: true, malformed: false, details };
 }
 
 export function failed(details: readonly string[]): StepResult {
-  return { passed: false, details };
+  return { passed: false, malformed: false, details };
 }
 
-function malformed(error: z.ZodError): StepResult {
-  return failed(error.issues.map((issue) => `Evidence field "${issue.path.join('.')}": ${issue.message}`));
+export function malformed(error: z.ZodError): StepResult {
+  const problems = error.issues.map((issue) => `Evidence field "${issue.path.join('.')}": ${issue.message}`);
+  return { passed: false, malformed: true, details: [MALFORMED_LEAD, ...problems] };
 }
 
-function judgeAuthoredTests(evidence: unknown, { changedFiles }: EvidenceContext): StepResult {
+function judgeAuthoredTests(evidence: unknown, { changedFiles, dirtyAtStart }: EvidenceContext): StepResult {
   const parsed = authoredTests.safeParse(evidence);
   if (!parsed.success) {
     return malformed(parsed.error);
   }
   const changed = new Set(changedFiles.map(({ file }) => file));
-  const problems = parsed.data.specFiles.flatMap((file) => [
-    ...(SPEC_FILE.test(file) ? [] : [`${file} is not a spec file.`]),
-    ...(changed.has(file) ? [] : [`${file} was not created or changed.`]),
-  ]);
-  return problems.length === 0 ? passed() : failed(problems);
+  const unchanged = parsed.data.specFiles.filter((file) => !changed.has(file));
+  const problems = [
+    ...parsed.data.specFiles.filter((file) => !SPEC_FILE.test(file)).map((file) => `${file} is not a spec file.`),
+    ...unchanged.filter((file) => !dirtyAtStart.has(file)).map((file) => `${file} was not created or changed.`),
+  ];
+  return problems.length === 0 ? passed(unchanged.map(carriedOver)) : failed(problems);
 }
 
-function judgeImplementation(evidence: unknown, { plan, changedFiles }: EvidenceContext): StepResult {
+function judgeImplementation(evidence: unknown, { plan, changedFiles, dirtyAtStart }: EvidenceContext): StepResult {
   const parsed = implementation.safeParse(evidence);
   if (!parsed.success) {
     return malformed(parsed.error);
   }
-  const planned = new Set(plan.files);
-  const strays = changedFiles.map(({ file }) => file).filter((file) => !planned.has(file) && !SPEC_FILE.test(file));
   if (changedFiles.length === 0) {
-    return failed(['No file was changed.']);
+    const carried = plan.files.filter((file) => dirtyAtStart.has(file));
+    return carried.length === 0 ? failed(['No file was changed.']) : passed(carried.map(carriedOver));
   }
+  const planned = new Set(plan.files);
+  const strays = changedFiles.map(({ file }) => file).filter((file) => !planned.has(file) && !isTestSupportFile(file));
   return strays.length === 0 ? passed() : failed(strays.map((file) => `${file} was changed but is not in the plan.`));
+}
+
+function carriedOver(file: string): string {
+  return `${file} is unchanged in this story; it already carried uncommitted work when the story began.`;
 }
 
 function judgeValidatedTests(evidence: unknown, { story }: EvidenceContext): StepResult {

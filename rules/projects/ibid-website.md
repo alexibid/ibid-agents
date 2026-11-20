@@ -9,16 +9,19 @@ that complements the CV. Static pages built from a content snapshot; the admin r
 | Nx project | `ibid-website` |
 | Prefix | `website-` |
 | Commit scope | `ibid-website` |
+| Specialist | `agents/ibid-website-specialist.md` |
 | Delivery | Static web on Firebase Hosting (site `ibid-website`, project `ibid-32cbe`) plus the contact Function |
 
 ## Mandatory steps
 
 | Step | When |
 | --- | --- |
-| `plan`, `implement`, `build`, `lint`, `rule-checks`, `unit-tests`, `review`, `final-verification` | `always` |
+| `plan`, `author-tests`, `implement`, `build`, `lint`, `rule-checks`, `unit-tests`, `validate-tests`, `review`, `final-verification` | `always` |
 | `browser-qa`, `ux-critique` | `ui` |
 
-The project has lint and test targets configured. `accessibility`, `performance` and `journey` join `ui` once story S9 adds the e2e target.
+The project has lint and test targets, so every story is proven by tests written first and
+validated after. `accessibility`, `performance` and `journey` join `ui` once story S9 adds the
+e2e target.
 
 ## Checks
 
@@ -30,23 +33,23 @@ The project has lint and test targets configured. `accessibility`, `performance`
 
 ## Content
 
-- The build, the tests and CI read only `src/content/content.snapshot.json`. Nothing in the
-  site build talks to PocketBase.
-- `npx nx run ibid-website:content` is the only writer of the snapshot. It validates before
-  writing and leaves the previous snapshot untouched on any failure.
+- The site reads its content only from `src/content/content.snapshot.json`, through
+  `SnapshotContentRepository`. Nothing in the site talks to a CMS, an API or a database.
+- The snapshot changes only inside a story; the brief says why and which pages change.
 - Routes come from the snapshot at bootstrap. Never rebuild `router.config` at runtime.
 
 ## Configurations
 
-- `site` is the published build. It holds no admin route, chunk or PocketBase client.
-- `studio` is local only. It holds the admin and reads and writes the local PocketBase.
-- No credential enters any bundle. The admin password is typed at login, never stored in code
-  or configuration.
+- `production` is the published build and `development` the local one. There is no separate
+  admin build.
+- The admin routes (`admin`, `admin/login`) work on the snapshot repository only: what they
+  create, change or delete is never persisted.
+- No credential enters any bundle, the admin password included.
 
 ## Showcase
 
-- Domains: `book`, `contact` and `content-management`, sharing only the `content` kernel.
-  A domain never imports another domain.
+- Layers under `src/app/`: `domain`, `application` (the `book`, `contact` and `admin` facades
+  and state), `infrastructure` and `ui`. A facade never imports another facade.
 - Each pattern (Signal Store behind a facade, DI tokens, host directives, OnPush, virtual
   scrolling) appears only where it solves a real problem, and nowhere else.
 - No component extends another component.

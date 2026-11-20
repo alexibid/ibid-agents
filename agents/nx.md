@@ -59,6 +59,6 @@ to use.
 
 ## Verified by
 
-LangGraph runs `nx sync:check` whenever a workspace file changed, and then the build of every
+The flow engine runs `nx sync:check` whenever a workspace file changed, and then the build of every
 project the sheet names. A project left out of sync, or a broken dependency rule, fails the
 step.

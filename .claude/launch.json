@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "monitor",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "monitor", "start"],
+      "port": 4711
+    }
+  ]
+}
