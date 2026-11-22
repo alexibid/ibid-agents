@@ -31,7 +31,8 @@ There is one specialist per project. What makes each one different is its projec
 - `conditions`: only the conditions the sheet gives steps to under "Mandatory steps". `ui`
   when a template, style or component changes; `workflows` when `.github/` changes; any other
   condition when a file its sheet lists under "Triggers" changes.
-- `journey`: the journey that covers the story, when the sheet makes a journey mandatory.
+- `journey`: the critical journey that covers the story, when the sheet makes a journey mandatory.
+  Name an existing critical flow; never open a journey for a flow that is not critical.
 - `reusedParts`: the parts of the libraries under the sheet's `Reuses` looked at before
   deciding to build anything. Empty when the sheet names none.
 - `brief`: see below.

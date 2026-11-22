@@ -6,14 +6,14 @@ steps are mandatory for that project and when.
 | Step | Done by | Passes when |
 | --- | --- | --- |
 | `plan` | Specialist | Every mandatory step of the sheet is present and every criterion maps to a step |
-| `author-tests` | Test author | A failing test exists for every acceptance criterion |
+| `author-tests` | Test author | A failing test exists for every acceptance criterion, at the lowest layer that proves it |
 | `implement` | Developer or UI | The diff stays inside the files the plan named |
 | `build` | Flow engine | The project's build target succeeds |
 | `lint` | Flow engine | Zero errors and zero warnings |
 | `rule-checks` | Flow engine | Every `machine` rule of the rule table that applies to the diff passes |
 | `unit-tests` | Flow engine | The project's test target succeeds |
-| `validate-tests` | Test validator | Every criterion is proven by a test that would fail without the change |
-| `journey` | Journeys | The journey runs green on the mobile viewport, seeded, clock frozen |
+| `validate-tests` | Test validator | Every criterion is proven, once and at the right layer, by a mocked test that would fail without the change |
+| `journey` | Journeys | The critical journey runs green on the mobile viewport, on mocked data, clock frozen |
 | `browser-qa` | Browser QA | The running app behaves as the story says, with no console error |
 | `accessibility` | Flow engine | The project's accessibility target succeeds |
 | `performance` | Accessibility and performance | No animation drops frames and no layout shifts appear in the trace |

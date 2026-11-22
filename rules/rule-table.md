@@ -142,6 +142,25 @@ way it will be guaranteed.
 | L04 | `utils` has full coverage | machine | no | Coverage threshold |
 | L05 | `boilerplate` holds no product logic and no single-product dependency | judgement | no | Reviewer |
 
+## Testing
+
+How many tests, at which layer, and with what data. The weights follow the testing trophy.
+
+| Id | Rule | Kind | Today | How it is guaranteed |
+| --- | --- | --- | --- | --- |
+| T01 | Each criterion is proven at the lowest layer that can prove it: logic unit tests (50–60%), component integration (25–35%), journeys (10–15%) | judgement | no | Test validator |
+| T02 | Every test reads its data from mocks; no test reaches a real API, database, local file or installed app | judgement | no | Test validator and reviewer |
+| T03 | Logic is tested without TestBed; TestBed only for `inject()`, lifecycle or templates | judgement | no | Reviewer |
+| T04 | Tests assert public behaviour (DOM, signal value, output), never private members or internal call counts | judgement | no | Test validator |
+| T05 | One check lives in one layer, with at most three tests per criterion | judgement | no | Test validator |
+| T06 | Journeys cover only critical business flows end to end, never field validation or isolated visual states | judgement | no | Test validator |
+| T07 | Journey selectors are `getByRole`, `getByLabel`, `getByText` or `data-testid`; never CSS classes, DOM structure or XPath | machine | no | Journey scan |
+| T08 | Journeys never call `waitForTimeout` | machine | no | Journey scan |
+| T09 | Each journey prepares its own mocked data and depends on no run order | judgement | no | Test validator |
+| T10 | Page objects hold locators and actions; every `expect` stays in the spec | judgement | no | Reviewer |
+| T11 | Business logic aims at 75–85% coverage; no tests for trivial getters, modules or route tables | judgement | no | Test validator |
+| T12 | Signal effects are flushed with `TestBed.flushEffects()` or `fixture.whenStable()`, never with timeouts | judgement | no | Reviewer |
+
 ## From the existing skills
 
 Rules that lived only inside a skill and were in no rule file.
@@ -158,11 +177,11 @@ Rules that lived only inside a skill and were in no rule file.
 
 | Kind | Count |
 | --- | --- |
-| `machine` | 58 |
+| `machine` | 60 |
 | `guard` | 5 |
 | `process` | 13 |
-| `judgement` | 25 |
-| All | 101 |
+| `judgement` | 35 |
+| All | 113 |
 
 Enforced by something other than memory today: 9, plus 1 partial and 1 unverified.
 

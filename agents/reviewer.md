@@ -41,6 +41,9 @@ and could still be clearer; those reach the user in the handover.
 | W53, W58 | In workflows: is a list of apps hardcoded? Is `tools/` treated as a submodule? |
 | W61 | Is everything in English, with product copy in translations? |
 | K01 | Is mock data written inline in a spec? |
+| T02 | Does any test reach a real API, database, local file or installed app? |
+| T03, T12 | Is TestBed used for plain logic, or an effect awaited with a timeout? |
+| T10 | Does a page object hold an `expect`? |
 | K04 | Does a component stylesheet carry shared look instead of local structure? |
 | Layers | Does `domain/` stay free of framework imports, with use cases in `application/` and only presentation in `ui/`? |
 | Atomic level | Does each interface part sit at the right level: atom, molecule, organism, template or page? |

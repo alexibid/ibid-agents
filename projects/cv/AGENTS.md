@@ -70,8 +70,8 @@ O `.env` e o `node_modules` ficam na raiz (ficheiros ocultos e dependências).
 
 ## Como o Scout funciona
 
-- Lê os alertas de vagas que já chegam ao Gmail (LinkedIn), nunca pesquisa na web. Só conta o que foi publicado nas últimas 2 semanas (`SCOUT_WINDOW_DAYS` em `resources/app/src/config.ts`); vagas `new` mais antigas passam a `seen`.
-- Duplicados validados por ID da vaga do LinkedIn e por empresa, título e local. Mostra "já candidatado" quando já existe candidatura nessa empresa.
+- Lê os alertas de vagas que já chegam ao Gmail (LinkedIn, Indeed, ITJobs e Teamlyzer), nunca pesquisa na web. Cada fonte tem o seu leitor, escolhido pelo remetente em `resources/app/src/scout/alert-sources.ts`; os destaques semanais do ITJobs são ignorados. Só conta o que foi publicado nas últimas 2 semanas (`SCOUT_WINDOW_DAYS` em `resources/app/src/config.ts`); vagas `new` mais antigas passam a `seen`.
+- Duplicados validados por link e por empresa, título e local, primeiro no lote inteiro de alertas e depois contra as vagas guardadas (`resources/app/src/domain/source-priority.ts`). Entre portais diferentes o local é ignorado e aceita-se um título que só acrescenta texto (o Indeed junta subtítulos). Quando há duplicado, fica sempre a versão do LinkedIn, com as outras fontes como links secundários; uma vaga guardada de outro portal passa à versão do LinkedIn quando esta aparece. Mostra "já candidatado" quando já existe candidatura nessa empresa.
 - Só aceita níveis **Mid e Senior** (e títulos sem nível, que ficam como "Não indicado"). Descarta júnior, estágio, trainee, lead, principal, staff, head, manager, director e architect (`resources/app/src/domain/title-relevance.ts`). Cada vaga leva o nível no Excel e no xbar.
 - Filtra por título (frontend e afins), local (Porto, remoto em Portugal) e piso salarial. O piso é o do guia de negociação com refeição e ginásio (`resources/app/src/valores/scout-floor.ts`); vagas que declarem menos são descartadas. A maioria das vagas não publica salário, por isso cada vaga leva no Excel a faixa de mercado do seu nível (`resources/app/src/valores/level-bands.ts`, com fontes). Consultoras entram, marcadas com 🏢.
 

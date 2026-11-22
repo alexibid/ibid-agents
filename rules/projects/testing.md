@@ -37,3 +37,5 @@ confirmed when the flow engine is built.
 
 - Assertions and fixtures are strongly typed.
 - Fixtures are deterministic: the same seed and clock always give the same data.
+- Fixtures are the only data a test sees. No helper connects to a real API, database, local
+  file or installed app. (T02)
