@@ -22,9 +22,11 @@ export interface Instruction {
 }
 
 const TASKS: Readonly<Partial<Record<StepName, string>>> = {
-  'author-tests': 'Write a failing test for every acceptance criterion, working from the story and never from the implementation.',
+  'author-tests':
+    'Write a failing test for every acceptance criterion, once and at the lowest layer that proves it, on mocked data only, working from the story and never from the implementation.',
   implement: 'Make the change the plan describes, inside the planned files only. If the last result failed, fix exactly what it reports.',
-  'validate-tests': 'Confirm that each acceptance criterion is proven by a test that would fail without the change.',
+  'validate-tests':
+    'Confirm that each acceptance criterion is proven, once and at the right layer, by a mocked test that would fail without the change.',
   'browser-qa': 'Open the running app, exercise the story as a user would, and capture a screenshot of each state.',
   performance: 'Record a performance trace of the changed screens and report dropped frames and layout shifts.',
   'ux-critique': 'Use the changed screens critically. Report each problem with its severity and a screenshot. Write no code.',

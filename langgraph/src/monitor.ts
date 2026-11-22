@@ -50,9 +50,14 @@ async function readActivity(): Promise<void> {
 }
 
 async function sampleLimits(): Promise<void> {
-  const samples = (await Promise.all([readAntigravityLimits(), readClaudeLimits(), claudeEstimate.refresh()])).flat();
+  const readings = await Promise.allSettled([readAntigravityLimits(), readClaudeLimits(), claudeEstimate.refresh()]);
+  const samples = readings.flatMap((reading) => (reading.status === 'fulfilled' ? reading.value : []));
   if (samples.length > 0) {
     await limitLedger.keep(samples);
+  }
+  const failure = readings.find((reading) => reading.status === 'rejected');
+  if (failure !== undefined) {
+    throw failure.reason;
   }
 }
 

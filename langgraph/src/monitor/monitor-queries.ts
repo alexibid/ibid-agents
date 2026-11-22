@@ -34,6 +34,8 @@ const LANGGRAPH_CALLS_FOR_PROMPTS = `
   from agent_calls
   where prompt_id = any($1::text[]) and kind = 'langgraph'`;
 
+const READING_GOES_STALE_AFTER = '3 minutes';
+
 const LIMITS = `
   with recursive pools as (
     (select tool, pool, time_window from limit_samples order by tool, pool, time_window limit 1)
@@ -52,7 +54,10 @@ const LIMITS = `
       order by sampled_at desc limit 1
     ) newest
   )
-  select * from latest
+  select tool, pool, "window", "resetsOn", "sampledOn",
+    case when "resetsOn" <= now() then 0 else "usedPercent" end as "usedPercent",
+    "sampledOn" < now() - interval '${READING_GOES_STALE_AFTER}' as stale
+  from latest
   where not exists (
     select 1 from latest newer
     where newer.tool = latest.tool and newer."window" = latest."window" and newer."sampledOn" > latest."sampledOn"

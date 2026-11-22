@@ -9,6 +9,7 @@ export interface LimitReading {
   readonly usedPercent: number;
   readonly resetsOn: string;
   readonly sampledOn: string;
+  readonly stale: boolean;
 }
 
 export interface DayOfTokens {

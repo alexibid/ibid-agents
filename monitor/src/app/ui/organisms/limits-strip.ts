@@ -10,6 +10,12 @@ import { Meter } from '../atoms/meter';
 
 const TOOLS: readonly Tool[] = ['claude', 'antigravity'];
 
+function groupOf(tool: Tool, limits: readonly LimitReading[]) {
+  const readings = limits.filter((reading) => reading.tool === tool);
+  const lastSampledOn = readings.map((reading) => reading.sampledOn).sort().at(-1) ?? '';
+  return { tool, name: TOOL_NAMES[tool], readings, stale: readings.some((reading) => reading.stale), lastSampledOn };
+}
+
 @Component({
   selector: 'monitor-limits-strip',
   imports: [Button, Meter, DatePipe],
@@ -26,6 +32,11 @@ const TOOLS: readonly Tool[] = ['claude', 'antigravity'];
     @for (group of groups(); track group.tool) {
       <section class="limits">
         <h2 class="limits__tool">{{ group.name }}</h2>
+        @if (group.stale) {
+          <p class="limits__stale" role="alert">
+            Sem leitura recente: estes valores são de {{ group.lastSampledOn | date: 'EEE d, HH:mm' }} e podem estar errados.
+          </p>
+        }
         @for (reading of group.readings; track reading.pool + reading.window) {
           <monitor-meter
             [label]="windowName(reading) + ' · ' + poolName(reading)"
@@ -48,7 +59,7 @@ export class LimitsStrip {
   protected readonly refreshFailed = signal(false);
 
   protected readonly groups = computed(() =>
-    TOOLS.map((tool) => ({ tool, name: TOOL_NAMES[tool], readings: this.store.limits().filter((reading) => reading.tool === tool) })),
+    TOOLS.map((tool) => groupOf(tool, this.store.limits())),
   );
 
   protected refresh(): void {

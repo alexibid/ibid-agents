@@ -7,6 +7,7 @@ const WINDOWS: readonly (readonly [TimeWindow, string])[] = [
   ['weekly', 'sem'],
 ];
 const NOTHING_KNOWN = 'ibid';
+const NO_FRESH_READING = 'sem leitura';
 
 const PERCENT = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 0 });
 
@@ -16,8 +17,12 @@ function percentText(percent: number): string {
 
 export function menuBarTextOf(limits: readonly LimitReading[]): string {
   const perTool = TOOLS.flatMap((tool) => {
+    const readings = limits.filter((reading) => reading.tool === tool);
+    if (readings.some((reading) => reading.stale)) {
+      return [`${TOOL_NAMES[tool]} ${NO_FRESH_READING}`];
+    }
     const figures = WINDOWS.flatMap(([window, short]) => {
-      const used = limits.filter((reading) => reading.tool === tool && reading.window === window).map((reading) => reading.usedPercent);
+      const used = readings.filter((reading) => reading.window === window).map((reading) => reading.usedPercent);
       return used.length === 0 ? [] : [`${short} ${percentText(Math.max(...used))}`];
     });
     return figures.length === 0 ? [] : [`${TOOL_NAMES[tool]} ${figures.join(' ')}`];

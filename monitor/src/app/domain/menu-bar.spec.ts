@@ -6,6 +6,7 @@ const reading = (fields: Pick<LimitReading, 'tool' | 'pool' | 'window' | 'usedPe
   ...fields,
   resetsOn: '2026-11-14T17:20:41.000Z',
   sampledOn: '2026-11-13T09:41:24.421Z',
+  stale: false,
 });
 
 describe('menuBarTextOf', () => {
@@ -32,5 +33,14 @@ describe('menuBarTextOf', () => {
     ]);
 
     expect(text).toBe('Antigravity sem 68%');
+  });
+
+  it('should say a tool has no fresh reading instead of showing its old figures', () => {
+    const text = menuBarTextOf([
+      { ...reading({ tool: 'antigravity', pool: 'gemini', window: 'weekly', usedPercent: 33.6 }), stale: true },
+      reading({ tool: 'claude', pool: 'all models', window: '5h', usedPercent: 23.4 }),
+    ]);
+
+    expect(text).toBe('Claude 5h 23% · Antigravity sem leitura');
   });
 });

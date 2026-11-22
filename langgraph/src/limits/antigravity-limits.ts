@@ -1,12 +1,8 @@
 import { execFile } from 'node:child_process';
 import { Agent, request } from 'node:https';
 import { promisify } from 'node:util';
+import { languageServerProcessIdsIn, sessionKeyIn } from './antigravity-process.js';
 import { samplesOfAntigravitySummary, type LimitSample } from './limit-sample.js';
-
-interface LanguageServer {
-  readonly processId: string;
-  readonly sessionKey: string;
-}
 
 const run = promisify(execFile);
 const SUMMARY_PATH = '/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary';
@@ -15,26 +11,52 @@ const TRUSTS_LOCAL_CERTIFICATE = new Agent({ rejectUnauthorized: false });
 const ANSWER_TIMEOUT_MS = 4000;
 const NO_ANSWER = '';
 
-export async function readAntigravityLimits(): Promise<LimitSample[]> {
-  const server = await runningLanguageServer();
-  if (server === undefined) {
-    return [];
+export class AntigravityLimitsUnreadableError extends Error {
+  constructor(reason: string) {
+    super(`Antigravity limits could not be read: ${reason}`);
+    this.name = 'AntigravityLimitsUnreadableError';
   }
-  for (const port of await listeningPortsOf(server.processId)) {
-    const samples = samplesOfAntigravitySummary(parsed(await ask(port, server.sessionKey)));
+}
+
+export async function readAntigravityLimits(): Promise<LimitSample[]> {
+  const reasons: string[] = [];
+  for (const processId of await runningLanguageServers()) {
+    const samples = await samplesOfServer(processId).catch((error: unknown) => {
+      reasons.push(error instanceof Error ? error.message : String(error));
+      return [];
+    });
     if (samples.length > 0) {
       return samples;
     }
   }
+  if (reasons.length > 0) {
+    throw new AntigravityLimitsUnreadableError(reasons.join('; '));
+  }
   return [];
 }
 
-async function runningLanguageServer(): Promise<LanguageServer | undefined> {
-  const { stdout } = await run('ps', ['-axo', 'pid=,command=']);
-  const line = stdout.split('\n').find((entry) => entry.includes('language_server') && entry.includes('--csrf_token'));
-  const processId = /^\s*(\d+)/.exec(line ?? '')?.[1];
-  const sessionKey = /--csrf_token[= ](\S+)/.exec(line ?? '')?.[1];
-  return processId === undefined || sessionKey === undefined ? undefined : { processId, sessionKey };
+async function runningLanguageServers(): Promise<string[]> {
+  const { stdout } = await run('ps', ['-axwwo', 'pid=,command=']);
+  return languageServerProcessIdsIn(stdout);
+}
+
+async function samplesOfServer(processId: string): Promise<LimitSample[]> {
+  const sessionKey = await sessionKeyOf(processId);
+  if (sessionKey === undefined) {
+    throw new Error(`language server ${processId} carries no session key`);
+  }
+  for (const port of await listeningPortsOf(processId)) {
+    const samples = samplesOfAntigravitySummary(parsed(await ask(port, sessionKey)));
+    if (samples.length > 0) {
+      return samples;
+    }
+  }
+  throw new Error(`language server ${processId} gave no quota on any port`);
+}
+
+async function sessionKeyOf(processId: string): Promise<string | undefined> {
+  const { stdout } = await run('ps', ['eww', '-o', 'command=', '-p', processId]).catch(() => ({ stdout: '' }));
+  return sessionKeyIn(stdout);
 }
 
 async function listeningPortsOf(processId: string): Promise<number[]> {

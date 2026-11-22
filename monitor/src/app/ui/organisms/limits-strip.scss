@@ -21,6 +21,13 @@
   &__unknown {
     @include tools.small-label;
   }
+
+  &__stale {
+    @include tools.small-label;
+
+    color: var(--color-bad);
+    flex-basis: 100%;
+  }
 }
 
 .limits-refresh {
