@@ -4,7 +4,14 @@ import type { Plan, Story } from '../domain/plan.js';
 import type { ProjectSheet } from '../domain/sheet.js';
 import type { StepName } from '../domain/steps.js';
 
-export type StoryStatus = 'planning' | 'working' | 'finished' | 'needs-user' | 'abandoned';
+export type StoryStatus = 'planning' | 'working' | 'ready-for-commit' | 'finished' | 'needs-user' | 'abandoned';
+
+export interface StoryOrigin {
+  readonly issue: string;
+  readonly epic: string;
+}
+
+export const NO_ORIGIN: StoryOrigin = { issue: '', epic: '' };
 
 export interface HistoryEntry {
   readonly step: StepName | 'plan';
@@ -16,6 +23,12 @@ export const EMPTY_PLAN: Plan = { files: [], conditions: [], journey: '', reused
 
 export const FlowState = Annotation.Root({
   story: Annotation<Story>(),
+  origin: Annotation<StoryOrigin>({ reducer: (_previous, next) => next, default: () => NO_ORIGIN }),
+  commitRequested: Annotation<boolean>({ reducer: (_previous, next) => next, default: () => false }),
+  lastPasses: Annotation<Record<string, Fingerprint>>({
+    reducer: (previous, next) => ({ ...previous, ...next }),
+    default: () => ({}),
+  }),
   sheet: Annotation<ProjectSheet>(),
   baseline: Annotation<Fingerprint>(),
   contractsDirectory: Annotation<string>(),

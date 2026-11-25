@@ -9,8 +9,11 @@ import { isTestSupportFile } from '../domain/test-files.js';
 export interface StepResult {
   readonly passed: boolean;
   readonly malformed: boolean;
+  readonly asksTheUser: boolean;
   readonly details: readonly string[];
 }
+
+export const QUESTION_LEAD = 'The agent needs a decision from the user before going on:';
 
 export interface EvidenceContext {
   readonly story: Story;
@@ -67,16 +70,25 @@ export async function judgeEvidence(step: StepName, evidence: unknown, context: 
 }
 
 export function passed(details: readonly string[] = []): StepResult {
-  return { passed: true, malformed: false, details };
+  return { passed: true, malformed: false, asksTheUser: false, details };
 }
 
 export function failed(details: readonly string[]): StepResult {
-  return { passed: false, malformed: false, details };
+  return { passed: false, malformed: false, asksTheUser: false, details };
+}
+
+export function questionsIn(evidence: unknown): readonly string[] {
+  const questions = typeof evidence === 'object' && evidence !== null ? (evidence as Record<string, unknown>)['questions'] : [];
+  return Array.isArray(questions) ? questions.filter((question): question is string => typeof question === 'string' && question.trim() !== '') : [];
+}
+
+export function askingTheUser(questions: readonly string[]): StepResult {
+  return { passed: false, malformed: false, asksTheUser: true, details: [QUESTION_LEAD, ...questions] };
 }
 
 export function malformed(error: z.ZodError): StepResult {
   const problems = error.issues.map((issue) => `Evidence field "${issue.path.join('.')}": ${issue.message}`);
-  return { passed: false, malformed: true, details: [MALFORMED_LEAD, ...problems] };
+  return { passed: false, malformed: true, asksTheUser: false, details: [MALFORMED_LEAD, ...problems] };
 }
 
 function judgeAuthoredTests(evidence: unknown, { changedFiles, dirtyAtStart }: EvidenceContext): StepResult {

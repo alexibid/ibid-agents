@@ -1,6 +1,6 @@
 export const STEP_ORDER = [
-  'author-tests',
   'implement',
+  'author-tests',
   'build',
   'lint',
   'rule-checks',
@@ -18,7 +18,7 @@ export const STEP_ORDER = [
 
 export type StepName = (typeof STEP_ORDER)[number];
 
-export const CONDITIONS = ['always', 'ui', 'figures', 'workflows'] as const;
+export const CONDITIONS = ['always', 'ui', 'behaviour', 'figures', 'workflows'] as const;
 
 export type Condition = (typeof CONDITIONS)[number];
 
@@ -46,6 +46,22 @@ const STEP_OWNERS: Readonly<Record<StepName, string>> = {
 
 const REPAIR_STEP: StepName = 'implement';
 
+const COMMIT_GATE: ReadonlySet<StepName> = new Set([
+  'rule-checks',
+  'unit-tests',
+  'validate-tests',
+  'journey',
+  'browser-qa',
+  'accessibility',
+  'performance',
+  'ux-critique',
+  'visual-gate',
+  'review',
+  'final-verification',
+]);
+
+const SCREEN_STEPS: ReadonlySet<StepName> = new Set(['browser-qa', 'ux-critique', 'visual-gate', 'accessibility', 'performance']);
+
 const SELF_REPAIRING_STEPS: ReadonlySet<StepName> = new Set(['author-tests', 'implement', 'final-verification']);
 
 export function isStepName(value: string): value is StepName {
@@ -67,7 +83,18 @@ export function ownerOf(step: StepName): string {
   return STEP_OWNERS[step];
 }
 
-const REPAIRED_BY: Readonly<Partial<Record<StepName, StepName>>> = { 'validate-tests': 'author-tests' };
+const REPAIRED_BY: Readonly<Partial<Record<StepName, StepName>>> = {
+  'unit-tests': 'author-tests',
+  'validate-tests': 'author-tests',
+};
+
+export function isCommitGateStep(step: StepName): boolean {
+  return COMMIT_GATE.has(step);
+}
+
+export function looksAtTheScreen(step: StepName): boolean {
+  return SCREEN_STEPS.has(step);
+}
 
 export function possibleRepairStepsFor(failedStep: StepName): StepName[] {
   return [failedStep, ...repairersOf(failedStep)];

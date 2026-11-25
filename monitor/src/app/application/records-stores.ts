@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import type { Observable } from 'rxjs';
 import type { Epic } from '../domain/backlog';
+import type { BoardEpic } from '../domain/board';
 import { matchesProblem, NO_TELEMETRY, type LimitReading, type Note, type Problem, type Telemetry } from '../domain/records';
 import { keptFresh } from './kept-fresh';
 import { MonitorGateway } from './monitor-gateway';
@@ -80,6 +81,18 @@ export class BacklogStore {
     gateway: this.gateway,
     choice: ALWAYS,
     load: () => this.gateway.backlog(),
+    whileLoading: [],
+  });
+}
+
+@Injectable({ providedIn: 'root' })
+export class BoardStore {
+  private readonly gateway = inject(MonitorGateway);
+
+  readonly epics = keptFresh<boolean, readonly BoardEpic[]>({
+    gateway: this.gateway,
+    choice: ALWAYS,
+    load: () => this.gateway.board(),
     whileLoading: [],
   });
 }

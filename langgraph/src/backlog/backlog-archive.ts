@@ -48,7 +48,7 @@ interface ItemRow extends Row {
   readonly updated_at: Date;
 }
 
-const DROP_LEFT_OUT = 'delete from backlog_items where epic_id = $1 and not (key = any($2::text[]))';
+const DROP_LEFT_OUT = "delete from backlog_items where epic_id = $1 and state = 'draft' and not (key = any($2::text[]))";
 
 const KEEP_ITEM = `
   insert into backlog_items (epic_id, key, position, kind, project, title, body, size, repository, parent_key, issue_url, state, run_id)

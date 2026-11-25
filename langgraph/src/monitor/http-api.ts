@@ -1,3 +1,5 @@
+import { boardOf, type BoardEpic } from '../backlog/board.js';
+import { IssueStateReader } from '../backlog/issue-states.js';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import type { BacklogArchive } from '../backlog/backlog-archive.js';
 import { UnknownNoteError, type NoteArchive } from '../memory/note-archive.js';
@@ -41,7 +43,14 @@ const DEFAULT_DAYS = 14;
 const NOT_FOUND = 404;
 const UNAVAILABLE = 503;
 
+async function boardFrom(backlog: BacklogArchive, issueStates: IssueStateReader): Promise<BoardEpic[]> {
+  const epics = await backlog.epics('');
+  const repositories = epics.flatMap(({ items }) => items.filter(({ issueUrl }) => issueUrl !== '').map(({ repository }) => repository));
+  return boardOf(epics, await issueStates.statesOf(repositories));
+}
+
 export function createMonitorApi({ database, queries, archive, backlog, feed, refreshLimits, engine }: MonitorParts): Server {
+  const issueStates = new IssueStateReader();
   const answers: Readonly<Record<string, Answer>> = {
     '/api/prompts': (url) => queries.prompts(pageOf(url)),
     '/api/prompt': (url) => queries.prompt(url.searchParams.get('id') ?? ''),
@@ -52,6 +61,7 @@ export function createMonitorApi({ database, queries, archive, backlog, feed, re
     '/api/errors': (url) => queries.errors(pageOf(url)),
     '/api/plans': (url) => archive.plans(url.searchParams.get('text') ?? ''),
     '/api/backlog': (url) => backlog.epics(url.searchParams.get('project') ?? ''),
+    '/api/board': () => boardFrom(backlog, issueStates),
     '/api/flow-map': () => flowMapOf(),
     '/api/evals': (url) => evalsReportOf(database, url.searchParams.get('agent') ?? ''),
     '/api/agents': () => queries.agentRoster(),

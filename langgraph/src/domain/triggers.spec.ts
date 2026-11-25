@@ -14,6 +14,7 @@ const generalist: ProjectSheet = {
   mandatorySteps: [
     { step: 'implement', when: 'always' },
     { step: 'browser-qa', when: 'ui' },
+    { step: 'browser-qa', when: 'behaviour' },
     { step: 'review', when: 'workflows' },
   ],
   commands: {},
@@ -67,5 +68,21 @@ describe('conditionsOfFiles', () => {
     const noInterface = { ...generalist, mandatorySteps: [{ step: 'implement', when: 'always' }] } as const;
 
     expect(conditionsOfFiles(['apps/demo/src/a.html'], noInterface)).toEqual(['always']);
+  });
+
+  it('should trigger behaviour, not ui, for component code that changes nothing visual', () => {
+    const files = ['apps/demo/src/app/ui/pages/admin/admin.facade.ts', 'apps/demo/src/app/app.routes.ts'];
+
+    expect(conditionsOfFiles(files, generalist)).toEqual(['always', 'behaviour']);
+  });
+
+  it('should never trigger a screen condition from tests, mocks or stories', () => {
+    const files = [
+      'apps/demo/src/app/ui/pages/admin/admin.routes.spec.ts',
+      'apps/demo/src/mocks/cms-route.mock.ts',
+      'apps/demo/src/app/ui/atoms/button/button.stories.ts',
+    ];
+
+    expect(conditionsOfFiles(files, generalist)).toEqual(['always']);
   });
 });

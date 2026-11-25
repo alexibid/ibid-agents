@@ -2,6 +2,7 @@ import type { Routes } from '@angular/router';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', loadComponent: () => import('./ui/pages/prompts-page').then((page) => page.PromptsPage) },
+  { path: 'quadro', loadComponent: () => import('./ui/pages/board-page').then((page) => page.BoardPage) },
   { path: 'pedido/:promptId', loadComponent: () => import('./ui/pages/prompt-page').then((page) => page.PromptPage) },
   { path: 'agentes', loadComponent: () => import('./ui/pages/agents-page').then((page) => page.AgentsPage) },
   { path: 'telemetria', loadComponent: () => import('./ui/pages/telemetry-page').then((page) => page.TelemetryPage) },

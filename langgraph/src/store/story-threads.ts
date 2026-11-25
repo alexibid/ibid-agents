@@ -13,6 +13,8 @@ export interface LatestThread {
 export interface StoryThread {
   readonly storyId: string;
   readonly status: string;
+  readonly issue: string;
+  readonly epic: string;
   readonly files: readonly string[];
   readonly startedOn: Date;
   readonly updatedOn: Date;
@@ -25,6 +27,7 @@ interface CheckpointRow {
 }
 
 const WORKING = 'working';
+const HOLDING: ReadonlySet<string> = new Set([WORKING, 'ready-for-commit', 'needs-user']);
 
 const LATEST_PER_THREAD = `
   select latest.thread_id, latest.checkpoint, first.checkpoint as first_checkpoint
@@ -37,6 +40,10 @@ const LATEST_PER_THREAD = `
 
 export function isWorking(thread: StoryThread): boolean {
   return thread.status === WORKING;
+}
+
+export function holdsItsFiles(thread: StoryThread): boolean {
+  return HOLDING.has(thread.status);
 }
 
 export function latestThreads(stateFile: string): LatestThread[] {
@@ -62,6 +69,8 @@ function storyThreadOf({ threadId, values, startedOn, updatedOn }: LatestThread)
   return {
     storyId: threadId,
     status: textOf(values['status']),
+    issue: textOf(fieldOf(values['origin'], 'issue')),
+    epic: textOf(fieldOf(values['origin'], 'epic')),
     files: [...textsOf(fieldOf(values['plan'], 'files')), ...textsOf(values['testFiles'])],
     startedOn,
     updatedOn,

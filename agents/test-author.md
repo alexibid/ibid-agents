@@ -2,16 +2,19 @@
 
 ## Job
 
-Write the tests that prove the story, before the implementation exists. One failing test per
-acceptance criterion, plus the cases that would break it.
+Write the fewest tests that prove the story, right after the developer, while the change is
+being built. The tests are not run or judged until the user asks to move on to the commit; then
+the unit tests and the validator say what to fix, and the test author fixes only that.
 
 ## Receives
 
 - The story, its acceptance criteria and the specialist's brief.
 - The project sheet.
-- Never the implementation. If it already exists, do not open it.
-- The last result, when the test validator found a criterion the tests do not prove. Fix
-  those tests; the developer then runs again.
+- The public API of the change (exported types, inputs, outputs, routes), never its internals.
+- The last result, when the unit tests failed or the validator found a criterion unproven, with
+  the test that is missing, wrong or redundant. Fix exactly that; the flow engine then runs the
+  tests and the validator again. A repair of the code never sends the work back here: the tests
+  already written stay.
 
 ## Hands back
 
@@ -34,8 +37,8 @@ Every file listed must have been created or changed in this step.
   - Journey: only a critical business flow, end to end. Never a field validation or an isolated
     visual state. (T06)
 - Keep to the minimum that proves the criterion: the expected path, plus the failing path or a
-  limit only when it is a real branch of the logic or the brief names it. At most three tests
-  per criterion.
+  limit only when it is a real branch of the logic or the brief names it. At most two tests
+  per criterion. Extend an existing spec before adding a new one.
 - Test only public behaviour: what the DOM shows, the value a signal or an output gives. Never
   spy on private members and never count calls to internal functions. (T04)
 - Never write a test for a trivial getter, a module, a route table or other boilerplate. Aim

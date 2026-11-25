@@ -30,7 +30,14 @@ The same shape as the developer.
 
 ### Styles
 
-- SCSS in ITCSS layers, with BEM class names and no deep nesting. (W25, W26)
+- SCSS in ITCSS layers, with BEM class names. (W25)
+- SCSS is always nested: elements, modifiers, states and media queries sit under their block
+  with `&`, so each block reads top to bottom in one place. (W26)
+- Write the lightest selector that works, so anything can be overridden later: one class per
+  selector, no ids, no tag-qualified classes, no long descendant chains, defaults inside
+  `:where()`. Readability comes before cleverness. (W69)
+- Styles stay in their domain, and shared or global styles change only when the story asks.
+  Sizes, spacing and typography follow what the story asks and nothing else. (W66, W68)
 - Tokens and mixins only. No literal colour, size, shadow or duration. (W12, O08)
 - No `!important` outside `trumps`, and no inline fallback inside `var()`. (W25, K03)
 - A component's own stylesheet holds only its local structure. Shared look belongs to the

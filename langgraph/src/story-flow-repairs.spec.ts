@@ -64,6 +64,7 @@ describe('StoryFlow with a hand-back in the wrong shape', () => {
     await flow.submit(storyId, { files: ['apps/demo/src/cover.html'], conditions: ['ui'] });
     tree.changed = ['apps/demo/src/cover.html'];
     await flow.submit(storyId, { summary: 'opened the cover' });
+    await flow.advanceToCommit(storyId);
 
     const resent = await flow.submit(storyId, { verdict: 'pass', findings: [], screenshots: [] });
 
@@ -94,13 +95,14 @@ describe('StoryFlow with test files', () => {
     const { flow } = flowOver(tree, always('author-tests', 'implement', 'review'));
     const { storyId } = await flow.startStory(story);
     await flow.submit(storyId, { files: [COVER], conditions: [] });
-    tree.changed = [COVER_SPEC, COVER_MOCK];
-    await flow.submit(storyId, { specFiles: [COVER_SPEC] });
-    tree.changed = [COVER_SPEC, COVER_MOCK, COVER];
+    tree.changed = [COVER];
+    await flow.submit(storyId, { summary: 'opened the cover' });
+    await flow.advanceToCommit(storyId);
+    tree.changed = [COVER, COVER_SPEC, COVER_MOCK];
 
-    const implemented = await flow.submit(storyId, { summary: 'opened the cover' });
+    const authored = await flow.submit(storyId, { specFiles: [COVER_SPEC] });
 
-    expect(implemented.history.at(-1)).toEqual({ step: 'implement', passed: true, details: [] });
+    expect(authored.history.at(-1)).toEqual({ step: 'author-tests', passed: true, details: [] });
   });
 
   it('should keep the test files the test author wrote as part of the story', async () => {
@@ -108,7 +110,10 @@ describe('StoryFlow with test files', () => {
     const { flow, graph } = flowOver(tree, always('author-tests', 'implement'));
     const { storyId } = await flow.startStory(story);
     await flow.submit(storyId, { files: [COVER], conditions: [] });
-    tree.changed = [COVER_SPEC, COVER_MOCK, STRAY];
+    tree.changed = [COVER];
+    await flow.submit(storyId, { summary: 'opened the cover' });
+    await flow.advanceToCommit(storyId);
+    tree.changed = [COVER, COVER_SPEC, COVER_MOCK, STRAY];
 
     await flow.submit(storyId, { specFiles: [COVER_SPEC] });
 
@@ -124,6 +129,8 @@ describe('StoryFlow restarted over work already in the tree', () => {
     const { flow } = flowOver(new FakeTree(carriedOver), always('author-tests', 'implement'));
     const { storyId } = await flow.startStory(story);
     await flow.submit(storyId, { files: [COVER], conditions: [] });
+    await flow.submit(storyId, { summary: 'the cover already opens' });
+    await flow.advanceToCommit(storyId);
 
     const authored = await flow.submit(storyId, { specFiles: [COVER_SPEC] });
 
@@ -152,5 +159,25 @@ describe('StoryFlow restarted over work already in the tree', () => {
     const implemented = await flow.submit(storyId, { summary: 'nothing' });
 
     expect(implemented.history.at(-1)).toEqual({ step: 'implement', passed: false, details: ['No file was changed.'] });
+  });
+});
+
+describe('StoryFlow started before the commit phase existed', () => {
+  it('should hold a commit step it was already waiting for until the user asks to commit', async () => {
+    const tree = new FakeTree();
+    const { flow, graph } = flowOver(tree, always('implement', 'validate-tests', 'review'));
+    const { storyId } = await flow.startStory(story);
+    await flow.submit(storyId, { files: [COVER], conditions: [] });
+    tree.changed = [COVER];
+    await flow.submit(storyId, { summary: 'opened the cover' });
+    const config = { configurable: { thread_id: storyId } };
+    await graph.updateState(config, { status: 'working' }, 'implement');
+    await graph.invoke(null, config);
+
+    const held = await flow.submit(storyId, { criteria: [{ criterion: 'The cover opens', test: 'opens', proven: true }] });
+
+    expect(held.status).toBe('ready-for-commit');
+    expect(held.next).toBe('nothing');
+    expect(held.history.some(({ step }) => step === 'validate-tests')).toBe(false);
   });
 });

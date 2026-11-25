@@ -18,6 +18,7 @@ Papercraft origami progression for parents and children. App-first and voice-fir
 | --- | --- |
 | `plan`, `author-tests`, `implement`, `build`, `lint`, `rule-checks`, `unit-tests`, `validate-tests`, `review`, `final-verification` | `always` |
 | `journey`, `browser-qa`, `accessibility`, `performance`, `ux-critique` | `ui` |
+| `journey`, `browser-qa` | `behaviour` |
 | `visual-gate` | `figures` |
 
 ## Triggers

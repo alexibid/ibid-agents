@@ -18,6 +18,7 @@ Personal finance, local-first. **Oh Save Me!** in English, **Oh poupa-me!** in P
 | --- | --- |
 | `plan`, `author-tests`, `implement`, `build`, `lint`, `rule-checks`, `unit-tests`, `validate-tests`, `review`, `final-verification` | `always` |
 | `journey`, `browser-qa`, `accessibility`, `performance`, `ux-critique` | `ui` |
+| `journey`, `browser-qa` | `behaviour` |
 
 ## Agents
 

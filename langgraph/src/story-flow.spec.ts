@@ -43,7 +43,7 @@ describe('StoryFlow remaining steps', () => {
   it('should list the plan and every step a plan always runs after start_story', async () => {
     const started = await storyFlow().startStory(story);
 
-    expect(started.remainingSteps).toEqual(['plan', 'author-tests', 'implement', 'review', 'final-verification']);
+    expect(started.remainingSteps).toEqual(['plan', 'implement', 'author-tests', 'review', 'final-verification']);
   });
 
   it('should list the planned steps, conditional ones included, after an accepted plan', async () => {
@@ -53,7 +53,7 @@ describe('StoryFlow remaining steps', () => {
     const planned = await flow.submit(storyId, { files: ['apps/demo/src/a.html'], conditions: ['ui'] });
 
     expect(planned.status).toBe('working');
-    expect(planned.remainingSteps).toEqual(['author-tests', 'implement', 'browser-qa', 'review', 'final-verification']);
+    expect(planned.remainingSteps).toEqual(['implement', 'author-tests', 'browser-qa', 'review', 'final-verification']);
   });
 
   it('should keep listing the plan first after a rejected plan', async () => {

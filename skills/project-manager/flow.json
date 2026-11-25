@@ -5,7 +5,7 @@
       "id": "size",
       "name": "Dimensionar",
       "doneBy": "project-manager",
-      "task": "Read the request, the project sheets and the product notes. Say how big the work is (S, M or L) and why, and what decisions nobody has taken yet. For follow-ups of a finished story, each follow-up is size S unless it hides a decision.",
+      "task": "Read the request, the project sheets and the product notes. Say how big the work is (S, M or L) and why, which open epic it belongs to or whether it needs a new epic of at least 8 stories, and what decisions nobody has taken yet. For follow-ups of a finished story, each follow-up is size S unless it hides a decision.",
       "fields": {
         "size": "text",
         "reasons": "list",
@@ -17,7 +17,7 @@
       "id": "split",
       "name": "Partir",
       "doneBy": "project-manager",
-      "task": "Write the epic and split it into user stories, each with its project, size and acceptance criteria, and each story into tasks. No story may be L. For follow-ups of a finished story, read the backlog and the open issues first, drop what is already filed, and make each new follow-up a task under the story \"Keep <project> in step with its code\" of the epic \"Maintenance of <project>\", for the project it changes; reuse that epic and story while they are open.",
+      "task": "Write the epic and split it into user stories, each with its project, size and acceptance criteria, and each story into tasks. No story may be L. An epic is the unit of a commit: it holds at least 8 stories, usually 10 to 25, grouped by outcome. Read the backlog and the open issues first and reuse an open epic of the same project or theme, adding the new stories to it, instead of opening a new one; only the standing \"Maintenance of <project>\" epic may hold fewer. For follow-ups of a finished story, drop what is already filed and make each new follow-up a task under the story \"Keep <project> in step with its code\" of the epic \"Maintenance of <project>\", for the project it changes; reuse that epic and story while they are open.",
       "fields": {
         "epic": "text",
         "stories": "list",

@@ -5,7 +5,7 @@
       "id": "triage",
       "name": "Triagem",
       "doneBy": "devops",
-      "task": "Ask GitHub, never memory, which runs are failing in alexibid/ibid-workspace: gh run list --status failure for every workflow, and the state of the self-hosted runners. Keep only the latest failing run of each workflow and branch. Hand back their links and, for each, the job and step that failed.",
+      "task": "Ask GitHub, never memory, which runs are failing in alexibid/ibid-workspace: gh run list --status failure for every workflow, and the state of the self-hosted runners. Keep only the latest failing run of each workflow and branch. A failing Dependabot Updates run is a warning, not a failing run: name it under failedSteps as a warning and leave its link out of failingRuns. Hand back their links and, for each, the job and step that failed.",
       "fields": {
         "failingRuns": "urls",
         "failedSteps": "list",

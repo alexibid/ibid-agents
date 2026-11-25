@@ -8,6 +8,7 @@ import { EngineStrip } from './ui/organisms/engine-strip';
 import { LimitsStrip } from './ui/organisms/limits-strip';
 
 const SCREENS = [
+  { path: '/quadro', label: 'Quadro', exact: false },
   { path: '/', label: 'Pedidos', exact: true },
   { path: '/agentes', label: 'Agentes', exact: false },
   { path: '/telemetria', label: 'Telemetria', exact: false },

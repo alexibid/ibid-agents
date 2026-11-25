@@ -1,0 +1,16 @@
+{
+  "title": "Quick change",
+  "steps": [
+    {
+      "id": "change",
+      "name": "Fazer a alteração",
+      "doneBy": "quick-change",
+      "task": "Make exactly the change in the request: content, copy, images, or anything the user asked to do right away without a story. Use only what the user gave and the sources they named; never invent content. Touch only the files the change needs and keep the code others wrote as it is. Write no test, run no build, lint or test, and open no story, task or issue. Hand back the absolute paths of the files you changed and one line per file on what changed.",
+      "fields": {
+        "changedFiles": "optional-files",
+        "summary": "list"
+      },
+      "calls": []
+    }
+  ]
+}

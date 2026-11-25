@@ -40,6 +40,8 @@ runner `docker-runner`, built from `tools/ci/runner/` (Docker, `compose.yaml`).
 
 - Start from GitHub, never from memory: `gh run list --repo alexibid/ibid-workspace --status
   failure`, `gh run view <id> --log-failed`, `gh api repos/alexibid/ibid-workspace/actions/runners`.
+- A failing Dependabot Updates run or an open Dependabot alert is a warning to report, not a
+  failing run to fix to green.
 - When no run is failing, tell the user so with the links of the latest green runs and stop.
 - Read the logs to the first real error, not the last line.
 - Reproduce locally whenever the failing step can run on this machine, always through Nx or the
@@ -60,14 +62,18 @@ runner `docker-runner`, built from `tools/ci/runner/` (Docker, `compose.yaml`).
 Every agent runs DevOps before it shows a commit line for ibid-workspace, the root or a
 submodule. DevOps reports green only when all of these pass, and names what failed otherwise:
 
-- **Dependabot**: `.github/dependabot.yml` is valid, every `directory` it names exists, the latest
-  Dependabot Updates run on GitHub passed, and no open Dependabot alert is high or critical
-  (`gh api repos/alexibid/ibid-workspace/dependabot/alerts`).
 - **The dependency refresh**: the latest `dependencies.yml` run passed, when the workflow exists.
 - **The tests of the pending change**: `npm run check:affected` in the working copy, then the
   same check in a clean clone with its submodules (`npm run check:clean`).
-- **CI on `main`**: the latest runs of every workflow are green, or their failure is already
-  diagnosed.
+- **CI on `main`**: the latest runs of every workflow except Dependabot Updates are green, or
+  their failure is already diagnosed.
+
+Dependabot is a warning, never a blocker: `node tools/ci/verify-dependabot.mjs` checks that
+`.github/dependabot.yml` is valid and every `directory` it names exists, that the latest
+Dependabot Updates run passed, and that no open Dependabot alert is high or critical. It always
+exits 0; DevOps shows each finding as a warning beside the green and never withholds the commit
+lines for it. CI runs the same script in the `CI verified` job and the dependency refresh, where
+the findings appear as annotations and in the step summary.
 
 Only after that green does the agent show the commit lines.
 

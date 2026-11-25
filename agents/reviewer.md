@@ -40,6 +40,10 @@ and could still be clearer; those reach the user in the handover.
 | W49 | Could any credential reach a client? |
 | W53, W58 | In workflows: is a list of apps hardcoded? Is `tools/` treated as a submodule? |
 | W61 | Is everything in English, with product copy in translations? |
+| W66 | Did the change invent anything the story did not ask for: behaviour, copy, content, images, data? |
+| W67 | Did it change code the user or another agent wrote that the change did not need (refactor, rename, reformat)? |
+| W68 | Do two domains share a style, or did a shared or global style change without the story asking? |
+| W26, W69 | Is the SCSS nested under its block with `&`? Is every selector as light as it can be (one class, no id, no tag-qualified class, no long chain, no `!important` outside trumps)? |
 | K01 | Is mock data written inline in a spec? |
 | T02 | Does any test reach a real API, database, local file or installed app? |
 | T03, T12 | Is TestBed used for plain logic, or an effect awaited with a timeout? |

@@ -22,9 +22,28 @@ library first. A story with more than seven acceptance criteria is too big. A st
 a decision nobody has taken yet (data model, sync, payments, a new service) gets a design task
 for `/solution-architect` before it.
 
+## How big an epic is
+
+An epic is the unit of a commit and a release: the user commits only when an epic is finished, so
+an epic groups everything that ships together. It is never a single story.
+
+- An epic holds at least **8 stories** (the flow engine refuses fewer) and usually 10 to 25, with
+  their tasks. If the work is smaller than that, it is not a new epic: it becomes stories inside
+  the open epic of the same project or theme.
+- Group by outcome, not by size. One epic covers a whole theme of one project (or a theme that
+  crosses projects), such as "the book reading experience", "content and media" or "code quality".
+- Before drafting, read the backlog and the open issues. Reuse an open epic of the same project or
+  theme: put its link in `issue` and add the new stories to it. Open a new epic only when no open
+  one fits.
+- Work that does not belong to any theme goes to the standing `Maintenance of <project>` epic,
+  which is the only epic allowed to hold fewer than 8 stories.
+- Merging epics that are already open is a draft like any other: show the user the merged text and
+  wait for the approval before touching GitHub.
+
 ## Shape of the work
 
-- **Epic**: the outcome the user wants, in their words, and the list of its stories.
+- **Epic**: the outcome the user wants, in their words, and the list of its stories. It closes
+  when its last story closes, which happens once the user has committed the whole epic.
 - **User story**: one sentence (who wants what, and why), its size, its project, and acceptance
   criteria. Each criterion is a single thing a person could watch happen and say yes or no to.
   Cover the cases that break things: nothing to show, too much, a mistake by the person, no
@@ -47,7 +66,9 @@ for `/solution-architect` before it.
 - Issue type and labels come from the backlog (`issueType`, `labels`), never chosen by hand.
 - Never create or edit an issue before the user approves its exact text. Creating an
   issue publishes it; a public repository makes it visible to everyone.
-- Whenever a task, user story or epic is completed, the project manager closes the corresponding GitHub issue (`gh issue close <id> --repo <repo> --comment "Completed."`).
+- Every story that will run in the flow engine has its own issue, a sub-issue of its epic, before it starts. Work with no epic goes under the standing `Maintenance of <project>` epic.
+- A story's issue is closed only after the user has made the commit of that story; the monitor does it by itself once no file of the story is left uncommitted, and closes the epic when its last sub-issue closes.
+- Keeping GitHub true is automatic and runs through `issue-review`: status labels and comments come from the flow engine, and the review closes what is done, duplicated or obsolete. When a story's approved criteria change, update its issue body to the approved text without asking again; any new issue or new text still needs the user's approval.
 - Never put a credential, a key or personal data of anyone but the user in an issue.
 
 ## Follow-ups of a finished story

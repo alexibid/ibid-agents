@@ -10,10 +10,18 @@ steps and face the same checks.
 
 | Tool | Use |
 | --- | --- |
-| `start_story` | Start an approved user story. Returns the story id and asks for a plan |
+| `start_story` | Start an approved user story from its GitHub issue (and epic). Returns the story id and asks for a plan |
 | `submit_plan` | Hand in the specialist's plan. A rejected plan returns the problems |
 | `submit_step` | Hand in the result of the current step. Returns the next step or the exact failure |
-| `story_status` | Read where a story stands |
+| `story_status` | Read where a story stands, with its issue, its epic progress and the last GitHub update |
+| `advance_to_commit` | Only when the user asks: run the commit phase (tests, review, final verification) |
+| `hold_story` | Pause a story before the commit steps: nothing that judges the change runs until `advance_to_commit` |
+| `resume_story` | Take up a story that stopped as `needs-user`, at the failed step, with fresh attempts |
+| `link_story_issue` | Record the issue and epic of a story that started without them |
+| `confirm_commit` | Close at once what the monitor closes by itself within a minute after the commit: the story's issue and a complete epic |
+| `sync_github` | Bring every issue linked to a story in line with its stage |
+| `set_conversation_title` | Antigravity only: rename the conversation after the story |
+| `flow_cost` | Measure steps, failures, skipped repeats, test, screen and agent steps per story |
 
 ## How a story moves
 
@@ -23,13 +31,23 @@ steps and face the same checks.
    journey when one is mandatory, and lists the parts of the libraries under the sheet's `Reuses`
    considered when it touches the interface.
 3. The mandatory steps of the project sheet that match the plan become the queue, in the order
-   of `rules/steps.md`.
+   of `rules/steps.md`. The story builds first (`implement`, `author-tests`, `build`, `lint`) and
+   stops as `ready-for-commit`; every other step (rule checks, unit tests, test validation,
+   journeys, browser QA, UX, review, final verification) runs only with `advance_to_commit`.
 4. A step done by an agent pauses the flow until its evidence arrives. A step done by the
    program runs at once.
 5. After `implement`, the files that really changed are compared with the plan. Changes outside
-   it fail the step, and changes that trigger more conditions add their steps to the queue.
-6. A failed step sends the work back to `implement` with the failure. Three failures of the
-   same step stop the story and hand it to the user.
+   it fail the step, and the conditional steps are replanned from what the change really
+   touched: a condition the diff does not trigger drops its steps.
+6. A failed step sends the work back to `implement` with the failure (`unit-tests` and
+   `validate-tests` go back to `author-tests`). A repair of the code skips `author-tests`; the
+   tests already written stay until the unit tests or the validator fault them. Any agent may
+   hand back `questions`: the story waits for the user without spending an attempt. On the way back, `build` is skipped when only
+   tests changed, and a screen step that already passed is skipped when nothing on screen
+   changed. Three failures of the same step stop the story as `needs-user`; `resume_story`
+   continues it.
+7. Each time the story changes stage, its GitHub issue gets the matching `status: …` label and
+   one status comment, which is edited, never repeated.
 
 ## The graph
 

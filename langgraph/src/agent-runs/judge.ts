@@ -1,7 +1,7 @@
 import { stat } from 'node:fs/promises';
 import { isAbsolute } from 'node:path';
 import type { FieldKind, FlowStep } from './definition.js';
-import { draftsIn, parsedDraft, parsedLinks, type BacklogDraft } from '../backlog/backlog.js';
+import { draftsIn, epicSizeProblems, parsedDraft, parsedLinks, type BacklogDraft } from '../backlog/backlog.js';
 import { existsForSignedInUser } from './github-link.js';
 import { failedRunProblem } from './ci-run.js';
 
@@ -30,7 +30,7 @@ const CHECKS: Readonly<Record<FieldKind, Check>> = {
     Array.isArray(value) ? firstProblem(value.map(String), missingFile) : 'must be a list of absolute file paths, empty when nothing changed',
   'passing-runs': async (value) =>
     isList(value) ? firstProblem(value.map(String), (link) => failedRunProblem(link)) : 'must be a list of GitHub Actions run links',
-  backlog: async (value) => parsedDraft(value).problems.join('; '),
+  backlog: async (value) => [...parsedDraft(value).problems, ...epicSizeProblems(value)].join('; '),
   'published-issues': async (value, earlier) => unpublishedProblem(value, draftsIn(earlier).at(0)),
 };
 

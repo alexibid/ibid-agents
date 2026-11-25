@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { draftsIn, labelsOf, parsedDraft, parsedLinks, type BacklogItem } from './backlog.js';
+import { draftsIn, epicSizeProblems, labelsOf, parsedDraft, parsedLinks, type BacklogItem } from './backlog.js';
 
 const item = (changes: Partial<BacklogItem>): BacklogItem => ({
   key: 'S1',
@@ -26,6 +26,25 @@ describe('parsedDraft', () => {
 
   it('should refuse a backlog without exactly one epic', () => {
     expect(parsedDraft({ id: 'x', project: 'papikapi', items: [item({ parent: '' })] }).problems).toContain('must have exactly one epic');
+  });
+
+  it('should refuse an epic that holds fewer than eight stories', () => {
+    const small = { id: 'x', project: 'papikapi', items: [EPIC, item({}), item({ key: 'S2' })] };
+
+    expect(epicSizeProblems(small)[0]).toContain('has 2 stories; an epic holds at least 8');
+    expect(parsedDraft(small).problems).toEqual([]);
+  });
+
+  it('should let an existing epic be reworded without restating its stories', () => {
+    const existing = item({ key: 'Épico', kind: 'epic', size: 'L', parent: '', issue: 'https://github.com/alexibid/papikapi/issues/1' });
+
+    expect(epicSizeProblems({ id: 'x', project: 'papikapi', items: [existing] })).toEqual([]);
+  });
+
+  it('should let a standing maintenance epic hold fewer stories', () => {
+    const maintenance = item({ key: 'Épico', kind: 'epic', size: 'S', parent: '', title: 'Maintenance of papikapi' });
+
+    expect(epicSizeProblems({ id: 'x', project: 'papikapi', items: [maintenance, item({})] })).toEqual([]);
   });
 
   it('should refuse a story of size L', () => {

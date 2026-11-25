@@ -1,0 +1,66 @@
+<section class="o-stack">
+  <h1>Quadro</h1>
+  <p class="u-muted">Cada épico com as suas stories e tarefas, abertas e fechadas, tal como estão no GitHub.</p>
+
+  <div class="board-chips" role="group" aria-label="Mostrar">
+    <monitor-toggle-chip [(on)]="showOpen">Abertas</monitor-toggle-chip>
+    <monitor-toggle-chip [(on)]="showClosed">Fechadas</monitor-toggle-chip>
+  </div>
+
+  @for (group of projects(); track group.project) {
+    <section class="board-project">
+      <h2 class="board-project__name">{{ group.project }}</h2>
+      @for (row of group.epics; track row.id) {
+        <article class="o-panel board-epic">
+          <header class="board-epic__header">
+            <h3 class="board-epic__title">
+              @if (row.epic.url !== '') {
+                <a class="board-epic__link" [href]="row.epic.url" target="_blank" rel="noopener">{{ row.epic.title }}</a>
+              } @else {
+                {{ row.epic.title }}
+              }
+            </h3>
+            <span class="board-state" [class]="'board-state board-state--' + row.epic.state">{{ stateName(row.epic) }}</span>
+          </header>
+          <div class="board-epic__progress">
+            <div class="board-epic__track" role="img" [attr.aria-label]="row.done + ' de ' + row.total + ' feitas'">
+              <div class="board-epic__fill" [style.inline-size.%]="percentOf(row)"></div>
+            </div>
+            <span class="u-muted">{{ row.done }} de {{ row.total }} feitas</span>
+          </div>
+
+          <ul class="board-epic__cards">
+            @for (story of row.stories; track story.key) {
+              <li class="board-card">
+                <span class="board-state" [class]="'board-state board-state--' + story.state">{{ stateName(story) }}</span>
+                <span class="board-card__title" [class.board-card__title--closed]="story.state === 'closed'">
+                  @if (story.url !== '') {
+                    <a class="board-card__link" [href]="story.url" target="_blank" rel="noopener">{{ story.title }}</a>
+                  } @else {
+                    {{ story.title }}
+                  }
+                </span>
+                @if (story.stage !== '') {
+                  <span class="board-card__stage">{{ story.stage }}</span>
+                }
+                <span class="board-card__meta">{{ story.size }}{{ numberOf(story) === '' ? '' : ' · #' + numberOf(story) }}</span>
+                @if (story.tasks.length > 0) {
+                  <ul class="board-card__tasks">
+                    @for (task of story.tasks; track task.key) {
+                      <li class="board-card board-card--task">
+                        <span class="board-state" [class]="'board-state board-state--' + task.state">{{ stateName(task) }}</span>
+                        <span class="board-card__title" [class.board-card__title--closed]="task.state === 'closed'">{{ task.title }}</span>
+                      </li>
+                    }
+                  </ul>
+                }
+              </li>
+            }
+          </ul>
+        </article>
+      }
+    </section>
+  } @empty {
+    <p class="o-panel o-empty">Nada para mostrar com estes filtros.</p>
+  }
+</section>

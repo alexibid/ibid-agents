@@ -24,7 +24,12 @@ Todas as classes CSS dentro de componentes seguem BEM:
 - `.block__element` — descendente do bloco (`.card__title`, `.card__footer`)
 - `.block--modifier` — modificação de estado (`.card--active`, `.btn--disabled`, `.card__title--large`)
 
-Nunca uses seletores aninhados profundos ou classes fora deste padrão.
+Nunca uses classes fora deste padrão.
+
+### Nesting e especificidade
+
+- O SCSS usa sempre nesting: elementos, modificadores, estados e media queries ficam dentro do seu bloco com `&` (incluindo dentro de `:host` e `::ng-deep`), para que cada bloco se leia de cima para baixo num só sítio.
+- Os seletores são o mais leves e legíveis possível, para poderem sempre ser sobrepostos: uma classe por seletor, sem ids, sem classes presas a tags, sem cadeias longas, valores por defeito em `:where()` e `!important` só em Trumps.
 
 ## 💎 Princípios de Clean Code
 
@@ -106,7 +111,7 @@ Antes de propor qualquer código, o Claude Code deve verificar mentalmente:
 - [ ] Sem `any`, sem `null`/`undefined` evitáveis?
 - [ ] Classes seguem SRP e SOLID?
 - [ ] Ficheiro dentro do limite de linhas?
-- [ ] Estilos (se aplicável) seguem ITCSS + BEM?
+- [ ] Estilos (se aplicável) seguem ITCSS + BEM, com nesting e seletores leves?
 - [ ] Sem comentários redundantes ou código morto?
 
 ---

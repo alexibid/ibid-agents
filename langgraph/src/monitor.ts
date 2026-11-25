@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 import { join } from 'node:path';
 import { PostgresBacklogArchive } from './backlog/backlog-archive.js';
+import { CommitCloser } from './backlog/commit-closer.js';
+import { IssueStateReader } from './backlog/issue-states.js';
+import { GithubIssueSync } from './backlog/issue-sync.js';
+import { WorkspaceChanges } from './checks/workspace-changes.js';
+import { storiesStateFile, workspaceRootBesideAgents } from './configuration.js';
 import { readAntigravityLimits } from './limits/antigravity-limits.js';
+import { latestStoryThreads } from './store/story-threads.js';
 import { ClaudeEstimate } from './limits/claude-estimate.js';
 import { readClaudeLimits } from './limits/claude-limits.js';
 import { LimitLedger } from './limits/limit-ledger.js';
@@ -28,6 +34,12 @@ const feed = new ChangeFeed();
 const usageSync = new UsageSync(new UsageLedger(database));
 const limitLedger = new LimitLedger(database);
 const claudeEstimate = new ClaudeEstimate(database);
+const commitCloser = new CommitCloser({
+  finishedStories: () => latestStoryThreads(storiesStateFile()).filter(({ status }) => status === 'finished'),
+  uncommittedFiles: async () => new Set(Object.keys(await new WorkspaceChanges(workspaceRootBesideAgents()).fingerprint())),
+  issueStates: new IssueStateReader(),
+  issues: new GithubIssueSync(),
+});
 let lastFault = '';
 let writesInOrder: Promise<unknown> = Promise.resolve();
 let samplingNow: Promise<void> | undefined;
@@ -61,6 +73,13 @@ async function sampleLimits(): Promise<void> {
   }
 }
 
+async function closeCommittedStories(): Promise<void> {
+  const closed = await commitCloser.closeCommitted();
+  if (closed.length > 0) {
+    feed.announce();
+  }
+}
+
 function repeatedly(task: () => Promise<void>, everyMs: number): void {
   const attempt = () =>
     task().then(
@@ -90,4 +109,5 @@ createMonitorApi({
   console.log(`The monitor serves http://127.0.0.1:${PORT}`);
 });
 repeatedly(sampleLimitsNow, SAMPLE_LIMITS_EVERY_MS);
+repeatedly(closeCommittedStories, SAMPLE_LIMITS_EVERY_MS);
 repeatedly(() => oneAtATime(readActivity), READ_ACTIVITY_EVERY_MS);

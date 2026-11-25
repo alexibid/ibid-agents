@@ -18,9 +18,10 @@ that complements the CV. Static pages built from a content snapshot; the admin r
 | --- | --- |
 | `plan`, `author-tests`, `implement`, `build`, `lint`, `rule-checks`, `unit-tests`, `validate-tests`, `review`, `final-verification` | `always` |
 | `browser-qa`, `ux-critique` | `ui` |
+| `browser-qa` | `behaviour` |
 
-The project has lint and test targets, so every story is proven by tests written first and
-validated after. `accessibility`, `performance` and `journey` join `ui` once story S9 adds the
+The project has lint and test targets. Tests are written and validated only when the user asks
+to move on to the commit. `accessibility`, `performance` and `journey` join `ui` once story S9 adds the
 e2e target.
 
 ## Checks

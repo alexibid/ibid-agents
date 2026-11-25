@@ -1,0 +1,23 @@
+@use 'tools';
+
+.toggle-chip {
+  background: transparent;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  color: var(--color-muted);
+  cursor: pointer;
+  font: inherit;
+  min-block-size: 2.75rem;
+  padding: 0 var(--space-4);
+
+  &:focus-visible {
+    @include tools.focus-ring;
+  }
+
+  &--on {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-panel);
+    font-weight: 600;
+  }
+}

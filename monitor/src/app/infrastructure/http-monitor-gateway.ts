@@ -4,6 +4,7 @@ import { Observable, share } from 'rxjs';
 import { MonitorGateway } from '../application/monitor-gateway';
 import type { AgentRun, RosterEntry } from '../domain/agent-roster';
 import type { Epic } from '../domain/backlog';
+import type { BoardEpic } from '../domain/board';
 import type { EngineStatus } from '../domain/engine';
 import type { CaseReport } from '../domain/evals';
 import type { FlowMap, Story } from '../domain/flow-map';
@@ -67,6 +68,10 @@ export class HttpMonitorGateway extends MonitorGateway {
 
   override backlog(): Observable<Epic[]> {
     return this.http.get<Epic[]>(`${SERVICE}/backlog`);
+  }
+
+  override board(): Observable<BoardEpic[]> {
+    return this.http.get<BoardEpic[]>(`${SERVICE}/board`);
   }
 
   override flowMap(): Observable<FlowMap> {

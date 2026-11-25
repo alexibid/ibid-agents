@@ -2,20 +2,29 @@ import { END, START, StateGraph, interrupt, type BaseCheckpointSaver, type LangG
 import { z } from 'zod';
 import { checkRules } from '../checks/rule-checks.js';
 import { runCommand } from '../checks/shell.js';
-import type { ChangeTracker, ChangedFile } from '../checks/workspace-changes.js';
+import type { ChangeTracker, ChangedFile, Fingerprint } from '../checks/workspace-changes.js';
 import { clashesWith, ownChanges, type ActiveStories } from '../domain/concurrent-stories.js';
 import { judgePlan, stepQueue, type Plan } from '../domain/plan.js';
 import { isOutsideWorkspace, type ProjectSheet } from '../domain/sheet.js';
 import { conditionsOfFiles } from '../domain/triggers.js';
-import { CONDITIONS, STEP_ORDER, inCanonicalOrder, kindOf, possibleRepairStepsFor, type StepName } from '../domain/steps.js';
+import {
+  CONDITIONS,
+  STEP_ORDER,
+  inCanonicalOrder,
+  isCommitGateStep,
+  kindOf,
+  possibleRepairStepsFor,
+  type StepName,
+} from '../domain/steps.js';
 import { followUpsIn } from '../domain/follow-ups.js';
 import { isTestSupportFile } from '../domain/test-files.js';
 import type { SheetSource } from '../sheets/sheet-reader.js';
-import { failed, judgeEvidence, passed, type StepResult } from './evidence.js';
+import { askingTheUser, failed, judgeEvidence, passed, questionsIn, type StepResult } from './evidence.js';
 import { verifyHandover } from './final-verification.js';
 import { planInstruction, stepInstruction } from './instructions.js';
+import { isSkippableOnRepeat, skipReasonFor } from './repeat-skips.js';
 import { sentBack } from './sending-back.js';
-import { FlowState, type FlowStateUpdate, type FlowStateValue } from './state.js';
+import { FlowState, type FlowStateUpdate, type FlowStateValue, type StoryStatus } from './state.js';
 
 const JOURNEY_PLACEHOLDER = '<journey>';
 const WORKSPACE_FILE = /(?:^|\/)(?:nx\.json|project\.json|package\.json|tsconfig[^/]*\.json)$/;
@@ -46,8 +55,12 @@ export interface FlowDependencies {
 export function buildFlowGraph(dependencies: FlowDependencies, checkpointer?: BaseCheckpointSaver) {
   const { workspaceRoot, sheets, contractsDirectory, changesOf, activeStories } = dependencies;
 
-  async function storyChanges(state: FlowStateValue, config: LangGraphRunnableConfig): Promise<ChangedFile[]> {
-    const changed = await changesOf(state.sheet).changedSince(state.baseline);
+  async function storyChanges(
+    state: FlowStateValue,
+    config: LangGraphRunnableConfig,
+    since: Fingerprint = state.baseline,
+  ): Promise<ChangedFile[]> {
+    const changed = await changesOf(state.sheet).changedSince(since);
     const ownFiles = [...state.plan.files, ...state.testFiles];
     return ownChanges(changed, ownFiles, await activeStories.changedAlongside(storyIdOf(config)));
   }
@@ -62,7 +75,12 @@ export function buildFlowGraph(dependencies: FlowDependencies, checkpointer?: Ba
   }
 
   async function planNode(state: FlowStateValue, config: LangGraphRunnableConfig): Promise<FlowStateUpdate> {
-    const parsed = submittedPlan.safeParse(interrupt(planInstruction(state)));
+    const handedBack: unknown = interrupt(planInstruction(state));
+    const questions = questionsIn(handedBack);
+    if (questions.length > 0) {
+      return { status: 'needs-user', history: [{ step: 'plan', passed: false, details: askingTheUser(questions).details }] };
+    }
+    const parsed = submittedPlan.safeParse(handedBack);
     if (!parsed.success) {
       return rejectedPlan(parsed.error.issues.map((issue) => `Plan field "${issue.path.join('.')}": ${issue.message}`));
     }
@@ -72,12 +90,13 @@ export function buildFlowGraph(dependencies: FlowDependencies, checkpointer?: Ba
     if (!verdict.accepted || clashes.length > 0) {
       return rejectedPlan([...verdict.problems, ...clashes]);
     }
+    const queue = stepQueue(state.sheet, plan.conditions);
     return {
       plan,
       followUps,
-      queue: stepQueue(state.sheet, plan.conditions),
+      queue,
       position: 0,
-      status: 'working',
+      status: statusBefore(queue[0], state),
       history: [{ step: 'plan', passed: true, details: [] }],
     };
   }
@@ -87,11 +106,18 @@ export function buildFlowGraph(dependencies: FlowDependencies, checkpointer?: Ba
     if (step === undefined) {
       return { status: 'finished' };
     }
+    if (isCommitGateStep(step) && !state.commitRequested) {
+      return { status: 'ready-for-commit' };
+    }
     const { result, followUps } = await performStep(step, state, config);
     return result.passed ? { ...(await advanced(step, result, state, config)), followUps: [...followUps] } : sentBack(step, result, state);
   }
 
   async function performStep(step: StepName, state: FlowStateValue, config: LangGraphRunnableConfig): Promise<StepOutcome> {
+    const skipped = await skipReason(step, state, config);
+    if (skipped !== '') {
+      return { result: passed([skipped]), followUps: [] };
+    }
     if (kindOf(step) === 'command') {
       return { result: await runSheetCommand(step, state), followUps: [] };
     }
@@ -100,8 +126,20 @@ export function buildFlowGraph(dependencies: FlowDependencies, checkpointer?: Ba
       return { result: await runRuleChecks(changedFiles, state.sheet), followUps: [] };
     }
     const evidence: unknown = interrupt(stepInstruction(step, state));
+    const questions = questionsIn(evidence);
+    if (questions.length > 0) {
+      return { result: askingTheUser(questions), followUps: [] };
+    }
     const result = await judgedHandBack(step, evidence, state, changedFiles);
     return { result, followUps: result.passed ? followUpsIn(step, evidence) : [] };
+  }
+
+  async function skipReason(step: StepName, state: FlowStateValue, config: LangGraphRunnableConfig): Promise<string> {
+    const lastPass = state.lastPasses[step];
+    if (lastPass === undefined || sentStraightHere(step, state)) {
+      return '';
+    }
+    return skipReasonFor(step, await storyChanges(state, config, lastPass), state.sheet);
   }
 
   async function judgedHandBack(
@@ -151,25 +189,25 @@ export function buildFlowGraph(dependencies: FlowDependencies, checkpointer?: Ba
     state: FlowStateValue,
     config: LangGraphRunnableConfig,
   ): Promise<FlowStateUpdate> {
-    const widened = step === 'implement' ? await widenedPlan(state, config) : { queue: state.queue, plan: state.plan };
-    const queue = widened.queue;
+    const replanned = step === 'implement' ? await plannedFromChanges(state, config) : { queue: state.queue, plan: state.plan };
+    const queue = replanned.queue;
     const position = queue.indexOf(step) + 1;
     return {
       ...(step === 'author-tests' ? { testFiles: await authoredTestFiles(state, config) } : {}),
-      plan: widened.plan,
+      ...(isSkippableOnRepeat(step) ? { lastPasses: { [step]: await changesOf(state.sheet).fingerprint() } } : {}),
+      plan: replanned.plan,
       queue,
       position,
-      status: position >= queue.length ? 'finished' : 'working',
+      status: position >= queue.length ? 'finished' : statusBefore(queue[position], state),
       history: [{ step, passed: true, details: result.details }],
     };
   }
 
-  async function widenedPlan(state: FlowStateValue, config: LangGraphRunnableConfig): Promise<{ queue: StepName[]; plan: Plan }> {
+  async function plannedFromChanges(state: FlowStateValue, config: LangGraphRunnableConfig): Promise<{ queue: StepName[]; plan: Plan }> {
     const changedFiles = await storyChanges(state, config);
-    const found = conditionsOfFiles(changedFiles.map(({ file }) => file), state.sheet);
-    const conditions = [...new Set([...state.plan.conditions, ...found])];
+    const conditions = conditionsOfFiles([...state.plan.files, ...changedFiles.map(({ file }) => file)], state.sheet);
     return {
-      queue: inCanonicalOrder([...state.queue, ...stepQueue(state.sheet, found)]),
+      queue: inCanonicalOrder(stepQueue(state.sheet, conditions)),
       plan: { ...state.plan, conditions },
     };
   }
@@ -189,8 +227,8 @@ export function buildFlowGraph(dependencies: FlowDependencies, checkpointer?: Ba
   return new StateGraph(FlowState)
     .addNode('intake', intakeNode)
     .addNode('planning', planNode)
-    .addNode('author-tests', stepNode)
     .addNode('implement', stepNode)
+    .addNode('author-tests', stepNode)
     .addNode('build', stepNode)
     .addNode('lint', stepNode)
     .addNode('rule-checks', stepNode)
@@ -207,8 +245,8 @@ export function buildFlowGraph(dependencies: FlowDependencies, checkpointer?: Ba
     .addEdge(START, 'intake')
     .addEdge('intake', 'planning')
     .addConditionalEdges('planning', afterPlanning, afterPlanningTargets)
-    .addConditionalEdges('author-tests', nextStep, reachableFrom('author-tests'))
     .addConditionalEdges('implement', nextStep, reachableFrom('implement'))
+    .addConditionalEdges('author-tests', nextStep, reachableFrom('author-tests'))
     .addConditionalEdges('build', nextStep, reachableFrom('build'))
     .addConditionalEdges('lint', nextStep, reachableFrom('lint'))
     .addConditionalEdges('rule-checks', nextStep, reachableFrom('rule-checks'))
@@ -233,6 +271,15 @@ function reachableFrom(step: StepName): (StepName | typeof END)[] {
 function storyIdOf(config: LangGraphRunnableConfig): string {
   const threadId: unknown = config.configurable?.['thread_id'];
   return typeof threadId === 'string' ? threadId : '';
+}
+
+function sentStraightHere(step: StepName, state: FlowStateValue): boolean {
+  const last = state.history.at(-1);
+  return last !== undefined && !last.passed && last.step !== 'implement' && step === 'author-tests';
+}
+
+function statusBefore(next: StepName | undefined, state: FlowStateValue): StoryStatus {
+  return next !== undefined && isCommitGateStep(next) && !state.commitRequested ? 'ready-for-commit' : 'working';
 }
 
 function rejectedPlan(problems: readonly string[]): FlowStateUpdate {

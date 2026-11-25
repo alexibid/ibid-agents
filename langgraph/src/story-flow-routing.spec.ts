@@ -14,7 +14,7 @@ import { StoryFlow } from './story-flow.js';
 
 const COVER = 'apps/demo/src/cover.ts';
 const COVER_SPEC = 'apps/demo/src/cover.spec.ts';
-const ICON_MOCK = 'apps/demo/src/mocks/icon.svg';
+const ICON = 'apps/demo/src/icon.svg';
 const story = { project: 'demo', title: 'Open the cover', criteria: ['The cover opens'] };
 
 class FakeTree implements ChangeTracker {
@@ -58,10 +58,9 @@ describe('StoryFlow routing after a failed test validation', () => {
     const flow = flowOver(tree, always('author-tests', 'implement', 'validate-tests', 'review'));
     const { storyId } = await flow.startStory(story);
     await flow.submit(storyId, { files: [COVER], conditions: [] });
-    tree.changed = [COVER_SPEC];
-    await flow.submit(storyId, { specFiles: [COVER_SPEC] });
-    tree.changed = [COVER_SPEC, COVER];
+    tree.changed = [COVER];
     await flow.submit(storyId, { summary: 'opened the cover' });
+    await flow.advanceToCommit(storyId);
 
     const sentBack = await flow.submit(storyId, {
       criteria: [{ criterion: 'The cover opens', test: 'opens', proven: false }],
@@ -77,6 +76,7 @@ describe('StoryFlow routing after a failed test validation', () => {
     await flow.submit(storyId, { files: [COVER], conditions: [] });
     tree.changed = [COVER, COVER_SPEC];
     await flow.submit(storyId, { summary: 'opened the cover' });
+    await flow.advanceToCommit(storyId);
 
     const sentBack = await flow.submit(storyId, {
       criteria: [{ criterion: 'The cover opens', test: 'opens', proven: false }],
@@ -86,19 +86,36 @@ describe('StoryFlow routing after a failed test validation', () => {
   });
 });
 
-describe('StoryFlow widening the plan after implement', () => {
-  it('should bring a project agent into a step that a changed file added later', async () => {
+describe('StoryFlow replanning from the change after implement', () => {
+  const critic: ProjectAgent = { agent: 'motion-critic', step: 'browser-qa', when: 'ui', contract: 'skills/motion/SKILL.md' };
+  const screenSteps: MandatoryStep[] = [...always('implement', 'review'), { step: 'browser-qa', when: 'ui' }];
+
+  it('should bring a project agent into a step that a visual change needs', async () => {
     const tree = new FakeTree();
-    const critic: ProjectAgent = { agent: 'motion-critic', step: 'browser-qa', when: 'ui', contract: 'skills/motion/SKILL.md' };
-    const flow = flowOver(tree, [...always('implement', 'review'), { step: 'browser-qa', when: 'ui' }], [critic]);
+    const flow = flowOver(tree, screenSteps, [critic]);
     const { storyId } = await flow.startStory(story);
-    await flow.submit(storyId, { files: [COVER], conditions: [] });
-    tree.changed = [COVER, ICON_MOCK];
+    await flow.submit(storyId, { files: [COVER, ICON], conditions: ['ui'] });
+    tree.changed = [COVER, ICON];
 
-    const widened = await flow.submit(storyId, { summary: 'opened the cover' });
+    await flow.submit(storyId, { summary: 'opened the cover' });
 
-    expect(widened.remainingSteps[0]).toBe('browser-qa');
-    expect(doneByOf(widened.next)).toContain('motion-critic');
+    const replanned = await flow.advanceToCommit(storyId);
+
+    expect(replanned.remainingSteps[0]).toBe('browser-qa');
+    expect(doneByOf(replanned.next)).toContain('motion-critic');
+  });
+
+  it('should drop the browser check when the change turns out to touch nothing on screen', async () => {
+    const tree = new FakeTree();
+    const flow = flowOver(tree, screenSteps);
+    const { storyId } = await flow.startStory(story);
+    await flow.submit(storyId, { files: [COVER], conditions: ['ui'] });
+    tree.changed = [COVER];
+
+    const replanned = await flow.submit(storyId, { summary: 'opened the cover' });
+
+    expect(replanned.status).toBe('ready-for-commit');
+    expect(replanned.remainingSteps).toEqual(['review']);
   });
 });
 
@@ -112,6 +129,7 @@ describe('StoryFlow gathering follow-ups', () => {
     await flow.submit(storyId, { summary: 'first try', followUps: ['never kept'] });
     tree.changed = [COVER];
     await flow.submit(storyId, { summary: 'opened the cover' });
+    await flow.advanceToCommit(storyId);
 
     const reviewed = await flow.submit(storyId, {
       findings: [{ rule: 'W14', file: COVER, description: 'name hides intent', blocking: false }],

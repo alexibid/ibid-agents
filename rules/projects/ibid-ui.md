@@ -17,6 +17,7 @@ The shared design system. Every app consumes it.
 | --- | --- |
 | `plan`, `author-tests`, `implement`, `build`, `lint`, `rule-checks`, `unit-tests`, `validate-tests`, `review`, `final-verification` | `always` |
 | `browser-qa`, `accessibility`, `performance`, `ux-critique` | `ui` |
+| `browser-qa` | `behaviour` |
 
 A change here also runs `build` for every app that consumes the changed component.
 

@@ -34,6 +34,13 @@ memory.
 - Write a comment in source or tests.
 - Put a credential anywhere a client can read it, or ask the user to paste one.
 - Edit files outside the step you were given.
+- Invent what the user did not ask for: requirements, behaviour, copy, content, images, data or
+  APIs. When a decision is missing, hand back `questions` and change nothing. (W66)
+- Change code that the user or another agent wrote and the change does not need: no refactor,
+  rename, reformat, reorder or clean-up of working code. Touch only the lines the change needs. (W67)
+- Give the user a command that waits for input or opens a pager. Every command you hand over runs
+  to the end on its own (`-y`, `--force` where safe, `GIT_PAGER=cat`) and says roughly how long it
+  takes.
 
 ## Where things come from
 
@@ -51,6 +58,13 @@ prefix is banned.
 - Errors are thrown. `null` and `undefined` are not returned or passed when avoidable.
 - Files stay under 300 lines. Functions do one thing and take at most three arguments.
 - Styles are SCSS in ITCSS layers with BEM class names, built from tokens and mixins.
+- SCSS is always nested: elements, modifiers, states and media queries sit under their block
+  with `&`, so a block reads top to bottom in one place. (W26)
+- Selectors stay as light as possible so anything can be overridden later: one class per
+  selector, no ids, no tag-qualified classes, no long descendant chains, defaults inside
+  `:where()`, and `!important` only in trumps. (W69)
+- Each domain keeps its own styles. A change stays inside its component and never alters shared
+  or global styles unless the story asks for it. (W68)
 - Source never names a design tool.
 - Code, documentation, rules and GitHub issues are in English. Product copy lives in translations.
 - Nothing in `ibid-workspace` or its issues ever mentions agents, skills, LangGraph or the agent workflow.

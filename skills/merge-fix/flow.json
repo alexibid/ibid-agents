@@ -1,0 +1,16 @@
+{
+  "title": "Merge fix",
+  "steps": [
+    {
+      "id": "resolve",
+      "name": "Resolver os conflitos",
+      "doneBy": "merge-fix",
+      "task": "Find every file in conflict in the repository and its submodules (git status, git diff --name-only --diff-filter=U). Resolve each one in place, keeping the intent of both sides, and delete a file only when one side deleted it on purpose. Leave no conflict marker (<<<<<<<, =======, >>>>>>>): check with grep. Write no test, run no build, lint or test, and open no story or task. Hand back the absolute paths of the files you resolved, and one line per file on what you kept.",
+      "fields": {
+        "resolvedFiles": "optional-files",
+        "summary": "list"
+      },
+      "calls": []
+    }
+  ]
+}

@@ -38,6 +38,8 @@ const ISSUE_TYPES: Readonly<Record<ItemKind, string>> = { epic: 'Feature', story
 const KIND_LABELS: Readonly<Record<ItemKind, string>> = { epic: 'epic', story: 'user-story', task: 'task' };
 const PARENT_KINDS: Readonly<Record<ItemKind, readonly ItemKind[]>> = { epic: [], story: ['epic'], task: ['story', 'epic'] };
 const EMPTY_DRAFT: BacklogDraft = { id: '', project: '', items: [] };
+const MIN_STORIES_PER_EPIC = 8;
+const STANDING_EPIC = /^Maintenance of /;
 
 export function issueTypeOf(kind: ItemKind): string {
   return ISSUE_TYPES[kind];
@@ -86,6 +88,19 @@ function shapeProblemsOf(items: readonly BacklogItem[]): string[] {
     problems.push(...itemProblemsOf(item, kinds));
   }
   return problems;
+}
+
+export function epicSizeProblems(value: unknown): string[] {
+  const { value: draft, problems } = parsedDraft(value);
+  const epic = draft.items.find((item) => item.kind === 'epic');
+  const stories = draft.items.filter((item) => item.kind === 'story').length;
+  const onlyRewordsAnExistingEpic = epic?.issue !== '' && stories === 0;
+  if (problems.length > 0 || epic === undefined || STANDING_EPIC.test(epic.title) || onlyRewordsAnExistingEpic || stories >= MIN_STORIES_PER_EPIC) {
+    return [];
+  }
+  return [
+    `the epic "${epic.key}" has ${stories} stories; an epic holds at least ${MIN_STORIES_PER_EPIC}, because it is committed as one. Add the new stories to an open epic of the same project or theme, or widen this one`,
+  ];
 }
 
 function itemProblemsOf(item: BacklogItem, kinds: ReadonlyMap<string, ItemKind>): string[] {

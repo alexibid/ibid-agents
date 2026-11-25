@@ -43,7 +43,7 @@ way it will be guaranteed.
 | W23 | A lint rule wanting a non-empty block is configured, not silenced with a comment | machine | yes | `no-empty` and `no-empty-function` configuration |
 | W24 | Source never names design tools | machine | no | Word scan |
 | W25 | ITCSS layer order; no override outside `trumps` | machine | no | Stylelint `declaration-no-important` outside `trumps`, import-order scan |
-| W26 | BEM class names; no deep nesting | machine | no | Stylelint `selector-class-pattern`, `max-nesting-depth` |
+| W26 | BEM class names, and SCSS always nested under its block with `&` (elements, modifiers, states, media queries) | judgement | no | Stylelint `selector-class-pattern`, then reviewer |
 | W27 | A spec exists for every component, service, use case and repository | machine | no | Sibling spec check |
 | W28 | Tests are written before or alongside the code | process | no | Test author works from the story before the developer |
 | W29 | All business logic is covered | machine | no | Coverage threshold on domain and application layers |
@@ -58,7 +58,11 @@ way it will be guaranteed.
 | W38 | One commit line per affected repository, plus the root pointer bump | process | no | Final verifier reads `git status` in every submodule |
 | W39 | The commit type is chosen for its version effect | judgement | no | Reviewer |
 | W40 | Agent files are never committed | machine | yes | `.gitignore`, plus a `git ls-files` check |
-| W64 | No commit line for ibid-workspace is shown before DevOps validates Dependabot and the tests | process | no | After `final-verification` passes, the assistant runs `/devops` and shows the lines only on green |
+| W64 | No commit line for ibid-workspace is shown before DevOps validates the tests; Dependabot findings are warnings that never hold the lines back | process | no | After `final-verification` passes, the assistant runs `/devops` and shows the lines on green, with any Dependabot warning beside them |
+| W66 | Nothing is invented: requirements, behaviour, copy, content, images, data or APIs come from the user or the sources the brief names; an open decision becomes `questions` | judgement | partial | The flow engine stops the story on `questions`; reviewer |
+| W67 | Code the user or another agent wrote is not changed unless the change needs it: no refactor, rename, reformat or clean-up | judgement | no | Reviewer, plus the plan's file list |
+| W68 | Each domain keeps its own styles; shared or global styles change only when the story asks | judgement | no | Reviewer and UX critic |
+| W69 | Selectors stay as light as possible so they can be overridden: one class, no ids, no tag-qualified classes, no long chains, defaults in `:where()` | judgement | no | Reviewer; Stylelint `selector-max-specificity` once installed |
 | W65 | Every agent asks for the pending pulls before it starts | machine | yes | Claude's SessionStart hook lists the repositories behind their remote; the other tools read the rule in their instructions |
 | W41 | No inline heredocs or one-liners in the terminal | guard | no | Deny pattern |
 | W42 | Start from `git diff` and `git status` | process | no | The flow engine supplies the diff with each step |
@@ -152,7 +156,7 @@ How many tests, at which layer, and with what data. The weights follow the testi
 | T02 | Every test reads its data from mocks; no test reaches a real API, database, local file or installed app | judgement | no | Test validator and reviewer |
 | T03 | Logic is tested without TestBed; TestBed only for `inject()`, lifecycle or templates | judgement | no | Reviewer |
 | T04 | Tests assert public behaviour (DOM, signal value, output), never private members or internal call counts | judgement | no | Test validator |
-| T05 | One check lives in one layer, with at most three tests per criterion | judgement | no | Test validator |
+| T05 | One check lives in one layer, with at most two tests per criterion | judgement | no | Test validator |
 | T06 | Journeys cover only critical business flows end to end, never field validation or isolated visual states | judgement | no | Test validator |
 | T07 | Journey selectors are `getByRole`, `getByLabel`, `getByText` or `data-testid`; never CSS classes, DOM structure or XPath | machine | no | Journey scan |
 | T08 | Journeys never call `waitForTimeout` | machine | no | Journey scan |
@@ -177,11 +181,11 @@ Rules that lived only inside a skill and were in no rule file.
 
 | Kind | Count |
 | --- | --- |
-| `machine` | 60 |
+| `machine` | 59 |
 | `guard` | 5 |
 | `process` | 13 |
-| `judgement` | 35 |
-| All | 113 |
+| `judgement` | 40 |
+| All | 117 |
 
 Enforced by something other than memory today: 9, plus 1 partial and 1 unverified.
 

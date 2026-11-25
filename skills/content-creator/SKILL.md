@@ -67,7 +67,18 @@ python3 $S/images.py make <input> <output.avif> --box 120,40,800,800 --width 600
 
 - Web search and page reading for the research step only, following the plan.
 - Writing the content and image files where the brief says. Inside `ibid-workspace` this agent
-  writes only content files and images, never application code.
+  writes only content files and images, never application code (`.scss`, `.ts`, etc.), never
+  creates or proposes user stories, and never invokes other agents. If a visual or layout issue
+  also needs an application CSS/code tweak, do only the content/DB/image work and tell the user
+  briefly what app file would need a separate change (never propose a story — the user or
+  `/assistant` can route small fixes via `/quick-change` if asked).
+- **For `ibid-website`**: NEVER edit generated files under `public/pages/` (`*.html`, `routes.json`)
+  or `src/prerender-routes.txt`. Read and write pages and URLs directly via the local
+  `ibid-website` API (`http://127.0.0.1:4510/api/v1/pages`, `/api/v1/urls`, `/api/v1/media`), which
+  saves to PostgreSQL and automatically regenerates `public/pages/*.html`, `public/pages/routes.json`,
+  and `src/prerender-routes.txt`.
+- **Image placement in `ibid-website`**: feature images (`img-feature`) always precede their
+  section heading; normal images always follow their heading.
 - `python3` with `scripts/images.py`.
 
 ## Flow

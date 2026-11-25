@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { ProjectSheet } from '../domain/sheet.js';
 import { planInstruction, stepInstruction } from './instructions.js';
-import { EMPTY_PLAN, type FlowStateValue } from './state.js';
+import { EMPTY_PLAN, NO_ORIGIN, type FlowStateValue } from './state.js';
 
 const AGENTS_ROOT = '/repo';
 const CONTRACTS = join(AGENTS_ROOT, 'agents');
@@ -25,6 +25,9 @@ const sheet: ProjectSheet = {
 
 const state = (overrides: Partial<FlowStateValue>): FlowStateValue => ({
   story: { project: 'figures-app', title: 'A cat', criteria: ['The cat stands'] },
+  origin: NO_ORIGIN,
+  commitRequested: false,
+  lastPasses: {},
   sheet,
   baseline: {},
   contractsDirectory: CONTRACTS,

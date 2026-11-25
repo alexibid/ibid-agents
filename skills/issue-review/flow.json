@@ -1,0 +1,38 @@
+{
+  "title": "Issue review",
+  "steps": [
+    {
+      "id": "sync",
+      "name": "Sincronizar as stories",
+      "doneBy": "issue-review",
+      "task": "Call sync_github on ibid-langgraph. It brings every issue linked to a story in line with where the story stands. Hand back its one-line result per story and whether everything is up to date.",
+      "fields": {
+        "stories": "list",
+        "allUpToDate": "text"
+      },
+      "calls": []
+    },
+    {
+      "id": "review",
+      "name": "Rever todas as issues",
+      "doneBy": "issue-review",
+      "task": "List every open issue of each repository named in the request with gh. For each one, compare it with the stories of the flow engine, the backlog (read_backlog), the git log of the default branch and the code. Decide one action per issue: keep; fix its labels, size, parent or body to match what was approved; close as completed with the evidence (commit or story); close as duplicate of the issue it repeats; or close as not planned when it no longer makes sense. Hand back one finding per issue that needs an action: \"#<n>: <action> — <reason and evidence>\".",
+      "fields": {
+        "findings": "list"
+      },
+      "calls": []
+    },
+    {
+      "id": "apply",
+      "name": "Corrigir o GitHub",
+      "doneBy": "issue-review",
+      "task": "Apply every finding with gh: edit labels, size, parent and body; close with the reason (completed, duplicate, not planned) and a short comment in English that gives the evidence. Close an epic whose sub-issues are all closed. Never delete an issue. Hand back what changed, the links of the issues you closed, and a one-line summary that says whether GitHub now matches the real state.",
+      "fields": {
+        "changed": "list",
+        "closedIssues": "optional-urls",
+        "summary": "text"
+      },
+      "calls": []
+    }
+  ]
+}

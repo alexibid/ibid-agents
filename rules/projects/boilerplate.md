@@ -18,6 +18,7 @@ Storybook.
 | --- | --- |
 | `plan`, `implement`, `build`, `lint`, `rule-checks`, `unit-tests`, `review`, `final-verification` | `always` |
 | `browser-qa`, `accessibility` | `ui` |
+| `browser-qa` | `behaviour` |
 
 ## Checks
 

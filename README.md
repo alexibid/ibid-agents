@@ -9,7 +9,7 @@ Private multi-agent orchestration, governance, and audit system across all user 
 - **Zero Product Contamination**: Keeps product repositories 100% clean of vendor-specific AI prompts, rules, agent files, and scaffolding. Governance lives entirely at the user account level (`~/.gemini/config/` and `~/.claude/`).
 - **Context Rot & Token Blowout Elimination**: Massive monorepos degrade LLM reasoning when hundreds of rules and files are loaded into a single chat. This system isolates every job into focused contracts and subagents.
 - **Elimination of Self-Grading Bias**: Models that author implementation never author or validate their own tests.
-- **Deterministic State Machine**: Powered by the **flow engine** (reached via MCP as `ibid-langgraph`), work moves through strict, non-skippable gates (`plan` → `author-tests` → `implement` → `validate-tests` → `review` → `verify`).
+- **Deterministic State Machine**: Powered by the **flow engine** (reached via MCP as `ibid-langgraph`), work moves through strict, non-skippable gates in two phases: building (`plan` → `implement` → `author-tests` → `build` → `lint`) and, only when the user asks to commit, verifying (`rule-checks` → `unit-tests` → `validate-tests` → `journey` → `browser-qa` → `ux-critique` → `review` → `final-verification`). Repeats that cannot change the result are skipped, and an agent that is not sure asks instead of guessing.
 - **Active Enforcement & Auditing**:
   - **Guard Hooks (`PreToolUse`)**: Deny state-changing git commands, forbidden test runners, unassigned ports, and edits outside active flows.
   - **Desktop Monitor (Angular + Tauri + PostgreSQL)**: Audits real agent calls, token expenditure, rate limits, and flow execution.
@@ -57,16 +57,16 @@ Private multi-agent orchestration, governance, and audit system across all user 
 ### User Story Lifecycle (the flow engine Core Roles)
 
 - **`/specialist`**
-  - **Does**: Plans the exact files to touch, declares triggered conditions (`ui`, `figures`, `workflows`), reuses `ibid-ui` elements, and writes the technical brief.
+  - **Does**: Plans the exact files to touch, declares triggered conditions (`ui`, `behaviour`, `figures`, `workflows`), reuses `ibid-ui` elements, and writes the technical brief.
   - **Forbidden**: Writing source code, modifying unplanned files, assuming external APIs exist without checking contracts.
 
 - **`/test-author`**
-  - **Does**: Writes failing specs (`.spec.ts`) exclusively from the story and acceptance criteria before implementation exists (strict TDD).
-  - **Forbidden**: Reading or seeing the developer's implementation, authoring production code, writing inline mock data (K01).
+  - **Does**: Right after the developer, writes the fewest specs (`.spec.ts`) that prove each criterion, at the lowest layer, on mocked data only (at most two per criterion); at the commit, fixes only what the unit tests or the validator fault.
+  - **Forbidden**: Reading the implementation's internals, authoring production code, writing inline mock data (K01), reaching a real API or database (T02).
 
 - **`/developer`**
-  - **Does**: Implements logic strictly within the planned files until tests pass, keeping functions small (SRP) and files under 300 lines.
-  - **Forbidden**: Touching files outside the approved plan, writing comments (W22), using `any` (W17), judging own tests, changing git state.
+  - **Does**: Implements logic strictly within the planned files, keeping functions small (SRP) and files under 300 lines; in the commit phase, fixes what the tests or the review report.
+  - **Forbidden**: Inventing anything the story did not ask for (W66), changing code the user or another agent wrote that the change does not need (W67), sharing styles across domains or changing shared styles unasked (W68), flat SCSS or heavy selectors (W26, W69), touching files outside the plan, writing comments (W22), using `any` (W17), changing git state.
 
 - **`/ui`**
   - **Does**: Builds markup, styles (SCSS/ITCSS/BEM), tokens, and motion for user interfaces.
@@ -113,8 +113,20 @@ Private multi-agent orchestration, governance, and audit system across all user 
   - **Forbidden**: Loosening or deleting CI gates, editing application business logic directly.
 
 - **`/project-manager`**
-  - **Does**: Breaks large epics (`size L`) into small stories (`S`/`M`) with acceptance criteria; creates English GitHub issues upon approval.
+  - **Does**: Groups work into epics of at least 8 stories (the unit of a commit), reusing an open epic of the same project or theme; splits them into small stories (`S`/`M`) with acceptance criteria; creates English GitHub issues upon approval.
   - **Forbidden**: Starting implementation, writing issues referencing internal agent workflows or the flow engine (W61).
+
+- **`/issue-review`**
+  - **Does**: The project manager's review of GitHub: after a commit, on scope changes and at most once a day, brings every open issue in line with the code and closes what is done, duplicated or obsolete, with the evidence.
+  - **Forbidden**: Deleting issues, writing new issue text without approval, editing the `status: …` labels the flow engine owns.
+
+- **`/quick-change`**
+  - **Does**: Makes content, copy, image or "urgent, no story" changes in one step.
+  - **Forbidden**: Opening a story, task or issue, running tests, inventing content.
+
+- **`/merge-fix`**
+  - **Does**: Resolves merge conflicts on the spot in one step, keeping both intents.
+  - **Forbidden**: Opening a story, task or issue, running tests, builds or lint, changing git state.
 
 - **`/solution-architect`**
   - **Does**: Analyzes multi-project architectures, diagnoses structural flaws, designs end-to-end integration contracts.

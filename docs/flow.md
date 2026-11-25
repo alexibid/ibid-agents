@@ -8,8 +8,8 @@ graph TD;
 	__start__([<p>__start__</p>]):::first
 	intake(intake)
 	planning(planning)
-	author-tests(author-tests)
 	implement(implement)
+	author-tests(author-tests)
 	build(build)
 	lint(lint)
 	rule-checks(rule-checks)
@@ -26,8 +26,8 @@ graph TD;
 	__end__([<p>__end__</p>]):::last
 	__start__ --> intake;
 	intake --> planning;
-	planning -.-> author-tests;
 	planning -.-> implement;
+	planning -.-> author-tests;
 	planning -.-> build;
 	planning -.-> lint;
 	planning -.-> rule-checks;
@@ -42,6 +42,21 @@ graph TD;
 	planning -.-> review;
 	planning -.-> final-verification;
 	planning -.-> __end__;
+	implement -.-> author-tests;
+	implement -.-> build;
+	implement -.-> lint;
+	implement -.-> rule-checks;
+	implement -.-> unit-tests;
+	implement -.-> validate-tests;
+	implement -.-> journey;
+	implement -.-> browser-qa;
+	implement -.-> accessibility;
+	implement -.-> performance;
+	implement -.-> ux-critique;
+	implement -.-> visual-gate;
+	implement -.-> review;
+	implement -.-> final-verification;
+	implement -.-> __end__;
 	author-tests -.-> implement;
 	author-tests -.-> build;
 	author-tests -.-> lint;
@@ -57,20 +72,6 @@ graph TD;
 	author-tests -.-> review;
 	author-tests -.-> final-verification;
 	author-tests -.-> __end__;
-	implement -.-> build;
-	implement -.-> lint;
-	implement -.-> rule-checks;
-	implement -.-> unit-tests;
-	implement -.-> validate-tests;
-	implement -.-> journey;
-	implement -.-> browser-qa;
-	implement -.-> accessibility;
-	implement -.-> performance;
-	implement -.-> ux-critique;
-	implement -.-> visual-gate;
-	implement -.-> review;
-	implement -.-> final-verification;
-	implement -.-> __end__;
 	build -.-> implement;
 	build -.-> lint;
 	build -.-> rule-checks;
@@ -110,6 +111,7 @@ graph TD;
 	rule-checks -.-> review;
 	rule-checks -.-> final-verification;
 	rule-checks -.-> __end__;
+	unit-tests -.-> author-tests;
 	unit-tests -.-> implement;
 	unit-tests -.-> validate-tests;
 	unit-tests -.-> journey;
@@ -121,6 +123,7 @@ graph TD;
 	unit-tests -.-> review;
 	unit-tests -.-> final-verification;
 	unit-tests -.-> __end__;
+	validate-tests -.-> author-tests;
 	validate-tests -.-> implement;
 	validate-tests -.-> journey;
 	validate-tests -.-> browser-qa;
@@ -176,8 +179,8 @@ graph TD;
 	final-verification -.-> implement;
 	final-verification -.-> __end__;
 	planning -.-> planning;
-	author-tests -.-> author-tests;
 	implement -.-> implement;
+	author-tests -.-> author-tests;
 	build -.-> build;
 	lint -.-> lint;
 	rule-checks -.-> rule-checks;

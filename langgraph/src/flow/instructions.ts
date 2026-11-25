@@ -23,10 +23,10 @@ export interface Instruction {
 
 const TASKS: Readonly<Partial<Record<StepName, string>>> = {
   'author-tests':
-    'Write a failing test for every acceptance criterion, once and at the lowest layer that proves it, on mocked data only, working from the story and never from the implementation.',
+    'Write the fewest tests that prove each acceptance criterion, once and at the lowest layer, on mocked data only. Extend the existing specs and keep every test that already proves something. When the last result failed, fix exactly what it reports.',
   implement: 'Make the change the plan describes, inside the planned files only. If the last result failed, fix exactly what it reports.',
   'validate-tests':
-    'Confirm that each acceptance criterion is proven, once and at the right layer, by a mocked test that would fail without the change.',
+    'Confirm that each acceptance criterion is proven, once and at the right layer, by a mocked test that would fail without the change, and that the changed business logic is covered as agreed (75-85%). Name exactly which test is missing, wrong or redundant.',
   'browser-qa': 'Open the running app, exercise the story as a user would, and capture a screenshot of each state.',
   performance: 'Record a performance trace of the changed screens and report dropped frames and layout shifts.',
   'ux-critique': 'Use the changed screens critically. Report each problem with its severity and a screenshot. Write no code.',
@@ -47,7 +47,8 @@ const HAND_BACK: Readonly<Partial<Record<StepName, string>>> = {
   'final-verification': '{ "commitLines": [{ "repository": "<submodule path or .>", "line": "type(scope): subject" }] }',
 };
 
-const FOLLOW_UPS = '"followUps": ["<optional: work outside this story worth doing later>"]';
+const FOLLOW_UPS =
+  '"followUps": ["<optional: work outside this story worth doing later>"], "questions": ["<only when you cannot go on without a decision of the user; never guess instead>"]';
 
 const CONTRACTS: Readonly<Partial<Record<StepName, readonly string[]>>> = {
   'author-tests': ['test-author.md'],

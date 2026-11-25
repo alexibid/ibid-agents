@@ -19,6 +19,7 @@ are involved.
 | --- | --- |
 | `plan`, `implement`, `build`, `lint`, `rule-checks`, `review`, `final-verification` | `always` |
 | `browser-qa`, `ux-critique` | `ui` |
+| `browser-qa` | `behaviour` |
 | `visual-gate` | `figures` |
 
 The project declares no test target today. `author-tests`, `unit-tests` and `validate-tests`
