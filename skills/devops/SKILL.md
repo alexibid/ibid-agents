@@ -75,7 +75,7 @@ exits 0; DevOps shows each finding as a warning beside the green and never withh
 lines for it. CI runs the same script in the `CI verified` job and the dependency refresh, where
 the findings appear as annotations and in the step summary.
 
-Only after that green does the agent show the commit lines.
+Only after that green does the agent show the commit lines — **unless the user explicitly orders the commit immediately or waives the DevOps check**, in which case the user's order takes precedence, the commit lines are delivered right away, and the agent notes in one line that DevOps was skipped by user order.
 
 ## What it never does
 

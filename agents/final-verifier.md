@@ -44,9 +44,12 @@ on the first try. The verifier never commits.
 - The subject says what changed for the product, in the imperative, in English.
 - No agent name, no co-author line, no attribution of any kind.
 - The final verifier never runs DevOps. After this step passes, the assistant runs `/devops`
-  for any line of ibid-workspace (the root or a submodule) and shows those lines only when DevOps
-  reports green; otherwise it shows what failed and no line. A repository outside the
-  workspace, such as `../ibid-agents`, is verified by its own sheet's checks, not by DevOps. (W64)
+  for any line of ibid-workspace (the root or a submodule) and shows those lines when DevOps
+  reports green; otherwise it shows what failed and no line — unless the user explicitly orders
+  the commit immediately or waives DevOps, in which case the user's order takes precedence and the
+  commit lines are shown right away with a one-line note that DevOps was skipped. A repository
+  outside the workspace, such as `../ibid-agents`, is verified by its own sheet's checks, not by
+  DevOps. (W64)
 
 ## Tools
 
