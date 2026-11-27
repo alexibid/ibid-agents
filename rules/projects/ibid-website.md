@@ -11,6 +11,7 @@ that complements the CV. Static pages built from a content snapshot; the admin r
 | Commit scope | `ibid-website` |
 | Specialist | `agents/ibid-website-specialist.md` |
 | Delivery | Static web on Firebase Hosting (site `ibid-website`, project `ibid-32cbe`) plus the contact Function |
+| Discovery | `seo`: a public website, so every step reads `rules/discovery/seo.md` |
 
 ## Mandatory steps
 
@@ -19,6 +20,7 @@ that complements the CV. Static pages built from a content snapshot; the admin r
 | `plan`, `author-tests`, `implement`, `build`, `lint`, `rule-checks`, `unit-tests`, `validate-tests`, `review`, `final-verification` | `always` |
 | `browser-qa`, `ux-critique` | `ui` |
 | `browser-qa` | `behaviour` |
+| `seo-audit` | `always` |
 
 The project has lint and test targets. Tests are written and validated only when the user asks
 to move on to the commit. `accessibility`, `performance` and `journey` join `ui` once story S9 adds the
@@ -31,6 +33,20 @@ e2e target.
 | `lint` | `npx nx lint ibid-website` |
 | `unit-tests` | `npx nx test ibid-website` |
 | `build` | `npx nx build ibid-website` |
+
+## SEO audit
+
+What the `seo-audit` step reads after the build. A problem in the built pages blocks only when
+the story changes one of the `page sources` or the hosting config; otherwise it is existing debt
+and comes back as a warning.
+
+| Field | Value |
+| --- | --- |
+| `pages` | `dist/ibid-website/browser` |
+| `routes` | `dist/ibid-website/prerendered-routes.json` |
+| `hosting` | `firebase.json` |
+| `templates` | `apps/ibid-website/src/app` |
+| `page sources` | `apps/ibid-website/src/index.html`, `apps/ibid-website/src/prerender-routes.txt`, `meta.service.ts`, `.routes.ts`, `.routes.server.ts`, `robots.txt`, `llms.txt`, `404.html`, `.webmanifest`, `firebase.json` |
 
 ## Content
 

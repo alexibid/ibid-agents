@@ -53,3 +53,17 @@ export function tokensSpentOn(prompt: TokenUse): number {
 export function secondsTakenBy(prompt: Pick<PromptSummary, 'askedOn' | 'finishedOn'>): number {
   return Math.max(0, Math.round((Date.parse(prompt.finishedOn) - Date.parse(prompt.askedOn)) / 1000));
 }
+
+export function formatDuration(totalSeconds: number): string {
+  const safe = Math.max(0, Math.round(totalSeconds));
+  if (safe < 60) {
+    return `${safe} s`;
+  }
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  const seconds = safe % 60;
+  if (hours > 0) {
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  }
+  return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+}

@@ -23,10 +23,33 @@ const run = promisify(execFile);
 const GH_TIMEOUT_MS = 10000;
 const KEEP_FOR_MS = 60_000;
 
-export function progressFrom(url: string, issue: unknown): EpicProgress {
+const DONE_STAGE_LABELS = new Set(['status: ready for commit', 'status: verifying', 'status: awaiting commit']);
+
+function isDoneSubIssue(issue: unknown): boolean {
+  if (!isObject(issue)) {
+    return false;
+  }
+  if (textIn(issue, 'state').toLowerCase() === 'closed') {
+    return true;
+  }
+  const labels = Array.isArray(issue.labels) ? issue.labels : [];
+  return labels.some((label) => isObject(label) && DONE_STAGE_LABELS.has(textIn(label, 'name')));
+}
+
+export function progressFrom(url: string, issue: unknown, subIssues: unknown = []): EpicProgress {
   const fields = isObject(issue) ? issue : {};
   const summary = objectIn(fields, 'sub_issues_summary');
-  return { url, title: textIn(fields, 'title'), done: numberIn(summary, 'completed'), total: numberIn(summary, 'total') };
+  const totalFromSummary = numberIn(summary, 'total');
+  const items = Array.isArray(subIssues) ? subIssues : [];
+  if (items.length === 0) {
+    return { url, title: textIn(fields, 'title'), done: numberIn(summary, 'completed'), total: totalFromSummary };
+  }
+  return {
+    url,
+    title: textIn(fields, 'title'),
+    done: items.filter(isDoneSubIssue).length,
+    total: Math.max(totalFromSummary, items.length),
+  };
 }
 
 export class EpicProgressReader {
@@ -46,7 +69,11 @@ export class EpicProgressReader {
     if (apiPath === '') {
       throw new EpicUnreadableError(url);
     }
-    const progress = progressFrom(url, await this.read(apiPath).catch(() => Promise.reject(new EpicUnreadableError(url))));
+    const [issue, subIssues] = await Promise.all([
+      this.read(apiPath).catch(() => Promise.reject(new EpicUnreadableError(url))),
+      this.read(`${apiPath}/sub_issues?per_page=100`).catch(() => []),
+    ]);
+    const progress = progressFrom(url, issue, subIssues);
     this.kept.set(url, { progress, readOn: this.now() });
     return progress;
   }

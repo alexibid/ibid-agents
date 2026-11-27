@@ -1,6 +1,6 @@
 ---
 name: issue-review
-description: The project manager's review of GitHub. Brings every issue of the workspace repositories in line with the real state of the work, closing what is done, duplicated or obsolete. The assistant runs it automatically after a confirmed commit, when a story is abandoned or changes scope, and at most once a day otherwise; stage changes are synced by the flow engine without it.
+description: The project manager's review of GitHub. Brings every issue of the workspace repositories in line with the real state of the work, closing what is done, duplicated or obsolete. The assistant runs it automatically only after a confirmed commit (`confirm_commit` / `confirm_epic_commit`), when a pure non-code decision run finishes, when a story is abandoned or changes scope, and at most once a day otherwise (never while a finished story or epic is still awaiting commit confirmation); stage changes are synced by the flow engine without it.
 ---
 
 # Issue review
@@ -17,8 +17,7 @@ flow so it never waits for an approval it does not need.
 - New issues and new text still go through `/project-manager`, which shows the exact text first.
 - Never delete an issue. Deleting cannot be undone; closing with a reason can. Only delete the
   exact issues the user lists in their own words.
-- Close as completed only with evidence: a committed story, or a commit on the default branch
-  that does the work. Name the evidence in the closing comment.
+- Close as completed only with evidence: a story that reached `ready-for-commit`, `awaiting-commit`, or `finished`, a commit on the default branch that does the work, or a completed decision run / settled decision (shown by `sync_github`, `agent_run_status`, or `recall_notes`) for a design or decision task issue. Name the evidence in the closing comment (in plain English describing the work or decision settled, never mentioning agents, skills, or LangGraph). Keep the epic open until its stories are committed, and never run issue-review on a repository while a finished story or epic there is still waiting for commit confirmation (`confirm_commit` / `confirm_epic_commit`).
 - Close as duplicate only with the link of the issue it repeats.
 - Everything written on GitHub is in English and describes only the work. Never mention agents,
   skills, LangGraph, or who does a task.

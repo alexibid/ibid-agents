@@ -2,7 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 
-export const FIELD_KINDS = ['text', 'list', 'yes', 'urls', 'optional-urls', 'file', 'files', 'optional-files', 'passing-runs', 'backlog', 'published-issues'] as const;
+export const FIELD_KINDS = ['text', 'list', 'yes', 'urls', 'optional-urls', 'file', 'files', 'optional-files', 'passing-runs', 'backlog', 'published-issues', 'discovery-review'] as const;
 
 const stepSchema = z.object({
   id: z.string().regex(/^[a-z][a-z0-9-]*$/),
@@ -13,18 +13,28 @@ const stepSchema = z.object({
   calls: z.array(z.string().regex(/^[a-z][a-z0-9-]*$/)).default([]),
 });
 
+const followUpSchema = z.object({
+  agent: z.string().regex(/^[a-z][a-z0-9-]*$/),
+  noApprovalAgent: z.string().regex(/^[a-z][a-z0-9-]*$/).optional(),
+  when: z.enum(['linked-issues', 'always']).default('linked-issues'),
+  instruction: z.string().min(1),
+});
+
 const flowSchema = z.object({
   title: z.string().min(1),
+  afterFinish: followUpSchema.optional(),
   steps: z.array(stepSchema).min(1),
 });
 
 export type FieldKind = (typeof FIELD_KINDS)[number];
 export type FlowStep = z.infer<typeof stepSchema>;
+export type FlowFollowUp = z.infer<typeof followUpSchema>;
 
 export interface AgentFlowDefinition {
   readonly agent: string;
   readonly title: string;
   readonly skillFile: string;
+  readonly afterFinish?: FlowFollowUp;
   readonly steps: readonly FlowStep[];
 }
 
@@ -58,5 +68,11 @@ export function definitionOf(agent: string, text: string, skillFile: string): Ag
   if (new Set(ids).size !== ids.length) {
     throw new InvalidAgentFlowError(agent, ['two steps share an id']);
   }
-  return { agent, title: parsed.data.title, skillFile, steps: parsed.data.steps };
+  return {
+    agent,
+    title: parsed.data.title,
+    skillFile,
+    ...(parsed.data.afterFinish !== undefined ? { afterFinish: parsed.data.afterFinish } : {}),
+    steps: parsed.data.steps,
+  };
 }

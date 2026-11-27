@@ -9,6 +9,13 @@ const GH_TIMEOUT_MS = 10000;
 
 export type ApiCall = (path: string) => Promise<boolean>;
 
+export class IssueNotFoundError extends Error {
+  constructor(url: string) {
+    super(`${url} is not a GitHub issue the signed-in user can read. A story starts from an existing issue.`);
+    this.name = 'IssueNotFoundError';
+  }
+}
+
 export function githubApiPathOf(url: URL): string {
   if (!GITHUB_HOSTS.has(url.hostname)) {
     return '';
@@ -24,6 +31,14 @@ export function githubApiPathOf(url: URL): string {
 export async function existsForSignedInUser(url: URL, call: ApiCall = callGh): Promise<boolean> {
   const path = githubApiPathOf(url);
   return path === '' ? false : call(path);
+}
+
+export async function verifyGithubIssues(urls: readonly string[], call: ApiCall = callGh): Promise<void> {
+  for (const url of urls.filter((link) => link !== '')) {
+    if (!(await existsForSignedInUser(new URL(url), call))) {
+      throw new IssueNotFoundError(url);
+    }
+  }
 }
 
 async function callGh(path: string): Promise<boolean> {

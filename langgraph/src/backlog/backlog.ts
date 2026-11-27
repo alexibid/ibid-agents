@@ -38,7 +38,7 @@ const ISSUE_TYPES: Readonly<Record<ItemKind, string>> = { epic: 'Feature', story
 const KIND_LABELS: Readonly<Record<ItemKind, string>> = { epic: 'epic', story: 'user-story', task: 'task' };
 const PARENT_KINDS: Readonly<Record<ItemKind, readonly ItemKind[]>> = { epic: [], story: ['epic'], task: ['story', 'epic'] };
 const EMPTY_DRAFT: BacklogDraft = { id: '', project: '', items: [] };
-const MIN_STORIES_PER_EPIC = 8;
+const MIN_STORIES_PER_EPIC = 3;
 const STANDING_EPIC = /^Maintenance of /;
 
 export function issueTypeOf(kind: ItemKind): string {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { existsForSignedInUser, githubApiPathOf } from './github-link.js';
+import { existsForSignedInUser, githubApiPathOf, IssueNotFoundError, verifyGithubIssues } from './github-link.js';
 
 describe('githubApiPathOf', () => {
   it.each([
@@ -29,5 +29,14 @@ describe('existsForSignedInUser', () => {
     const found = await existsForSignedInUser(new URL('https://example.com/page'), async () => true);
 
     expect(found).toBe(false);
+  });
+});
+
+describe('verifyGithubIssues', () => {
+  it('should skip empty links and reject unreadable issues', async () => {
+    await expect(verifyGithubIssues(['', 'https://github.com/alexibid/services/issues/1'], async () => true)).resolves.toBeUndefined();
+    await expect(verifyGithubIssues(['https://github.com/alexibid/services/issues/99'], async () => false)).rejects.toThrow(
+      IssueNotFoundError,
+    );
   });
 });

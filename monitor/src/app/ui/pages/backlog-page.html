@@ -4,6 +4,7 @@
     Os épicos, as stories e as tarefas que o gestor de projeto preparou. O texto fica aqui até o aprovares; depois de ir
     para o GitHub, é lá que manda e aqui fica o link.
   </p>
+  <monitor-text-field label="Procurar no backlog" placeholder="Texto do épico ou das stories" [(value)]="query" />
 
   @for (entry of epics(); track entry.epic.id) {
     <article class="o-panel backlog">
@@ -32,6 +33,8 @@
       }
     </article>
   } @empty {
-    <p class="o-panel o-empty">Ainda não há nada no backlog.</p>
+    <p class="o-panel o-empty">
+      {{ query().trim() ? 'Nenhum épico ou story corresponde à pesquisa.' : 'Ainda não há nada no backlog.' }}
+    </p>
   }
 </section>

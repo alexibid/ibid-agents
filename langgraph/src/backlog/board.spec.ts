@@ -52,10 +52,10 @@ describe('boardOf', () => {
     expect(board?.stories[0]?.tasks.map(({ key, state }) => ({ key, state }))).toEqual([{ key: 'T1', state: 'closed' }]);
   });
 
-  it('should count how many stories of the epic are done', () => {
+  it('should count how many stories of the epic are done (closed or ready for commit)', () => {
     const [board] = boardOf([bookMotion], states);
 
-    expect({ done: board?.done, total: board?.total, stage: board?.epic.stage }).toEqual({ done: 1, total: 3, stage: 'em curso' });
+    expect({ done: board?.done, total: board?.total, stage: board?.epic.stage }).toEqual({ done: 2, total: 3, stage: 'em curso' });
   });
 
   it('should list open epics first, the most recent on top', () => {

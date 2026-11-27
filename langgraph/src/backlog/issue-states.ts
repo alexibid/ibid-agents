@@ -52,7 +52,7 @@ async function listWithGh(repository: string): Promise<unknown> {
   const { stdout } = await run(
     'gh',
     ['issue', 'list', '-R', repository, '--state', 'all', '--limit', LIMIT, '--json', 'number,state,labels'],
-    { timeout: GH_TIMEOUT_MS },
+    { timeout: GH_TIMEOUT_MS, env: { ...process.env, PATH: `${process.env['PATH'] ?? ''}:/opt/homebrew/bin:/usr/local/bin` } },
   );
   return JSON.parse(stdout);
 }

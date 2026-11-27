@@ -27,7 +27,9 @@ export class CommitCloser {
     const states = await this.parts.issueStates.statesOf(linked.flatMap(({ issue }) => repositoryOf(issue)));
     const uncommitted = await this.parts.uncommittedFiles();
     const committed = linked.filter(
-      ({ issue, files }) => states.get(issue)?.state === 'open' && files.every((file) => !uncommitted.has(file)),
+      ({ issue, epic, files }) =>
+        (states.get(issue)?.state === 'open' || (epic !== '' && states.get(epic)?.state === 'open')) &&
+        files.every((file) => !uncommitted.has(file)),
     );
     for (const story of committed) {
       await this.parts.issues.closeDone({ issue: story.issue, epic: story.epic });

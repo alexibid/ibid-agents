@@ -79,12 +79,12 @@ Only open a story when the user explicitly asks for one, or when the request is 
 
 1. Clarify in 1–2 short questions who it is for, what happens today, what should change, and edge cases (empty state, error, offline, duplicate action).
 2. If the request touches a shared library and an app, split it into two stories (library first).
-3. The user commits per epic, not per story: stories of one epic are built one after another and stay `ready-for-commit`, and when the last one of an epic is ready, tell the user in one line that the epic is ready to commit and list its stories. Only when they say to commit, call `advance_to_commit` for each story of the epic. If the request is size `L` (an epic), start `/project-manager` on `ibid-langgraph` (`start_agent_run` with `agent: "project-manager"`), delegate to the `project-manager` subagent to size and split it into `S`/`M` stories and tasks, and publish GitHub issues in English only after the user approves the exact text.
+3. The user commits per epic, not per story: stories of one epic are built one after another and stay `ready-for-commit`, and when the last one of an epic is ready (or the user asks to commit the ready stories), tell the user in one line and list the ready stories. Only when they say to commit, call `advance_epic_to_commit` once with the epic URL (or `storyIds` for a chosen subset) so build, lint, rule checks, unit tests, `validate-tests`, `browser-qa`, `ux-critique`, `review`, and `final-verification` run ONCE across the ready stories instead of per story. If the request is size `L` (an epic), start `/project-manager` on `ibid-langgraph` (`start_agent_run` with `agent: "project-manager"`), delegate to the `project-manager` subagent to size and split it into `S`/`M` stories and tasks, and publish GitHub issues in English only after the user approves the exact text.
 4. Present each story concisely in bullets:
    - **Story**: one sentence (who wants what and why).
    - **Project & Size**: project name and `S` or `M`.
    - **Acceptance Criteria**: observable behaviours (yes/no), with zero code details.
-   - **Agents**: only the **Building** agents that will execute up to `ready-for-commit` (specialist → developer/ui → test-author). Verification and judgement agents (`/test-validator`, `/browser-qa`, `/accessibility-performance`, `/ux-critic`, `/visual-gate`, `/reviewer`, `/final-verifier`) and `/devops` never run during Building — state in parentheses that they run only when closing the epic (`advance_to_commit`, when the user asks to commit the epic), unless waived by the user.
+   - **Agents**: only the **Building** agents that will execute up to `ready-for-commit` (specialist → developer/ui → test-author). Verification and judgement agents (`/test-validator`, `/browser-qa`, `/accessibility-performance`, `/ux-critic`, `/visual-gate`, `/reviewer`, `/final-verifier`) and `/devops` never run during Building — state in parentheses that they run only once when closing the epic (`advance_epic_to_commit`, when the user asks to commit the epic), unless waived by the user.
 5. Every story comes from a GitHub issue, a sub-issue of its epic. When the work has none, start `/project-manager` to draft it and publish it once the user approves the text. Never start a story without its issue.
 6. Wait for an explicit go-ahead from the user before calling `start_story`.
 
@@ -105,24 +105,30 @@ Only open a story when the user explicitly asks for one, or when the request is 
 8. GitHub is kept up to date without asking the user:
    - The flow engine updates the story's issue by itself each time the story changes stage; read the result in `github`.
    - Never start `issue-review` for a stage change: the flow engine already updates the issue, at no cost. Call `sync_github` instead when the `github` line says `not checked`.
-   - Start `issue-review` (`start_agent_run` with `agent: "issue-review"` and the repositories of the stories in progress) only after `confirm_commit`, when a story is abandoned or has its criteria or scope changed, and at most once a day otherwise. It reviews every open issue and closes what is done, duplicated or obsolete.
-   - After the user commits a finished story, the monitor closes its issue by itself within a minute (and the epic when it is complete); the Quadro tab shows it. Call `confirm_commit` only to close it at once.
+   - Start `issue-review` (`start_agent_run` with `agent: "issue-review"` and the repositories of the stories in progress) **only after** `confirm_commit` / `confirm_epic_commit` confirms a finished code story/epic is committed, when a pure non-code decision run (`/solution-architect`) tied to a GitHub issue completes (`requiredFollowUp` in the engine output, unless `/project-manager` is needed because criteria, scope, or backlog items also changed), when a story is abandoned or has its criteria or scope changed, and at most once a day otherwise — never while a finished code story or epic in that repository is still waiting for the user's commit and confirmation. It reviews every open issue and closes what is done, duplicated or obsolete.
+   - After the user commits a finished story or epic, **always call `confirm_commit` (standalone story) or `confirm_epic_commit` (epic) first** to confirm zero uncommitted files remain and close the story/epic on GitHub before starting `/project-manager` follow-ups or `/issue-review` (the monitor also reconciles closed state in the background on the Quadro tab).
    - End the status with the result of the last review: `🔗 GitHub revisto: <n> issues corrigidas, tudo atualizado ✅`, or what is still wrong.
-9. `ready-for-commit` means the change and its tests are written and built; nothing has been run or judged yet (no browser QA, no unit tests, no validation, no review, no `/devops`). Tell the user in one line and wait. Only when closing the epic and the user asks to move on to the commit, call `advance_to_commit` and carry on with the steps it hands out (unless the user waives them). Never call it on your own and never hand out a browser QA, UX, review or final-verification step before it. When the user says to stop, wait or not to go on to those steps, call `hold_story`: the story goes back to `ready-for-commit` and nothing that judges the change runs until the user asks to commit again. If the user asks for it while the story is still being built, call it then: the story goes straight on.
+9. `ready-for-commit` means the change and its tests are written and built; nothing has been run or judged yet (no browser QA, no unit tests, no validation, no review, no `/devops`). Tell the user in one line and wait. Only when the user asks to move on to the commit, call `advance_epic_to_commit` for the epic (or `advance_to_commit` for a standalone story without an epic) and carry on with the steps it hands out (unless the user waives them). Never call it on your own and never hand out a browser QA, UX, review or final-verification step before it. When the user says to stop, wait or not to go on to those steps, call `hold_story`: the story goes back to `ready-for-commit` and nothing that judges the change runs until the user asks to commit again. If the user asks for it while the story is still being built, call it then: the story goes straight on.
 
 ## Part Three: Handing Over
 
 When `status` is `finished`:
 
-- Show the final bulleted status list with all steps `[✅ Concluído]`.
-- Output the exact git commit commands returned by `final-verification` (after `/devops` green validation, unless the user explicitly waives it), each in its own `bash` block, submodules first and workspace root last, without rewriting or merging them.
-- List the story's `followUps` in short bullets. They are the work the story found but did not
-  do: non-blocking review findings, medium and low UX findings, and what the agents declared.
-- Then hand them to `/project-manager`: `start_agent_run` with `agent: "project-manager"` and a
-  request that starts with `Follow-ups of finished story <storyId>: <story title>`, then the
-  issue of the story when there is one, then each follow-up on its own line. Its flow folds them
-  into the backlog and closes the story's issue; nothing reaches GitHub before the user approves.
-- Decisions and conclusions go to the archivist, never to the project manager.
+1. **Deliver commit commands FIRST (stop and wait — never close or file follow-ups yet)**:
+   - Show the final bulleted status list with all steps `[✅ Concluído]`.
+   - Output the exact git commit commands returned by `final-verification` (after `/devops` green validation, unless the user explicitly waives it), each in its own `bash` block, submodules first and workspace root last, without rewriting or merging them.
+   - List the story's `followUps` concisely in short bullets for visibility (non-blocking review findings, medium/low UX findings, and what the agents declared), if any.
+   - **Stop and wait for the user to commit.** Never start `/project-manager` or `/issue-review` before the user commits and commit confirmation succeeds, and never ask to approve follow-up drafts or close story/epic/decision issues before the commit commands are delivered and committed.
+2. **Confirm commit FIRST, THEN close remaining issues and file follow-ups**:
+   - Once the user says they committed, call `confirm_commit` (standalone story) or `confirm_epic_commit` (epic / epic commit run) FIRST to verify zero uncommitted files remain and close the story/epic on GitHub.
+   - If `confirm_commit` / `confirm_epic_commit` fails because files are still uncommitted, report those files and wait — never run `/project-manager` or `/issue-review` yet.
+   - **Only after `confirm_commit` / `confirm_epic_commit` succeeds**:
+     - If there are `followUps` (or any remaining unclosed issues to reconcile alongside them), hand them to `/project-manager` (`start_agent_run` with `agent: "project-manager"` and a request that starts with `Follow-ups of finished story <storyId>: <story title>`, then the story/epic issue links, then each follow-up on its own line) so its flow folds them into the backlog and closes any remaining open issues once the user approves.
+     - Run `/issue-review` (`start_agent_run` with `agent: "issue-review"` and the touched repositories) to confirm GitHub matches the committed state and close anything still open, duplicated, or obsolete.
+
+Pure non-code decision runs (`/solution-architect`):
+
+- Decisions and conclusions themselves go to the archivist (`remember_note`), never as backlog items; however, whenever `/solution-architect` (or any pure non-code decision run) finishes with `requiredFollowUp` or was tied to a GitHub decision issue (such as `D1`), pass `issue` (and `epic`) when starting the run, save the decision with `remember_note`, and **immediately** run `/issue-review` (to close the decision issue and duplicates without waiting for user approval, keeping any parent epic open) or `/project-manager` (if story criteria, scope, or backlog items also changed, listing the decision issue in `closedIssues`). Never leave a settled decision issue open until the end of the epic. (If a code story or epic has already reached `finished` awaiting commit, deliver its commit commands and confirm with `confirm_commit` / `confirm_epic_commit` first.)
 
 When `status` is `needs-user`:
 

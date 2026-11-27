@@ -5,8 +5,18 @@ const EPIC = 'https://github.com/demo/site/issues/36';
 const epicIssue = { title: 'Progressive HTML delivery', sub_issues_summary: { total: 4, completed: 1, percent_completed: 25 } };
 
 describe('progressFrom', () => {
-  it('should read the title and how many sub-issues are closed', () => {
+  it('should read the title and how many sub-issues are closed when sub-issues are absent', () => {
     expect(progressFrom(EPIC, epicIssue)).toEqual({ url: EPIC, title: 'Progressive HTML delivery', done: 1, total: 4 });
+  });
+
+  it('should count built stories (ready for commit, verifying, awaiting commit) as done alongside closed ones', () => {
+    const subIssues = [
+      { state: 'closed', labels: [] },
+      { state: 'open', labels: [{ name: 'status: ready for commit' }] },
+      { state: 'open', labels: [{ name: 'status: verifying' }] },
+      { state: 'open', labels: [{ name: 'status: building' }] },
+    ];
+    expect(progressFrom(EPIC, epicIssue, subIssues)).toEqual({ url: EPIC, title: 'Progressive HTML delivery', done: 3, total: 4 });
   });
 });
 
@@ -17,7 +27,7 @@ describe('EpicProgressReader', () => {
     const reader = new EpicProgressReader(
       async (apiPath) => {
         asked.push(apiPath);
-        return epicIssue;
+        return apiPath.endsWith('/sub_issues?per_page=100') ? [] : epicIssue;
       },
       () => clock,
     );
@@ -28,7 +38,12 @@ describe('EpicProgressReader', () => {
     clock = 61_000;
     await reader.progressOf(EPIC);
 
-    expect(asked).toEqual(['repos/demo/site/issues/36', 'repos/demo/site/issues/36']);
+    expect(asked).toEqual([
+      'repos/demo/site/issues/36',
+      'repos/demo/site/issues/36/sub_issues?per_page=100',
+      'repos/demo/site/issues/36',
+      'repos/demo/site/issues/36/sub_issues?per_page=100',
+    ]);
   });
 
   it('should say the epic is unreadable when GitHub does not answer', async () => {

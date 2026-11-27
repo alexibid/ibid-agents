@@ -9,6 +9,7 @@ class FakeGh {
   readonly calls: string[][] = [];
   labels: string[] = [];
   comments: object[] = [];
+  subIssues: object[] = [];
   epicSummary = { total: 4, completed: 1 };
   failWith = '';
 
@@ -20,6 +21,9 @@ class FakeGh {
     const path = args[0] === 'api' ? (args.at(-1) ?? '') : '';
     if (path.endsWith('/comments?per_page=100')) {
       return JSON.stringify(this.comments);
+    }
+    if (path.endsWith('/sub_issues?per_page=100')) {
+      return JSON.stringify(this.subIssues);
     }
     if (path.endsWith('/issues/36')) {
       return JSON.stringify({ labels: [], sub_issues_summary: this.epicSummary });
@@ -78,6 +82,27 @@ describe('GithubIssueSync.show', () => {
 
     expect(synced.state).toBe('not linked');
     expect(fake.calls).toEqual([]);
+  });
+});
+
+describe('GithubIssueSync.closeBuilt', () => {
+  it('should close the story and its open sub-issues while keeping the epic open', async () => {
+    const fake = new FakeGh();
+    fake.labels = ['user-story', 'status: building'];
+    fake.subIssues = [
+      { number: 39, state: 'open' },
+      { number: 40, state: 'closed' },
+    ];
+    fake.epicSummary = { total: 1, completed: 1 };
+
+    const synced = await syncOver(fake).closeBuilt(origin, 'ready-for-commit');
+
+    expect(synced.detail).toBe('issue #38 closed (ready-for-commit)');
+    expect(fake.edits()).toContainEqual(['issue', 'close', '38', '-R', 'demo/site', '--reason', 'completed']);
+    expect(fake.edits()).toContainEqual(['issue', 'close', '39', '-R', 'demo/site', '--reason', 'completed']);
+    expect(fake.edits()).not.toContainEqual(['issue', 'close', '40', '-R', 'demo/site', '--reason', 'completed']);
+    expect(fake.edits()).not.toContainEqual(['issue', 'close', '36', '-R', 'demo/site', '--reason', 'completed']);
+    expect(fake.edits()).toContainEqual(['issue', 'edit', '36', '-R', 'demo/site', '--add-label', 'status: in progress']);
   });
 });
 

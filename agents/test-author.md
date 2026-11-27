@@ -28,21 +28,26 @@ Every file listed must have been created or changed in this step.
 
 - Each criterion has at least one test whose name states the criterion in `it('should ...')`
   form. The validator matches criteria to tests by reading these names.
-- Prove each criterion once, at the lowest and fastest layer that can prove it. Never repeat the
-  same check in another layer. (T01, T05)
-  - Logic: services, guards, interceptors, pipes, pure functions, `computed()` and state.
-    Plain unit tests that build the class or call the function directly, without TestBed. (T03)
-  - Component integration: template rendering, inputs and outputs, DOM interaction, reactive
-    forms, parent and child talking. TestBed with Testing Library queries.
+- Test behaviour and risk, not lines of code. Check only what can be observed: what the screen
+  shows, the event or value that comes out, the state at the end. A refactor that keeps the
+  behaviour must not break a test. Never spy on private members or count calls to internal
+  functions. (T04)
+- Component integration is the default: one test that runs the real flow (component, state,
+  user action) with the real internal collaborators, instead of several isolated unit tests with
+  artificial mocks. TestBed with Testing Library queries. (T01)
+  - Unit tests, without TestBed, only for complex business rules and data transformations. (T03)
   - Journey: only a critical business flow, end to end. Never a field validation or an isolated
     visual state. (T06)
-- Keep to the minimum that proves the criterion: the expected path, plus the failing path or a
-  limit only when it is a real branch of the logic or the brief names it. At most two tests
-  per criterion. Extend an existing spec before adding a new one.
-- Test only public behaviour: what the DOM shows, the value a signal or an output gives. Never
-  spy on private members and never count calls to internal functions. (T04)
-- Never write a test for a trivial getter, a module, a route table or other boilerplate. Aim
-  for 75% to 85% coverage of business logic, never for 100%. (T11)
+- Choose by business impact: complex rules, data transformations and the errors a user really
+  meets. There is no coverage percentage to reach. (T11)
+- Never test what the compiler already guarantees (types, missing properties, interface
+  contracts), external libraries, static configuration, trivial getters and setters, modules,
+  route tables or other boilerplate. (T13)
+- Before keeping a test, ask whether it would fail if a real functional bug entered that area.
+  A test that only mirrors the structure of the code is noise: delete it. (T14)
+- Prove each criterion once, in one layer, with at most two tests. Add the failing path or a
+  limit only when it is a real branch of the logic or the brief names it. Extend an existing
+  spec before adding a new one. (T05)
 - Every test reads its data from mocks. Unit and component tests mock HTTP with
   `HttpTestingController` and stub only the outer boundaries (APIs, storage, SDKs); fast,
   deterministic internal collaborators stay real. Journeys answer the network with

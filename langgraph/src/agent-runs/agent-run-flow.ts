@@ -1,16 +1,19 @@
 import { randomUUID } from 'node:crypto';
 import { Command, type BaseCheckpointSaver } from '@langchain/langgraph';
+import { linkedIssuesIn } from './decision-issues.js';
 import type { AgentFlowDefinition } from './definition.js';
 import { buildAgentRunGraph, type AgentRunGraph, type RunInstruction } from './graph.js';
 import { KEEPS_NOTHING, type ResultKeeper } from './result-keeper.js';
 import { NOT_RECORDING_RUNS, type RunJournal } from './run-journal.js';
-import type { AgentRunStateValue, RunHistoryEntry, RunStatus } from './state.js';
+import { NO_RUN_ORIGIN, type AgentRunStateValue, type RunFollowUp, type RunHistoryEntry, type RunOrigin, type RunStatus } from './state.js';
 
 export interface RunReport {
   readonly runId: string;
   readonly agent: string;
   readonly status: RunStatus;
   readonly next: RunInstruction | 'nothing';
+  readonly linkedIssues?: readonly string[];
+  readonly requiredFollowUp?: RunFollowUp;
   readonly history: readonly RunHistoryEntry[];
   readonly recorded: boolean;
 }
@@ -46,9 +49,15 @@ export class AgentRunFlow {
     this.#definitions = new Map(definitions.map((definition) => [definition.agent, definition]));
   }
 
-  async start(agent: string, request: string): Promise<RunReport> {
+  definitions(): readonly AgentFlowDefinition[] {
+    return [...this.#definitions.values()];
+  }
+
+  async start(agent: string, request: string, origin: Partial<RunOrigin> = {}): Promise<RunReport> {
     const runId = `${agent}${SEPARATOR}${randomUUID().slice(0, 8)}`;
-    await this.#graphOf(agent).invoke({ agent, request }, configOf(runId));
+    const normalizedOrigin: RunOrigin = { issue: origin.issue ?? NO_RUN_ORIGIN.issue, epic: origin.epic ?? NO_RUN_ORIGIN.epic };
+    const linkedIssues = linkedIssuesIn(request, normalizedOrigin);
+    await this.#graphOf(agent).invoke({ agent, request, origin: normalizedOrigin, linkedIssues }, configOf(runId));
     const recorded = await this.journal.started({ runId, agent, request });
     return { ...(await this.report(runId)), recorded };
   }
@@ -96,11 +105,15 @@ export class AgentRunFlow {
     }
     const pending = snapshot.tasks.flatMap((task) => task.interrupts).at(0);
     const status = state.status ?? 'working';
+    const linkedIssues = state.linkedIssues ?? [];
+    const requiredFollowUp = status === 'finished' ? state.requiredFollowUp : undefined;
     return {
       runId,
       agent,
       status,
       next: pending === undefined || status === 'abandoned' ? 'nothing' : (pending.value as RunInstruction),
+      ...(linkedIssues.length > 0 ? { linkedIssues } : {}),
+      ...(requiredFollowUp === undefined ? {} : { requiredFollowUp }),
       history: state.history ?? [],
       recorded: false,
     };

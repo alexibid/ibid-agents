@@ -5,11 +5,12 @@
       "id": "size",
       "name": "Dimensionar",
       "doneBy": "project-manager",
-      "task": "Read the request, the project sheets and the product notes. Say how big the work is (S, M or L) and why, which open epic it belongs to or whether it needs a new epic of at least 8 stories, and what decisions nobody has taken yet. For follow-ups of a finished story, each follow-up is size S unless it hides a decision.",
+      "task": "Read the request, the project sheets and the product notes. Say how big the work is (S, M or L) and why, which open epic it belongs to or whether it needs a new epic of at least 8 stories, and what decisions nobody has taken yet. For follow-ups of a finished story, each follow-up is size S unless it hides a decision. Then validate the request for discovery: for every project it touches, read the \"Discovery\" field of its project sheet; a website (seo) lists the rules of rules/discovery/seo.md the work touches, an app (aso) lists none while rules/discovery/aso.md has no rule, and a project whose sheet has no Discovery is \"unclassified\": never guess, put the question in \"openDecisions\".",
       "fields": {
         "size": "text",
         "reasons": "list",
-        "openDecisions": "list"
+        "openDecisions": "list",
+        "discoveryReview": "discovery-review"
       },
       "calls": []
     },
@@ -31,7 +32,7 @@
       "id": "draft-issues",
       "name": "Escrever as issues",
       "doneBy": "project-manager",
-      "task": "Write every issue in English exactly as it will be published: one epic, its stories and their tasks. Never mention agents, skills, LangGraph, or who does a task vs. an agent in the issue text. Give each a short key (Epic, S1, T1), its kind, title, body with the acceptance criteria, size, repository (owner/name) and the key of its parent. To change an issue that already exists, put its link in \"issue\"; to reshape an epic, reuse its id and keys. List in \"closedIssues\" the issues that stop making sense. The flow engine keeps the draft in the backlog. For follow-ups of a finished story, put that story's issue in \"closedIssues\".",
+      "task": "Write every issue in English exactly as it will be published: one epic, its stories and their tasks. Never mention agents, skills, LangGraph, or who does a task vs. an agent in the issue text. Give each a short key (Epic, S1, T1), its kind, title, body with the acceptance criteria, size, repository (owner/name) and the key of its parent. To change an issue that already exists, put its link in \"issue\"; to reshape an epic, reuse its id and keys. List in \"closedIssues\" the issues that stop making sense. The flow engine keeps the draft in the backlog. For follow-ups of a finished story or a settled decision task, put that story's or decision task's issue in \"closedIssues\". Every rule the size step listed in \"discoveryReview\" for the draft's project appears by its id, such as (SEO15), in the acceptance criteria of at least one story.",
       "fields": {
         "backlog": "backlog",
         "closedIssues": "optional-urls"

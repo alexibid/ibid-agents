@@ -4,6 +4,7 @@ export const STEP_ORDER = [
   'build',
   'lint',
   'rule-checks',
+  'seo-audit',
   'unit-tests',
   'validate-tests',
   'journey',
@@ -22,7 +23,7 @@ export const CONDITIONS = ['always', 'ui', 'behaviour', 'figures', 'workflows'] 
 
 export type Condition = (typeof CONDITIONS)[number];
 
-export type StepKind = 'command' | 'rule-checks' | 'evidence';
+export type StepKind = 'command' | 'rule-checks' | 'seo-audit' | 'evidence';
 
 const COMMAND_STEPS: ReadonlySet<StepName> = new Set(['build', 'lint', 'unit-tests', 'journey', 'accessibility']);
 
@@ -32,6 +33,7 @@ const STEP_OWNERS: Readonly<Record<StepName, string>> = {
   build: 'flow engine',
   lint: 'flow engine',
   'rule-checks': 'flow engine',
+  'seo-audit': 'flow engine',
   'unit-tests': 'flow engine',
   'validate-tests': 'test validator',
   journey: 'flow engine',
@@ -47,7 +49,10 @@ const STEP_OWNERS: Readonly<Record<StepName, string>> = {
 const REPAIR_STEP: StepName = 'implement';
 
 const COMMIT_GATE: ReadonlySet<StepName> = new Set([
+  'build',
+  'lint',
   'rule-checks',
+  'seo-audit',
   'unit-tests',
   'validate-tests',
   'journey',
@@ -75,6 +80,9 @@ export function isCondition(value: string): value is Condition {
 export function kindOf(step: StepName): StepKind {
   if (COMMAND_STEPS.has(step)) {
     return 'command';
+  }
+  if (step === 'seo-audit') {
+    return 'seo-audit';
   }
   return step === 'rule-checks' ? 'rule-checks' : 'evidence';
 }

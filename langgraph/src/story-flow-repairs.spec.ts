@@ -4,6 +4,7 @@ import type { ChangeTracker, ChangedFile, Fingerprint } from './checks/workspace
 import { NO_OTHER_STORIES } from './domain/concurrent-stories.js';
 import type { MandatoryStep, ProjectSheet } from './domain/sheet.js';
 import { buildFlowGraph, type FlowGraph } from './flow/graph.js';
+import type { FlowJournal } from './journal/flow-journal.js';
 import { StoryFlow } from './story-flow.js';
 
 const COVER = 'apps/demo/src/cover.ts';
@@ -40,7 +41,11 @@ class FakeTree implements ChangeTracker {
   }
 }
 
-function flowOver(tree: FakeTree, mandatorySteps: readonly MandatoryStep[]): { flow: StoryFlow; graph: FlowGraph } {
+function flowOver(
+  tree: FakeTree,
+  mandatorySteps: readonly MandatoryStep[],
+  journal?: FlowJournal,
+): { flow: StoryFlow; graph: FlowGraph } {
   const graph = buildFlowGraph(
     {
       workspaceRoot: '/workspace',
@@ -51,7 +56,7 @@ function flowOver(tree: FakeTree, mandatorySteps: readonly MandatoryStep[]): { f
     },
     new MemorySaver(),
   );
-  return { flow: new StoryFlow(graph), graph };
+  return { flow: new StoryFlow(graph, journal), graph };
 }
 
 const always = (...steps: MandatoryStep['step'][]): MandatoryStep[] => steps.map((step) => ({ step, when: 'always' }));
@@ -179,5 +184,115 @@ describe('StoryFlow started before the commit phase existed', () => {
     expect(held.status).toBe('ready-for-commit');
     expect(held.next).toBe('nothing');
     expect(held.history.some(({ step }) => step === 'validate-tests')).toBe(false);
+  });
+});
+
+describe('StoryFlow attempts visibility and hold journal sync', () => {
+  it('should report remaining attempt counts across hold and advance, and record holdForCommit in the journal', async () => {
+    const tree = new FakeTree();
+    const statuses: string[] = [];
+    const journal: FlowJournal = {
+      storyStarted: async ({ status }) => {
+        statuses.push(status);
+        return true;
+      },
+      stepsJudged: async ({ status }) => {
+        statuses.push(status);
+        return true;
+      },
+    };
+    const { flow } = flowOver(tree, always('implement', 'author-tests', 'validate-tests', 'review'), journal);
+    const { storyId } = await flow.startStory(story);
+    await flow.submit(storyId, { files: [COVER], conditions: [] });
+    tree.changed = [COVER];
+    await flow.submit(storyId, { summary: 'opened the cover' });
+    tree.changed = [COVER, COVER_SPEC];
+    await flow.submit(storyId, { specFiles: [COVER_SPEC] });
+    await flow.advanceToCommit(storyId);
+
+    const failedOnce = await flow.submit(storyId, {
+      criteria: [{ criterion: 'The cover opens', test: 'missing assertion', proven: false }],
+    });
+    expect(failedOnce.attempts).toEqual({ 'validate-tests': 1 });
+
+    const held = await flow.holdForCommit(storyId);
+    expect(held.status).toBe('ready-for-commit');
+    expect(held.attempts).toEqual({ 'validate-tests': 1 });
+    expect(held.recorded).toBe(true);
+    expect(statuses.at(-1)).toBe('ready-for-commit');
+
+    const resumedCommit = await flow.advanceToCommit(storyId);
+    expect(resumedCommit.attempts).toEqual({ 'validate-tests': 1 });
+  });
+});
+
+describe('StoryFlow attempts across passes and concurrent stray edits', () => {
+  it('should clear implement attempts after passing so later repairs start fresh', async () => {
+    const tree = new FakeTree();
+    const { flow } = flowOver(tree, always('implement', 'review'));
+    const { storyId } = await flow.startStory(story);
+    await flow.submit(storyId, { files: [COVER], conditions: [] });
+
+    await flow.submit(storyId, { summary: 'nothing changed yet' });
+    await flow.submit(storyId, { summary: 'still nothing changed' });
+    tree.changed = [COVER];
+    const passedImplement = await flow.submit(storyId, { summary: 'opened the cover' });
+    expect(passedImplement.attempts).toEqual({});
+
+    await flow.advanceToCommit(storyId);
+    await flow.submit(storyId, { findings: [{ rule: 'W14', file: COVER, description: 'fix name', blocking: true }] });
+    tree.changed = [];
+    await flow.submit(storyId, { summary: 'reverted by mistake' });
+    tree.changed = [COVER, STRAY];
+    const fourthTryOverall = await flow.submit(storyId, { summary: 'forgot extraFiles once' });
+
+    expect(fourthTryOverall.status).toBe('working');
+    expect(fourthTryOverall.attempts).toEqual({ review: 1, implement: 1, 'implement extra-files': 1 });
+  });
+
+  it('should not block as needs-user when the agent declares prior stray files and a new concurrent edit appears', async () => {
+    const tree = new FakeTree();
+    const { flow } = flowOver(tree, always('implement', 'review'));
+    const { storyId } = await flow.startStory(story);
+    await flow.submit(storyId, { files: [COVER], conditions: [] });
+
+    tree.changed = [COVER, 'apps/demo/src/layout.scss'];
+    await flow.submit(storyId, { summary: 'opened the cover' });
+
+    tree.changed = [COVER, 'apps/demo/src/layout.scss', 'apps/demo/src/book.scss'];
+    const declaredFirst = await flow.submit(storyId, {
+      summary: 'declared layout',
+      extraFiles: [{ file: 'apps/demo/src/layout.scss', reason: 'user edited' }],
+    });
+
+    tree.changed = [COVER, 'apps/demo/src/layout.scss', 'apps/demo/src/book.scss', 'apps/demo/src/footer.scss'];
+    const declaredSecond = await flow.submit(storyId, {
+      summary: 'declared book',
+      extraFiles: [
+        { file: 'apps/demo/src/layout.scss', reason: 'user edited' },
+        { file: 'apps/demo/src/book.scss', reason: 'quick change' },
+      ],
+    });
+
+    expect(declaredFirst.status).toBe('working');
+    expect(declaredSecond.status).toBe('working');
+    expect(declaredSecond.history.at(-1)?.details).toEqual([
+      'apps/demo/src/footer.scss was changed but is not in the plan. Declare it in "extraFiles" with the reason, or revert it.',
+    ]);
+  });
+
+  it('should still stop as needs-user if an undeclared file goes unresolved three times even while new strays appear', async () => {
+    const tree = new FakeTree();
+    const { flow } = flowOver(tree, always('implement', 'review'));
+    const { storyId } = await flow.startStory(story);
+    await flow.submit(storyId, { files: [COVER], conditions: [] });
+
+    tree.changed = [COVER, STRAY];
+    await flow.submit(storyId, { summary: 'try 1' });
+    tree.changed = [COVER, STRAY, 'apps/demo/src/other.scss'];
+    await flow.submit(storyId, { summary: 'try 2' });
+    const third = await flow.submit(storyId, { summary: 'try 3' });
+
+    expect(third.status).toBe('needs-user');
   });
 });

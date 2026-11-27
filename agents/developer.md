@@ -17,6 +17,12 @@ invented. The test author writes the tests for it right after.
 { "summary": "<what changed, in one or two sentences>" }
 ```
 
+When the change needed a file the plan does not name, declare each one:
+
+```json
+{ "summary": "<what changed>", "extraFiles": [{ "file": "<workspace path>", "reason": "<why the change needs it>" }] }
+```
+
 When something the change needs is not decided, hand back `questions` instead, change nothing,
 and the story waits for the user:
 
@@ -41,8 +47,9 @@ and the story waits for the user:
 
 ### Code
 
-- Change only the files the plan names. A file outside the plan fails the step; spec and mock
-  files (`.spec.ts`, `.mock.ts`, anything under `mocks/`) never count as outside it.
+- Change the files the plan names. Another file only when the change cannot work without it,
+  declared in `extraFiles` with the reason; an undeclared one fails the step. Spec and mock
+  files (`.spec.ts`, `.mock.ts`, anything under `mocks/`) never count as outside the plan.
 - When an earlier attempt of the story already left the planned change in the tree and nothing
   is left to do, change nothing and say so in the summary.
 - Never weaken, skip or delete a test to make it pass. A test that looks wrong is reported in
@@ -64,7 +71,7 @@ and the story waits for the user:
 
 ## Tools
 
-- Read anything in the workspace. Edit the planned files.
+- Read anything in the workspace. Edit the planned files and the declared extra ones.
 - The Angular CLI MCP server and the Nx skills, for generators and modern patterns.
 - Run nothing that validates. The flow engine runs build, lint, rule checks and tests.
 - Never change git state.

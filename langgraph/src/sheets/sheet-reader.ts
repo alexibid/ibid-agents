@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { SheetError, type ConditionTrigger, type MandatoryStep, type ProjectSheet } from '../domain/sheet.js';
+import { DISCOVERY_FIELD, isDiscovery, type Discovery } from '../domain/discovery.js';
 import { GENERIC_SPECIALIST, type ProjectAgent, type TeamStep } from '../domain/project-team.js';
 import { isCondition, isStepName, kindOf, type Condition, type StepName } from '../domain/steps.js';
 import { codeSpans, rowsBeforeFirstHeading, rowsUnderHeading, type TableRow } from './markdown-tables.js';
@@ -47,6 +48,7 @@ export function parseSheet(markdown: string, sheetFile: string): ProjectSheet {
     triggers: triggersOf(rowsUnderHeading(markdown, 'Triggers'), sheetFile),
     mandatorySteps: mandatoryStepsOf(rowsUnderHeading(markdown, 'Mandatory steps'), sheetFile),
     commands: commandsOf(rowsUnderHeading(markdown, 'Checks'), sheetFile),
+    ...discoveryFieldOf(fields, sheetFile),
   };
   assertAgentsJoinMandatorySteps(sheet);
   return sheet;
@@ -69,6 +71,17 @@ function requiredField(fields: ReadonlyMap<string, string>, name: string, sheetF
     throw new SheetError(sheetFile, `the field "${name}" is missing from the first table`);
   }
   return value;
+}
+
+function discoveryFieldOf(fields: ReadonlyMap<string, string>, sheetFile: string): { readonly discovery?: Discovery } {
+  const value = fields.get(DISCOVERY_FIELD);
+  if (value === undefined) {
+    return {};
+  }
+  if (!isDiscovery(value)) {
+    throw new SheetError(sheetFile, `the field "${DISCOVERY_FIELD}" must be \`seo\` or \`aso\`, not "${value}"`);
+  }
+  return { discovery: value };
 }
 
 function reusedLibrariesOf(rows: readonly TableRow[]): string[] {

@@ -16,6 +16,7 @@ export function runCommand(command: string, workingDirectory: string, input = ''
     child.stderr.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
     child.on('error', (error) => resolve({ succeeded: false, outputTail: error.message }));
     child.on('close', (exitCode) => resolve({ succeeded: exitCode === 0, outputTail: tailOf(chunks.join('')) }));
+    child.stdin.on('error', () => undefined);
     child.stdin.end(input);
   });
 }

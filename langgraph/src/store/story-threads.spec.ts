@@ -3,10 +3,20 @@ import { DatabaseSync } from 'node:sqlite';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { latestStoryThreads } from './story-threads.js';
+import { holdsItsFiles, latestStoryThreads, type StoryThread } from './story-threads.js';
 
 const checkpoint = (status: string, files: readonly string[], ts: string, testFiles: readonly string[] = []) =>
   JSON.stringify({ ts, channel_values: { status, plan: { files }, testFiles } });
+
+const thread = (status: string, epic: string): StoryThread => ({
+  storyId: 's1',
+  status,
+  issue: 'https://github.com/demo/site/issues/80',
+  epic,
+  files: ['a.ts'],
+  startedOn: new Date('2026-11-18T22:00:00.000Z'),
+  updatedOn: new Date('2026-11-18T22:10:00.000Z'),
+});
 
 describe('latestStoryThreads', () => {
   let folder = '';
@@ -44,5 +54,22 @@ describe('latestStoryThreads', () => {
 
   it('should read nothing when there is no state yet', () => {
     expect(latestStoryThreads(join(folder, 'missing.sqlite'))).toEqual([]);
+  });
+});
+
+describe('holdsItsFiles', () => {
+  const epic = 'https://github.com/demo/site/issues/78';
+
+  it('should hold files while a story is actively working or waiting for the user', () => {
+    expect(holdsItsFiles(thread('working', epic))).toBe(true);
+    expect(holdsItsFiles(thread('needs-user', epic))).toBe(true);
+  });
+
+  it('should not hold files for ready-for-commit, planning, finished, or abandoned stories', () => {
+    expect(holdsItsFiles(thread('ready-for-commit', epic))).toBe(false);
+    expect(holdsItsFiles(thread('ready-for-commit', ''))).toBe(false);
+    expect(holdsItsFiles(thread('planning', epic))).toBe(false);
+    expect(holdsItsFiles(thread('finished', epic))).toBe(false);
+    expect(holdsItsFiles(thread('abandoned', epic))).toBe(false);
   });
 });

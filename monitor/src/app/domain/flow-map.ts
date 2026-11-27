@@ -90,6 +90,7 @@ export const NODE_NAMES: Readonly<Record<string, string>> = {
   build: 'Build',
   lint: 'Lint',
   'rule-checks': 'Regras',
+  'seo-audit': 'Auditoria SEO',
   'unit-tests': 'Testes unitários',
   'validate-tests': 'Validar testes',
   journey: 'Jornada',

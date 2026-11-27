@@ -5,17 +5,20 @@ import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import type { AgentRunFlow } from './agent-runs/agent-run-flow.js';
 import { registerAgentRunTools } from './agent-runs/agent-run-tools.js';
+import { decisionRunsIn } from './agent-runs/decision-issues.js';
 import { PostgresBacklogArchive } from './backlog/backlog-archive.js';
 import { registerBacklogTools } from './backlog/backlog-tools.js';
 import { agentRunFlowOf } from './agent-runs/setup.js';
 import { buildCoachGraph } from './coach/graph.js';
 import { CoachFlow, type CoachReport } from './coach-flow.js';
-import { readConfiguration } from './configuration.js';
+import { agentRunsStateFile, readConfiguration } from './configuration.js';
 import { GithubIssueSync } from './backlog/issue-sync.js';
 import { changeTrackerOf, WorkspaceChanges } from './checks/workspace-changes.js';
 import { CheckpointActiveStories } from './flow/checkpoint-active-stories.js';
 import { buildFlowGraph } from './flow/graph.js';
+import { ensureCommitConfirmedBeforeIssueWork } from './flow/story-commit-tools.js';
 import { registerStoryTools, type StoryWorkspace } from './flow/story-tools.js';
 import { latestStoryThreads } from './store/story-threads.js';
 import { flowCostSince } from './journal/flow-cost.js';
@@ -27,6 +30,7 @@ import { PostgresNoteArchive } from './memory/note-archive.js';
 import { Database } from './store/database.js';
 import { StoryFlow } from './story-flow.js';
 import { SheetReader } from './sheets/sheet-reader.js';
+import { ACTIVITY_DIRECTORY, ActivityRecorder, activityFileOf, carriesToolCall } from './relay/server-activity.js';
 
 const DEFAULT_COACH_WORKSPACE = '/Users/alexsantos/Projects/lemon-mart';
 const database = new Database();
@@ -37,17 +41,21 @@ interface Flows {
   readonly workspace: StoryWorkspace;
 }
 
-async function createFlows(): Promise<Flows> {
+async function createFlows(agentRuns: AgentRunFlow): Promise<Flows> {
   const { workspaceRoot, projectsDirectory, contractsDirectory, stateFile, coachStateFile } = readConfiguration();
   await mkdir(dirname(stateFile), { recursive: true });
   await mkdir(dirname(coachStateFile), { recursive: true });
   const sheets = new SheetReader(projectsDirectory);
   const changesOf = changeTrackerOf(workspaceRoot);
+  const activeStories = new CheckpointActiveStories(stateFile, { agentRunsFile: agentRunsStateFile(), workspaceRoot });
   const storyGraph = buildFlowGraph(
-    { workspaceRoot, sheets, contractsDirectory, changesOf, activeStories: new CheckpointActiveStories(stateFile) },
+    { workspaceRoot, sheets, contractsDirectory, changesOf, activeStories },
     SqliteSaver.fromConnString(stateFile),
   );
-  const storyFlow = new StoryFlow(storyGraph, new PostgresFlowJournal(database), new GithubIssueSync());
+  const storyFlow = new StoryFlow(storyGraph, new PostgresFlowJournal(database), new GithubIssueSync()).withChanges({
+    changesOf,
+    activeStories,
+  });
   const coachFlow = new CoachFlow(buildCoachGraph({ contractsDirectory }, SqliteSaver.fromConnString(coachStateFile)));
   const workspace: StoryWorkspace = {
     storyIds: () => latestStoryThreads(stateFile).map(({ storyId }) => storyId),
@@ -55,6 +63,7 @@ async function createFlows(): Promise<Flows> {
       const dirty = await new WorkspaceChanges(workspaceRoot).fingerprint();
       return files.filter((file) => file in dirty);
     },
+    decisionRuns: () => decisionRunsIn(agentRunsStateFile(), agentRuns.definitions()),
   };
   return { storyFlow, coachFlow, workspace };
 }
@@ -109,7 +118,8 @@ function registerCoachTools(server: McpServer, coachFlow: CoachFlow): void {
 }
 
 const server = new McpServer({ name: 'ibid-langgraph', version: '0.1.0' });
-const { storyFlow, coachFlow, workspace } = await createFlows();
+const agentRuns = await agentRunFlowOf(database);
+const { storyFlow, coachFlow, workspace } = await createFlows(agentRuns);
 registerStoryTools(server, storyFlow, workspace);
 registerCoachTools(server, coachFlow);
 server.registerTool(
@@ -127,6 +137,15 @@ server.registerTool(
 );
 registerMemoryTools(server, new PostgresNoteArchive(database));
 registerHandoffTools(server, new PostgresHandoffArchive(database));
-registerAgentRunTools(server, await agentRunFlowOf(database));
+registerAgentRunTools(server, agentRuns, (attempt) => ensureCommitConfirmedBeforeIssueWork(storyFlow, workspace, attempt));
 registerBacklogTools(server, new PostgresBacklogArchive(database));
 await server.connect(new StdioServerTransport());
+
+const activity = new ActivityRecorder(activityFileOf(ACTIVITY_DIRECTORY, process.ppid));
+const reportActivityFault = (error: unknown) => console.error(error instanceof Error ? error.message : String(error));
+void activity.begin().catch(reportActivityFault);
+process.stdin.on('data', (chunk: Buffer) => {
+  if (carriesToolCall(chunk.toString('utf8'))) {
+    void activity.heard().catch(reportActivityFault);
+  }
+});

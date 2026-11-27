@@ -22,6 +22,7 @@ export interface GithubSync {
 
 export interface IssueSync {
   show(origin: StoryOrigin, stage: IssueStage): Promise<GithubSync>;
+  closeBuilt(origin: StoryOrigin, stage: 'ready-for-commit' | 'awaiting-commit'): Promise<GithubSync>;
   closeDone(origin: StoryOrigin): Promise<GithubSync>;
 }
 
@@ -36,6 +37,7 @@ const ISSUE_URL = /^https:\/\/github\.com\/([^/]+\/[^/]+)\/issues\/(\d+)\/?$/;
 
 export const NOT_SYNCING: IssueSync = {
   show: async () => notLinked(),
+  closeBuilt: async () => notLinked(),
   closeDone: async () => notLinked(),
 };
 
@@ -59,11 +61,26 @@ export class GithubIssueSync implements IssueSync {
     });
   }
 
+  async closeBuilt(origin: StoryOrigin, stage: 'ready-for-commit' | 'awaiting-commit'): Promise<GithubSync> {
+    return this.synced(origin, async (story) => {
+      await this.labelStage(story, stage);
+      await this.writeStatusComment(story, stage);
+      await this.gh(['issue', 'close', story.number, '-R', story.repository, '--reason', 'completed']);
+      await this.closeSubIssues(story);
+      const epic = addressOf(origin.epic);
+      if (epic !== undefined) {
+        await this.addLabel(epic, EPIC_IN_PROGRESS);
+      }
+      return `issue #${story.number} closed (${stage})`;
+    });
+  }
+
   async closeDone(origin: StoryOrigin): Promise<GithubSync> {
     return this.synced(origin, async (story) => {
       await this.labelStage(story, 'done');
       await this.writeStatusComment(story, 'done');
       await this.gh(['issue', 'close', story.number, '-R', story.repository, '--reason', 'completed']);
+      await this.closeSubIssues(story);
       const epic = addressOf(origin.epic);
       const epicClosed = epic !== undefined && (await this.closeEpicWhenComplete(epic));
       return `issue #${story.number} closed${epicClosed ? `; epic #${epic?.number} closed, every sub-issue is done` : ''}`;
@@ -113,6 +130,23 @@ export class GithubIssueSync implements IssueSync {
       return;
     }
     await this.gh(['issue', 'comment', issue.number, '-R', issue.repository, '--body', body]);
+  }
+
+  private async closeSubIssues(story: IssueAddress): Promise<void> {
+    const raw = await this.gh(['api', `${apiPathOf(story)}/sub_issues?per_page=100`]);
+    if (raw.trim() === '') {
+      return;
+    }
+    const items: unknown = JSON.parse(raw);
+    for (const sub of Array.isArray(items) ? items : []) {
+      if (!isObject(sub) || textIn(sub, 'state').toLowerCase() !== 'open') {
+        continue;
+      }
+      const subNumber = numberIn(sub, 'number');
+      if (subNumber > 0) {
+        await this.gh(['issue', 'close', String(subNumber), '-R', story.repository, '--reason', 'completed']);
+      }
+    }
   }
 
   private async closeEpicWhenComplete(epic: IssueAddress): Promise<boolean> {

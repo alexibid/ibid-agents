@@ -3,6 +3,7 @@
     <tr>
       <th scope="col">Pedido</th>
       <th scope="col">Data</th>
+      <th scope="col" class="u-numeric">Duração</th>
       <th scope="col" class="u-numeric">Tokens</th>
       <th scope="col" class="u-numeric">% das 5 horas</th>
       <th scope="col" class="u-numeric">% da semana</th>
@@ -42,6 +43,7 @@
           </div>
         </td>
         <td class="prompts__when">{{ group.lastAskedOn | date: 'd MMM, HH:mm' }}</td>
+        <td class="u-numeric">{{ formatDuration(group.totalSeconds) }}</td>
         <td class="u-numeric">{{ group.totalTokens | number }}</td>
         <td class="u-numeric"><monitor-percent [value]="group.fiveHourPercent" [estimated]="group.percentEstimated" /></td>
         <td class="u-numeric"><monitor-percent [value]="group.weeklyPercent" [estimated]="group.percentEstimated" /></td>
@@ -79,6 +81,7 @@
               }
             </td>
             <td class="prompts__when">{{ prompt.askedOn | date: 'd MMM, HH:mm' }}</td>
+            <td class="u-numeric">{{ formatDuration(secondsTakenBy(prompt)) }}</td>
             <td class="u-numeric">{{ tokensSpentOn(prompt) | number }}</td>
             <td class="u-numeric"><monitor-percent [value]="prompt.fiveHourPercent" [estimated]="prompt.percentEstimated" /></td>
             <td class="u-numeric"><monitor-percent [value]="prompt.weeklyPercent" [estimated]="prompt.percentEstimated" /></td>

@@ -21,16 +21,25 @@ export interface HistoryEntry {
 
 export const EMPTY_PLAN: Plan = { files: [], conditions: [], journey: '', reusedParts: [], brief: '' };
 
+export type PassMap = Readonly<Record<string, Fingerprint>>;
+export type PassPatch = Readonly<Record<string, Fingerprint | undefined>>;
+
 export const FlowState = Annotation.Root({
   story: Annotation<Story>(),
   origin: Annotation<StoryOrigin>({ reducer: (_previous, next) => next, default: () => NO_ORIGIN }),
+  epicMembers: Annotation<string[]>({ reducer: (_previous, next) => next, default: () => [] }),
   commitRequested: Annotation<boolean>({ reducer: (_previous, next) => next, default: () => false }),
-  lastPasses: Annotation<Record<string, Fingerprint>>({
-    reducer: (previous, next) => ({ ...previous, ...next }),
+  commitConfirmed: Annotation<boolean | undefined>({ reducer: (_previous, next) => next, default: () => undefined }),
+  lastPasses: Annotation<PassMap, PassPatch>({
+    reducer: (previous, next) =>
+      Object.fromEntries(
+        Object.entries({ ...previous, ...next }).filter((entry): entry is [string, Fingerprint] => entry[1] !== undefined),
+      ),
     default: () => ({}),
   }),
   sheet: Annotation<ProjectSheet>(),
   baseline: Annotation<Fingerprint>(),
+  implementBaseline: Annotation<Fingerprint | undefined>({ reducer: (_previous, next) => next, default: () => undefined }),
   contractsDirectory: Annotation<string>(),
   plan: Annotation<Plan>({ reducer: (_previous, next) => next, default: () => EMPTY_PLAN }),
   followUps: Annotation<string[]>({ reducer: (previous, next) => [...new Set([...previous, ...next])], default: () => [] }),

@@ -17,13 +17,14 @@ without spending an attempt, and `resume_story` with the user's decision adds it
 | Step | Done by | Passes when |
 | --- | --- | --- |
 | `plan` | Specialist | Every mandatory step of the sheet is present and every criterion maps to a step |
-| `author-tests` | Test author | Right after the developer: the fewest tests that prove each criterion, at the lowest layer; on a test failure, only what failed is fixed |
+| `author-tests` | Test author | Right after the developer: the fewest behaviour tests that prove each criterion, component integration by default; on a test failure, only what failed is fixed |
 | `implement` | Developer or UI | The diff stays inside the files the plan named |
 | `build` | Flow engine | The project's build target succeeds |
 | `lint` | Flow engine | Zero errors and zero warnings |
 | `rule-checks` | Flow engine | Every `machine` rule of the rule table that applies to the diff passes |
+| `seo-audit` | Flow engine | The audit of the prerendered pages (`rules/discovery/seo.md`) finds no `BLOCK` in what the story touches; existing debt comes back as warnings and follow-ups |
 | `unit-tests` | Flow engine | The project's test target succeeds |
-| `validate-tests` | Test validator | At the commit: every criterion is proven, once and at the right layer, by a mocked test that would fail without the change, and the changed logic is covered at 75-85% |
+| `validate-tests` | Test validator | At the commit: every criterion is proven, once and at the right layer, by a mocked test of behaviour that would fail without the change; judged by business risk, not coverage |
 | `journey` | Journeys | The critical journey runs green on the mobile viewport, on mocked data, clock frozen |
 | `browser-qa` | Browser QA | The running app behaves as the story says, with no console error |
 | `accessibility` | Flow engine | The project's accessibility target succeeds |
@@ -69,6 +70,5 @@ trigger a condition.
 
 Any hand-back, the plan included, may add `followUps`: work outside the story worth doing later,
 such as a document gone stale. The flow engine also keeps the review findings that do not block
-and the medium and low UX findings. A finished story reports them all once, and the assistant
-hands them to the project manager, who files them in the backlog.
+and the medium and low UX findings. A finished story reports them all once; after delivering the commit commands and confirming the commit (`confirm_commit` / `confirm_epic_commit`), the assistant hands them to the project manager, who files them in the backlog.
 

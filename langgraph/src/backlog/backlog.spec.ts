@@ -28,10 +28,10 @@ describe('parsedDraft', () => {
     expect(parsedDraft({ id: 'x', project: 'papikapi', items: [item({ parent: '' })] }).problems).toContain('must have exactly one epic');
   });
 
-  it('should refuse an epic that holds fewer than eight stories', () => {
+  it('should refuse an epic that holds fewer than three stories', () => {
     const small = { id: 'x', project: 'papikapi', items: [EPIC, item({}), item({ key: 'S2' })] };
 
-    expect(epicSizeProblems(small)[0]).toContain('has 2 stories; an epic holds at least 8');
+    expect(epicSizeProblems(small)[0]).toContain('has 2 stories; an epic holds at least 3');
     expect(parsedDraft(small).problems).toEqual([]);
   });
 

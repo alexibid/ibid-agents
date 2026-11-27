@@ -26,6 +26,10 @@ export function storiesStateFile(): string {
   return process.env['IBID_LANGGRAPH_STATE'] ?? join(PACKAGE_ROOT, 'state', 'stories.sqlite');
 }
 
+export function agentRunsStateFile(): string {
+  return process.env['IBID_AGENT_RUNS_STATE'] ?? join(PACKAGE_ROOT, 'state', 'agent-runs.sqlite');
+}
+
 export function workspaceRootBesideAgents(): string {
   return process.env[WORKSPACE_VARIABLE] || resolve(PACKAGE_ROOT, '..', '..', 'ibid-workspace');
 }

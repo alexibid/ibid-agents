@@ -1,5 +1,11 @@
 {
   "title": "Solution architect",
+  "afterFinish": {
+    "when": "linked-issues",
+    "agent": "project-manager",
+    "noApprovalAgent": "issue-review",
+    "instruction": "Do not wait until the end of the epic. Record the settled decision with remember_note, then immediately run /issue-review (start_agent_run with agent \"issue-review\" for the repository) to close the completed decision issue (keeping any parent epic open) and reconcile duplicates/labels, or run /project-manager (start_agent_run with agent \"project-manager\") if the decision changes story criteria, scope, or backlog items (listing the decision issue in closedIssues)."
+  },
   "steps": [
     {
       "id": "discover",

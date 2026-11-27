@@ -10,6 +10,7 @@ export interface StepResult {
   readonly passed: boolean;
   readonly malformed: boolean;
   readonly asksTheUser: boolean;
+  readonly undeclaredFiles: readonly string[];
   readonly details: readonly string[];
 }
 
@@ -28,7 +29,10 @@ type Judge = (evidence: unknown, context: EvidenceContext) => Promise<StepResult
 const verdict = z.enum(['pass', 'fail']);
 
 const authoredTests = z.object({ specFiles: z.array(z.string()).min(1) });
-const implementation = z.object({ summary: z.string().min(1) });
+const implementation = z.object({
+  summary: z.string().min(1),
+  extraFiles: z.array(z.object({ file: z.string().min(1), reason: z.string().trim().min(1) })).default([]),
+});
 const validatedTests = z.object({
   criteria: z.array(z.object({ criterion: z.string(), test: z.string().min(1), proven: z.boolean() })),
 });
@@ -49,6 +53,7 @@ const reviewed = z.object({
 const SPEC_FILE = /\.spec\.ts$/;
 const MALFORMED_LEAD =
   'The hand-back does not have the shape the instruction asks for, so nothing was judged. Send it again:';
+const UNDECLARED_SUFFIX = ' was changed but is not in the plan. Declare it in "extraFiles" with the reason, or revert it.';
 
 const JUDGES: Readonly<Partial<Record<StepName, Judge>>> = {
   'author-tests': judgeAuthoredTests,
@@ -70,11 +75,21 @@ export async function judgeEvidence(step: StepName, evidence: unknown, context: 
 }
 
 export function passed(details: readonly string[] = []): StepResult {
-  return { passed: true, malformed: false, asksTheUser: false, details };
+  return { passed: true, malformed: false, asksTheUser: false, undeclaredFiles: [], details };
 }
 
 export function failed(details: readonly string[]): StepResult {
-  return { passed: false, malformed: false, asksTheUser: false, details };
+  return { passed: false, malformed: false, asksTheUser: false, undeclaredFiles: [], details };
+}
+
+export function undeclaredExtraFiles(files: readonly string[]): StepResult {
+  return { passed: false, malformed: false, asksTheUser: false, undeclaredFiles: files, details: files.map(notInThePlan) };
+}
+
+export function undeclaredFilesIn(details: readonly string[]): string[] {
+  return details
+    .filter((detail) => detail.endsWith(UNDECLARED_SUFFIX))
+    .map((detail) => detail.slice(0, -UNDECLARED_SUFFIX.length));
 }
 
 export function questionsIn(evidence: unknown): readonly string[] {
@@ -82,13 +97,18 @@ export function questionsIn(evidence: unknown): readonly string[] {
   return Array.isArray(questions) ? questions.filter((question): question is string => typeof question === 'string' && question.trim() !== '') : [];
 }
 
+export function specFilesIn(evidence: unknown): readonly string[] {
+  const parsed = authoredTests.safeParse(evidence);
+  return parsed.success ? parsed.data.specFiles : [];
+}
+
 export function askingTheUser(questions: readonly string[]): StepResult {
-  return { passed: false, malformed: false, asksTheUser: true, details: [QUESTION_LEAD, ...questions] };
+  return { passed: false, malformed: false, asksTheUser: true, undeclaredFiles: [], details: [QUESTION_LEAD, ...questions] };
 }
 
 export function malformed(error: z.ZodError): StepResult {
   const problems = error.issues.map((issue) => `Evidence field "${issue.path.join('.')}": ${issue.message}`);
-  return { passed: false, malformed: true, asksTheUser: false, details: [MALFORMED_LEAD, ...problems] };
+  return { passed: false, malformed: true, asksTheUser: false, undeclaredFiles: [], details: [MALFORMED_LEAD, ...problems] };
 }
 
 function judgeAuthoredTests(evidence: unknown, { changedFiles, dirtyAtStart }: EvidenceContext): StepResult {
@@ -116,7 +136,15 @@ function judgeImplementation(evidence: unknown, { plan, changedFiles, dirtyAtSta
   }
   const planned = new Set(plan.files);
   const strays = changedFiles.map(({ file }) => file).filter((file) => !planned.has(file) && !isTestSupportFile(file));
-  return strays.length === 0 ? passed() : failed(strays.map((file) => `${file} was changed but is not in the plan.`));
+  const reasons = new Map(parsed.data.extraFiles.map(({ file, reason }) => [file, reason]));
+  const undeclared = strays.filter((file) => !reasons.has(file));
+  return undeclared.length === 0
+    ? passed(strays.map((file) => `${file} was added to the plan: ${reasons.get(file)}`))
+    : undeclaredExtraFiles(undeclared);
+}
+
+function notInThePlan(file: string): string {
+  return `${file}${UNDECLARED_SUFFIX}`;
 }
 
 function carriedOver(file: string): string {
@@ -129,8 +157,16 @@ function judgeValidatedTests(evidence: unknown, { story }: EvidenceContext): Ste
     return malformed(parsed.error);
   }
   const proven = new Set(parsed.data.criteria.filter((entry) => entry.proven).map((entry) => entry.criterion));
+  const reasons = new Map(parsed.data.criteria.filter((entry) => !entry.proven).map((entry) => [entry.criterion, entry.test]));
   const unproven = story.criteria.filter((criterion) => !proven.has(criterion));
-  return unproven.length === 0 ? passed() : failed(unproven.map((criterion) => `No test proves: ${criterion}`));
+  return unproven.length === 0
+    ? passed()
+    : failed(unproven.map((criterion) => unprovenReason(criterion, reasons.get(criterion))));
+}
+
+function unprovenReason(criterion: string, detail: string | undefined): string {
+  const reason = detail?.trim() ?? '';
+  return reason === '' ? `No test proves: ${criterion}` : `No test proves: ${criterion} — ${reason}`;
 }
 
 async function judgeObservation(evidence: unknown, context: EvidenceContext): Promise<StepResult> {
@@ -159,7 +195,9 @@ async function judgeCritique(evidence: unknown, context: EvidenceContext): Promi
     return malformed(parsed.error);
   }
   const missing = await missingFiles(parsed.data.screenshots, context.workspaceRoot);
-  const severe = parsed.data.findings.filter(({ severity }) => severity === 'high').map(({ description }) => description);
+  const severe = parsed.data.findings
+    .filter(({ severity }) => severity === 'high')
+    .map(({ description, screenshot }) => (screenshot.trim() === '' ? description : `${description} (${screenshot.trim()})`));
   const remaining = parsed.data.findings.filter(({ severity }) => severity !== 'high').map(({ description }) => description);
   return missing.length + severe.length === 0 ? passed(remaining) : failed([...missing, ...severe]);
 }

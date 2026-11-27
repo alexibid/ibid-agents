@@ -1,4 +1,4 @@
-import { tokensSpentOn, type Percent, type PromptSummary, type Tool } from './prompt';
+import { secondsTakenBy, tokensSpentOn, type Percent, type PromptSummary, type Tool } from './prompt';
 
 export interface ConversationGroup {
   readonly id: string;
@@ -7,6 +7,7 @@ export interface ConversationGroup {
   readonly tools: readonly Tool[];
   readonly firstAskedOn: string;
   readonly lastAskedOn: string;
+  readonly totalSeconds: number;
   readonly totalTokens: number;
   readonly fiveHourPercent: Percent;
   readonly weeklyPercent: Percent;
@@ -58,6 +59,7 @@ function toGroup(id: string, items: readonly PromptSummary[]): ConversationGroup
     tools,
     firstAskedOn: entry.askedOn,
     lastAskedOn: latest.askedOn,
+    totalSeconds: chronological.reduce((sum, item) => sum + secondsTakenBy(item), 0),
     totalTokens: chronological.reduce((sum, item) => sum + tokensSpentOn(item), 0),
     fiveHourPercent: sumPercents(chronological.map((item) => item.fiveHourPercent)),
     weeklyPercent: sumPercents(chronological.map((item) => item.weeklyPercent)),

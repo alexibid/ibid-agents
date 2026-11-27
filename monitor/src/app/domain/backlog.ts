@@ -61,3 +61,22 @@ export function issueNameOf(item: BacklogItem): string {
   }
   return item.repository.split('/').at(-1) ?? item.repository;
 }
+
+function matchesText(item: BacklogItem, needle: string): boolean {
+  return item.title.toLowerCase().includes(needle) || item.body.toLowerCase().includes(needle);
+}
+
+export function filterOutline(outline: EpicOutline, query: string): EpicOutline | null {
+  const needle = query.trim().toLowerCase();
+  if (needle === '') {
+    return outline;
+  }
+  if (matchesText(outline.head, needle)) {
+    return outline;
+  }
+  const stories = outline.stories.filter((branch) => matchesText(branch.story, needle));
+  if (stories.length === 0) {
+    return null;
+  }
+  return { ...outline, epicTasks: [], stories };
+}

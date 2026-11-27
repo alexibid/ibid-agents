@@ -1,4 +1,5 @@
 import { END, START, StateGraph, interrupt, type BaseCheckpointSaver } from '@langchain/langgraph';
+import { followUpFor } from './decision-issues.js';
 import type { AgentFlowDefinition, FlowStep } from './definition.js';
 import { handBackShapeOf, judgeHandBack } from './judge.js';
 import { AgentRunState, type AgentRunStateUpdate, type AgentRunStateValue } from './state.js';
@@ -50,8 +51,10 @@ async function runStep(
   const verdict = await judgeHandBack(step, handedBack, state.results);
   if (verdict.passed) {
     const last = position === definition.steps.length - 1;
+    const requiredFollowUp = last ? followUpFor(definition, state.linkedIssues) : 'none';
     return {
       status: last ? 'finished' : 'working',
+      ...(requiredFollowUp === 'none' ? {} : { requiredFollowUp }),
       results: { [step.id]: handedBack },
       history: [{ step: step.id, passed: true, details: [] }],
     };

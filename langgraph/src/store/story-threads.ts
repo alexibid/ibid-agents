@@ -8,6 +8,7 @@ export interface LatestThread {
   readonly values: ChannelValues;
   readonly startedOn: Date;
   readonly updatedOn: Date;
+  readonly sequence: number;
 }
 
 export interface StoryThread {
@@ -24,13 +25,14 @@ interface CheckpointRow {
   readonly thread_id: string;
   readonly checkpoint: Uint8Array | string;
   readonly first_checkpoint: Uint8Array | string;
+  readonly newest_row: number;
 }
 
 const WORKING = 'working';
-const HOLDING: ReadonlySet<string> = new Set([WORKING, 'ready-for-commit', 'needs-user']);
+const HOLDING: ReadonlySet<string> = new Set([WORKING, 'needs-user']);
 
 const LATEST_PER_THREAD = `
-  select latest.thread_id, latest.checkpoint, first.checkpoint as first_checkpoint
+  select latest.thread_id, latest.checkpoint, first.checkpoint as first_checkpoint, bounds.newest as newest_row
   from (
     select thread_id, max(rowid) as newest, min(rowid) as oldest
     from checkpoints where checkpoint_ns = '' group by thread_id
@@ -85,6 +87,7 @@ function threadOf(row: CheckpointRow): LatestThread {
     values: isRecord(values) ? values : {},
     startedOn: new Date(textOf(fieldOf(parsed(row.first_checkpoint), 'ts'))),
     updatedOn: new Date(textOf(fieldOf(latest, 'ts'))),
+    sequence: Number(row.newest_row ?? 0),
   };
 }
 

@@ -1,23 +1,21 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { existsForSignedInUser } from '../agent-runs/github-link.js';
+import { ensureNoPendingDecision, PendingDecisionReviewError, type DecisionRunRecord } from '../agent-runs/decision-issues.js';
+import { IssueNotFoundError, verifyGithubIssues } from '../agent-runs/github-link.js';
 import { EpicProgressReader, type EpicProgress } from '../backlog/epic-progress.js';
 import { setAntigravityTitle } from '../session/antigravity-title.js';
 import type { StoryFlow, StoryReport } from '../story-flow.js';
+import { advanceSingleStory, confirmStoryOrEpic } from './story-commit-tools.js';
 import type { StoryOrigin } from './state.js';
 
-export class IssueNotFoundError extends Error {
-  constructor(url: string) {
-    super(`${url} is not a GitHub issue the signed-in user can read. A story starts from an existing issue.`);
-    this.name = 'IssueNotFoundError';
-  }
-}
+export { IssueNotFoundError, PendingDecisionReviewError };
 
 type EpicReading = EpicProgress | 'no epic' | 'unreadable';
 
 export interface StoryWorkspace {
   readonly storyIds: () => readonly string[];
   readonly uncommittedAmong: (files: readonly string[]) => Promise<string[]>;
+  readonly decisionRuns?: () => readonly DecisionRunRecord[];
 }
 
 const issueUrl = z.string().url().describe('The GitHub issue of the story, such as https://github.com/owner/repo/issues/38');
@@ -47,6 +45,7 @@ export function registerStoryTools(
     },
     async ({ issue, epic, ...story }) =>
       originChecked({ issue, epic })
+        .then((origin) => ensureNoPendingDecision(origin, workspace.decisionRuns?.() ?? []))
         .then((origin) => storyFlow.startStory(story, origin))
         .then(answer, refusal),
   );
@@ -103,10 +102,32 @@ export function registerStoryTools(
     'advance_to_commit',
     {
       description:
-        'Only when the user asks to move on to the commit: run the tests, the review and the final verification. Before that, a story only builds and checks the change, and stops as ready-for-commit.',
+        'For a standalone story (or an existing epic commit run): run the commit phase (build, lint, rule checks, unit tests, validation, QA, UX, review, final verification). For stories in a multi-story epic, call advance_epic_to_commit instead so validation, QA, UX, review, and final verification run once for the whole epic.',
       inputSchema: { storyId: z.string() },
     },
-    async ({ storyId }) => storyFlow.advanceToCommit(storyId).then(answer, refusal),
+    async ({ storyId }) => advanceSingleStory(storyFlow, workspace, storyId).then(answer, refusal),
+  );
+
+  server.registerTool(
+    'advance_epic_to_commit',
+    {
+      description:
+        'When the user asks to commit an epic (or a chosen set of ready-for-commit stories): runs build, lint, rule checks, unit tests, validation, browser QA, UX critique, review, and final verification ONCE across all ready-for-commit stories of the epic (observing any quick-change or manual edits in the project).',
+      inputSchema: {
+        epic: issueUrl.describe('The GitHub issue URL of the epic'),
+        storyIds: z
+          .array(z.string())
+          .optional()
+          .describe('Optional explicit ready-for-commit story IDs to commit together; defaults to every ready-for-commit story of the epic'),
+      },
+    },
+    async ({ epic, storyIds }) =>
+      storyFlow
+        .advanceEpicToCommit(epic, workspace.storyIds(), {
+          ...(storyIds !== undefined ? { storyIds } : {}),
+          uncommittedAmong: workspace.uncommittedAmong,
+        })
+        .then(answer, refusal),
   );
 
   server.registerTool(
@@ -148,14 +169,27 @@ export function registerStoryTools(
     'confirm_commit',
     {
       description:
-        'Once the user says the commit of a finished story is made: checks that none of its files is still uncommitted, closes its GitHub issue, and closes the epic when every sub-issue is done.',
+        'Required after the user commits a finished story (or epic commit run), before running /project-manager follow-ups or /issue-review: checks that none of its files is still uncommitted, closes its GitHub issue, and closes the epic when every sub-issue is done.',
       inputSchema: { storyId: z.string() },
     },
     async ({ storyId }) =>
+      confirmStoryOrEpic(storyFlow, workspace, storyId).then(
+        (result) => (result.single !== undefined ? answer(result.single) : text({ epic: result.epic, confirmed: result.confirmed })),
+        refusal,
+      ),
+  );
+
+  server.registerTool(
+    'confirm_epic_commit',
+    {
+      description:
+        'Required after the user commits a finished epic, before running /project-manager follow-ups or /issue-review: checks that none of its finished stories has uncommitted files, closes every story issue, and closes the epic issue.',
+      inputSchema: { epic: issueUrl.describe('The GitHub issue URL of the epic') },
+    },
+    async ({ epic }) =>
       storyFlow
-        .report(storyId)
-        .then(async (report) => storyFlow.confirmCommit(storyId, await workspace.uncommittedAmong(report.files)))
-        .then(answer, refusal),
+        .confirmEpicCommit(epic, workspace.storyIds(), workspace.uncommittedAmong)
+        .then((confirmed) => text({ epic, confirmed }), refusal),
   );
 
   server.registerTool(
@@ -190,16 +224,30 @@ export function registerStoryTools(
   );
 }
 
-async function syncedStories(storyFlow: StoryFlow, workspace: StoryWorkspace) {
+export async function syncedStories(storyFlow: StoryFlow, workspace: StoryWorkspace) {
   const reports = await Promise.all(workspace.storyIds().map((storyId) => storyFlow.report(storyId)));
   const stories = [];
   for (const report of storiesToSync(reports)) {
     const synced = await storyFlow.resync(report.storyId, await workspace.uncommittedAmong(report.files));
     stories.push({ storyId: report.storyId, issue: synced.origin.issue, status: synced.status, github: synced.github });
   }
+  const decisionRuns = (workspace.decisionRuns?.() ?? []).map(({ runId, agent, finishedOn, linkedIssues, followUpStatus }) => ({
+    runId,
+    agent,
+    finishedOn,
+    linkedIssues,
+    followUpStatus,
+  }));
   const failed = stories.filter(({ github }) => github.state === 'failed');
-  return { allUpToDate: failed.length === 0, on: new Date().toISOString(), stories };
+  return {
+    allUpToDate: failed.length === 0,
+    on: new Date().toISOString(),
+    stories,
+    ...(decisionRuns.length > 0 ? { decisionRuns } : {}),
+  };
 }
+
+export { ensureNoPendingDecision };
 
 export function storiesToSync(reports: readonly StoryReport[]): StoryReport[] {
   const byIssue = new Map<string, StoryReport>();
@@ -213,11 +261,7 @@ export function storiesToSync(reports: readonly StoryReport[]): StoryReport[] {
 }
 
 async function originChecked(origin: StoryOrigin): Promise<StoryOrigin> {
-  for (const url of [origin.issue, origin.epic].filter((link) => link !== '')) {
-    if (!(await existsForSignedInUser(new URL(url)))) {
-      throw new IssueNotFoundError(url);
-    }
-  }
+  await verifyGithubIssues([origin.issue, origin.epic]);
   return origin;
 }
 

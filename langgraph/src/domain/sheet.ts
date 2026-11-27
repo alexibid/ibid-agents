@@ -1,3 +1,4 @@
+import type { Discovery } from './discovery.js';
 import type { ProjectAgent } from './project-team.js';
 import type { Condition, StepName } from './steps.js';
 
@@ -22,6 +23,7 @@ export interface ProjectSheet {
   readonly triggers: readonly ConditionTrigger[];
   readonly mandatorySteps: readonly MandatoryStep[];
   readonly commands: Readonly<Partial<Record<StepName, string>>>;
+  readonly discovery?: Discovery;
 }
 
 export class SheetError extends Error {

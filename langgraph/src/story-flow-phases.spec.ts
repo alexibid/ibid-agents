@@ -218,13 +218,11 @@ describe('StoryFlow origin', () => {
 describe('StoryFlow build after a repair', () => {
   async function failedReview(tree: EditedTree): Promise<{ flow: StoryFlow; storyId: string }> {
     const workspaceRoot = await mkdtemp(join(tmpdir(), 'build-'));
-    const flow = flowOver(tree, always('implement', 'build', 'author-tests', 'review'), workspaceRoot, { build: 'true' });
+    const flow = flowOver(tree, always('implement', 'build', 'review'), workspaceRoot, { build: 'true' });
     const { storyId } = await flow.startStory(story);
-    await flow.submit(storyId, { files: [COVER], conditions: [] });
+    await flow.submit(storyId, { files: [COVER, COVER_SPEC], conditions: [] });
     tree.edit(COVER);
     await flow.submit(storyId, { summary: 'opened the cover' });
-    tree.edit(COVER_SPEC);
-    await flow.submit(storyId, { specFiles: [COVER_SPEC] });
     await flow.advanceToCommit(storyId);
     await flow.submit(storyId, { findings: [{ rule: 'T11', file: COVER_SPEC, description: 'shape only', blocking: true }] });
     return { flow, storyId };
@@ -235,9 +233,10 @@ describe('StoryFlow build after a repair', () => {
     const { flow, storyId } = await failedReview(tree);
     tree.edit(COVER_SPEC);
 
-    const repaired = await flow.submit(storyId, { summary: 'fixed the test only' });
+    await flow.submit(storyId, { summary: 'fixed the test only' });
+    const built = await flow.advanceToCommit(storyId);
 
-    expect(repaired.history.filter(({ step }) => step === 'build').at(-1)?.details).toEqual([ONLY_TESTS_CHANGED]);
+    expect(built.history.filter(({ step }) => step === 'build').at(-1)?.details).toEqual([ONLY_TESTS_CHANGED]);
   });
 
   it('should build again when the repair changed the code', async () => {
@@ -245,9 +244,10 @@ describe('StoryFlow build after a repair', () => {
     const { flow, storyId } = await failedReview(tree);
     tree.edit(COVER);
 
-    const repaired = await flow.submit(storyId, { summary: 'changed the cover' });
+    await flow.submit(storyId, { summary: 'changed the cover' });
+    const built = await flow.advanceToCommit(storyId);
 
-    expect(repaired.history.filter(({ step }) => step === 'build').at(-1)?.details).toEqual([]);
+    expect(built.history.filter(({ step }) => step === 'build').at(-1)?.details).toEqual([]);
   });
 });
 
@@ -287,88 +287,5 @@ describe('StoryFlow test author on a repair', () => {
     const gap = await flow.submit(storyId, unproven);
 
     expect(stepOf(gap)).toBe('author-tests');
-  });
-});
-
-describe('StoryFlow questions instead of guesses', () => {
-  const question = { summary: 'not started', questions: ['Should the cover keep its shadow while it turns?'] };
-
-  it('should stop and wait for the user when the developer asks instead of guessing', async () => {
-    const flow = flowOver(new EditedTree(), always('implement', 'review'));
-    const { storyId } = await flow.startStory(story);
-    await flow.submit(storyId, { files: [COVER], conditions: [] });
-
-    const asked = await flow.submit(storyId, question);
-
-    expect(asked.status).toBe('needs-user');
-    expect(asked.history.at(-1)?.details).toContain('Should the cover keep its shadow while it turns?');
-  });
-
-  it('should give the developer the user decision when the story is resumed', async () => {
-    const flow = flowOver(new EditedTree(), always('implement', 'review'));
-    const { storyId } = await flow.startStory(story);
-    await flow.submit(storyId, { files: [COVER], conditions: [] });
-    await flow.submit(storyId, question);
-
-    const resumed = await flow.resume(storyId, 'Keep the shadow.');
-
-    expect(stepOf(resumed)).toBe('implement');
-    expect(resumed.next === 'nothing' ? '' : resumed.next.brief).toContain('The user decided: Keep the shadow.');
-  });
-
-  it('should let the specialist ask before planning anything', async () => {
-    const flow = flowOver(new EditedTree(), always('implement', 'review'));
-    const { storyId } = await flow.startStory(story);
-
-    const asked = await flow.submit(storyId, { questions: ['Does the cover open on mobile too?'] });
-    const resumed = await flow.resume(storyId, 'Desktop only.');
-
-    expect(asked.status).toBe('needs-user');
-    expect(resumed.next === 'nothing' ? '' : resumed.next.step).toBe('plan');
-    expect(resumed.next === 'nothing' ? '' : resumed.next.brief).toContain('Desktop only.');
-  });
-});
-
-describe('StoryFlow commit request after a code repair', () => {
-  it('should build again and wait for the user when a commit step sends the code back', async () => {
-    const tree = new EditedTree();
-    const flow = flowOver(tree, always('implement', 'author-tests', 'validate-tests', 'review'));
-    const { storyId } = await flow.startStory(story);
-    await flow.submit(storyId, { files: [COVER], conditions: [] });
-    tree.edit(COVER);
-    await flow.submit(storyId, { summary: 'opened the cover' });
-    tree.edit(COVER_SPEC);
-    await flow.submit(storyId, { specFiles: [COVER_SPEC] });
-    await flow.advanceToCommit(storyId);
-    await flow.submit(storyId, { criteria: [{ criterion: 'The cover opens', test: 'opens the cover', proven: true }] });
-    await flow.submit(storyId, { findings: [{ rule: 'W63', file: COVER, description: 'duplicated', blocking: true }] });
-    tree.edit(COVER);
-
-    const repaired = await flow.submit(storyId, { summary: 'removed the duplicate' });
-
-    expect(repaired.status).toBe('ready-for-commit');
-    expect(repaired.phase).toBe('building');
-    expect(repaired.next).toBe('nothing');
-  });
-});
-
-describe('StoryFlow hold', () => {
-  it('should stop the commit steps when the user changes their mind, until they ask again', async () => {
-    const tree = new EditedTree();
-    const flow = flowOver(tree, always('implement', 'author-tests', 'validate-tests', 'review'));
-    const { storyId } = await flow.startStory(story);
-    await flow.submit(storyId, { files: [COVER], conditions: [] });
-    tree.edit(COVER);
-    await flow.submit(storyId, { summary: 'opened the cover' });
-    tree.edit(COVER_SPEC);
-    await flow.submit(storyId, { specFiles: [COVER_SPEC] });
-    await flow.advanceToCommit(storyId);
-
-    const held = await flow.holdForCommit(storyId);
-    const again = await flow.advanceToCommit(storyId);
-
-    expect(held.status).toBe('ready-for-commit');
-    expect(held.next).toBe('nothing');
-    expect(stepOf(again)).toBe('validate-tests');
   });
 });

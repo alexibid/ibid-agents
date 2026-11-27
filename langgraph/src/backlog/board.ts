@@ -31,6 +31,7 @@ export interface BoardEpic {
 }
 
 const STAGE_PREFIX = 'status: ';
+const DONE_STAGES = new Set(['pronta para commit', 'a verificar', 'à espera do commit']);
 const STAGE_NAMES: Readonly<Record<string, string>> = {
   building: 'a construir',
   'ready for commit': 'pronta para commit',
@@ -66,7 +67,7 @@ function boardEpicOf(epic: StoredEpic, states: IssueStates): BoardEpic[] {
       project: epic.project,
       updatedOn: epic.updatedOn,
       epic: { ...cardOf(head), tasks: [] },
-      done: stories.filter((card) => card.state === 'closed').length,
+      done: stories.filter((card) => card.state === 'closed' || DONE_STAGES.has(card.stage)).length,
       total: stories.length,
       stories,
     },

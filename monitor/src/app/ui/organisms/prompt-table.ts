@@ -2,7 +2,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { groupConversations } from '../../domain/conversation-group';
-import { tokensSpentOn, type PromptSummary } from '../../domain/prompt';
+import { formatDuration, secondsTakenBy, tokensSpentOn, type PromptSummary } from '../../domain/prompt';
 import { Percent } from '../atoms/percent';
 import { ToolBadge } from '../atoms/tool-badge';
 
@@ -18,6 +18,8 @@ export class PromptTable {
 
   protected readonly groups = computed(() => groupConversations(this.prompts()));
   protected readonly tokensSpentOn = tokensSpentOn;
+  protected readonly secondsTakenBy = secondsTakenBy;
+  protected readonly formatDuration = formatDuration;
 
   private readonly expanded = signal<ReadonlySet<string>>(new Set());
 

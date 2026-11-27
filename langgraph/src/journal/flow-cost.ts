@@ -24,7 +24,7 @@ export interface FlowCost {
 
 const TEST_STEPS = new Set(['author-tests', 'unit-tests', 'validate-tests']);
 const SCREEN_STEPS = new Set(['browser-qa', 'ux-critique', 'visual-gate', 'accessibility', 'performance']);
-const ENGINE_STEPS = new Set(['build', 'lint', 'rule-checks', 'unit-tests', 'journey', 'accessibility']);
+const ENGINE_STEPS = new Set(['build', 'lint', 'rule-checks', 'seo-audit', 'unit-tests', 'journey', 'accessibility']);
 const SKIPPED = 'Skipped:';
 
 const RUNS_SINCE = `

@@ -66,5 +66,10 @@ works the same in Claude and in Antigravity.
    did not pass.
 5. A step done by the user, such as an approval, waits for the user's own words. Never fill it
    in for them.
+6. When `status` is `finished` with `requiredFollowUp` (a decision or design run tied to a GitHub
+   issue), the run has no git commit so commit-based sync will not close its issue: record the
+   settled decision via `remember_note` and hand off immediately to `/issue-review` (when only
+   closing the decision issue and duplicates) or `/project-manager` (when story criteria, scope,
+   or backlog items also change), never waiting until the end of the epic.
 
 If the flow engine cannot be reached, tell the user and stop.

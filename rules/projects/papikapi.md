@@ -11,6 +11,7 @@ Papercraft origami progression for parents and children. App-first and voice-fir
 | Specialist | `agents/papikapi-specialist.md` |
 | Reuses | `ibid-ui` |
 | Delivery | iOS and Android through Capacitor, macOS through Tauri, with a browser fallback for development |
+| Discovery | `aso`: a store app, so every step reads `rules/discovery/aso.md` |
 
 ## Mandatory steps
 

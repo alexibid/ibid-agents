@@ -15,10 +15,17 @@ const UPDATED: GithubSync = { state: 'updated', on: '2026-11-23T10:40:00.000Z', 
 
 class RecordingSync implements IssueSync {
   readonly stages: IssueStage[] = [];
+  built = 0;
   closed = 0;
 
   async show(_origin: unknown, stage: IssueStage): Promise<GithubSync> {
     this.stages.push(stage);
+    return UPDATED;
+  }
+
+  async closeBuilt(_origin: unknown, stage: 'ready-for-commit' | 'awaiting-commit'): Promise<GithubSync> {
+    this.stages.push(stage);
+    this.built += 1;
     return UPDATED;
   }
 
@@ -65,6 +72,7 @@ describe('StoryFlow keeping GitHub up to date', () => {
     const built = await flow.submit(storyId, { summary: 'opened the cover' });
 
     expect(sync.stages).toEqual(['building', 'ready-for-commit']);
+    expect(sync.built).toBe(1);
     expect(built.github).toEqual(UPDATED);
   });
 

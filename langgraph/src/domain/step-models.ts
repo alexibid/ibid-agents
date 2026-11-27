@@ -8,7 +8,7 @@ export interface StepModels {
 const STRONGEST: StepModels = { claude: 'opus', antigravity: 'pro' };
 const LIGHTER: StepModels = { claude: 'sonnet', antigravity: 'flash' };
 
-const STEPS_ON_THE_STRONGEST_MODEL: ReadonlySet<StepName | 'plan'> = new Set(['plan', 'implement', 'visual-gate']);
+const STEPS_ON_THE_STRONGEST_MODEL: ReadonlySet<StepName | 'plan'> = new Set(['implement', 'visual-gate']);
 
 export function modelsFor(step: StepName | 'plan'): StepModels {
   return STEPS_ON_THE_STRONGEST_MODEL.has(step) ? STRONGEST : LIGHTER;

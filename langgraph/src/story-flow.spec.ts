@@ -96,16 +96,14 @@ describe('StoryFlow with another story in progress', () => {
     return new StoryFlow(graph);
   }
 
-  it('should reject a plan that takes a file the other story owns', async () => {
+  it('should accept a plan that takes a file another story owns', async () => {
     const flow = concurrentFlow();
     const { storyId } = await flow.startStory(story);
 
-    const rejected = await flow.submit(storyId, { files: ['apps/demo/src/content.utils.ts'], conditions: [] });
+    const planned = await flow.submit(storyId, { files: ['apps/demo/src/content.utils.ts'], conditions: [] });
 
-    expect(rejected.status).toBe('planning');
-    expect(rejected.history.at(-1)?.details).toEqual([
-      'apps/demo/src/content.utils.ts already belongs to the story demo-encoding, which is in progress. Plan a different focus.',
-    ]);
+    expect(planned.status).toBe('working');
+    expect(planned.remainingSteps).toEqual(['implement', 'review']);
   });
 
   it('should not blame the implementation for what the other story changed', async () => {

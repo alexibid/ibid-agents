@@ -29,6 +29,6 @@ A change here also runs `build` for every app that consumes the changed service.
 
 - Pure headless TypeScript: no DOM and no templates. (L01)
 - Never imports from an app or from a UI library. (W01, W02)
-- Every public method has a spec. (L02)
+- Business rules, data transformations and the errors a user really meets have tests. (T11)
 - Failures are typed errors that are thrown, never error codes.
 - Drive documents are encrypted before they leave the device.

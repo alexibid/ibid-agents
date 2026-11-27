@@ -30,6 +30,13 @@ class FakeTree implements ChangeTracker {
 }
 
 function flowOver(tree: FakeTree, mandatorySteps: readonly MandatoryStep[], agents: readonly ProjectAgent[] = []): StoryFlow {
+  return flowWithOptions(tree, { mandatorySteps, agents, workspaceRoot: '/workspace' });
+}
+
+function flowWithOptions(
+  tree: FakeTree,
+  options: { readonly mandatorySteps: readonly MandatoryStep[]; readonly agents?: readonly ProjectAgent[]; readonly workspaceRoot?: string },
+): StoryFlow {
   const sheet: ProjectSheet = {
     project: 'demo',
     path: 'apps/demo',
@@ -37,13 +44,19 @@ function flowOver(tree: FakeTree, mandatorySteps: readonly MandatoryStep[], agen
     sheetFile: 'demo.md',
     reuses: [],
     specialist: 'agents/specialist.md',
-    agents,
+    agents: options.agents ?? [],
     triggers: [],
-    mandatorySteps,
+    mandatorySteps: options.mandatorySteps,
     commands: {},
   };
   const graph = buildFlowGraph(
-    { workspaceRoot: '/workspace', sheets: { read: async () => sheet }, contractsDirectory: '/contracts', changesOf: () => tree, activeStories: NO_OTHER_STORIES },
+    {
+      workspaceRoot: options.workspaceRoot ?? '/workspace',
+      sheets: { read: async () => sheet },
+      contractsDirectory: '/contracts',
+      changesOf: () => tree,
+      activeStories: NO_OTHER_STORIES,
+    },
     new MemorySaver(),
   );
   return new StoryFlow(graph);
@@ -83,6 +96,29 @@ describe('StoryFlow routing after a failed test validation', () => {
     });
 
     expect(sentBack.remainingSteps[0]).toBe('implement');
+  });
+
+  it('should pass the validator explanation to the repair step when a criterion is unproven', async () => {
+    const tree = new FakeTree();
+    const flow = flowOver(tree, always('author-tests', 'implement', 'validate-tests', 'review'));
+    const { storyId } = await flow.startStory(story);
+    await flow.submit(storyId, { files: [COVER], conditions: [] });
+    tree.changed = [COVER];
+    await flow.submit(storyId, { summary: 'opened the cover' });
+    tree.changed = [COVER, COVER_SPEC];
+    await flow.submit(storyId, { specFiles: [COVER_SPEC] });
+    await flow.advanceToCommit(storyId);
+
+    const sentBack = await flow.submit(storyId, {
+      criteria: [{ criterion: 'The cover opens', test: 'Remove duplicate test in cover.spec.ts (T05)', proven: false }],
+    });
+
+    expect(sentBack.history.at(-1)?.details).toEqual([
+      'No test proves: The cover opens — Remove duplicate test in cover.spec.ts (T05)',
+    ]);
+    expect(sentBack.next === 'nothing' || sentBack.next.lastResult === 'none' ? [] : sentBack.next.lastResult.details).toEqual([
+      'No test proves: The cover opens — Remove duplicate test in cover.spec.ts (T05)',
+    ]);
   });
 });
 
@@ -147,6 +183,84 @@ describe('scannableFiles', () => {
     const changed = ['kept.ts', 'deleted.ts'].map((file) => ({ repository: '.', file, alreadyDirty: false }));
 
     expect(scannableFiles(changed, root)).toEqual(['kept.ts']);
+    await rm(root, { recursive: true, force: true });
+  });
+});
+
+describe('StoryFlow judgement details handed back to executing agents', () => {
+  it('should send high UX findings with their screenshot to implement and keep medium/low findings as follow-ups on pass', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'ux-judgement-'));
+    await writeFile(join(root, 'mobile.png'), '');
+    const tree = new FakeTree();
+    const flow = flowWithOptions(tree, { mandatorySteps: always('implement', 'ux-critique'), workspaceRoot: root });
+    const { storyId } = await flow.startStory(story);
+    await flow.submit(storyId, { files: [COVER], conditions: [] });
+    tree.changed = [COVER];
+    await flow.submit(storyId, { summary: 'opened the cover' });
+    await flow.advanceToCommit(storyId);
+
+    const rejected = await flow.submit(storyId, {
+      findings: [
+        { severity: 'high', description: 'Submit button clipped at 390px', screenshot: 'mobile.png' },
+        { severity: 'medium', description: 'Label spacing is tight', screenshot: 'mobile.png' },
+      ],
+      screenshots: ['mobile.png'],
+    });
+
+    expect(rejected.remainingSteps[0]).toBe('implement');
+    expect(rejected.followUps).toEqual([]);
+    expect(rejected.next === 'nothing' || rejected.next.lastResult === 'none' ? [] : rejected.next.lastResult.details).toEqual([
+      'Submit button clipped at 390px (mobile.png)',
+    ]);
+
+    await flow.submit(storyId, { summary: 'fixed button overflow' });
+    await flow.advanceToCommit(storyId);
+    const passed = await flow.submit(storyId, {
+      findings: [{ severity: 'medium', description: 'Label spacing is tight', screenshot: 'mobile.png' }],
+      screenshots: ['mobile.png'],
+    });
+
+    expect(passed.status).toBe('finished');
+    expect(passed.followUps).toEqual(['UX (medium): Label spacing is tight']);
+    await rm(root, { recursive: true, force: true });
+  });
+
+  it('should pass browser-qa and blocking review findings to implement', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'qa-review-'));
+    await writeFile(join(root, 'qa.png'), '');
+    const tree = new FakeTree();
+    const flow = flowWithOptions(tree, { mandatorySteps: always('implement', 'browser-qa', 'review'), workspaceRoot: root });
+    const { storyId } = await flow.startStory(story);
+    await flow.submit(storyId, { files: [COVER], conditions: [] });
+    tree.changed = [COVER];
+    await flow.submit(storyId, { summary: 'opened the cover' });
+    await flow.advanceToCommit(storyId);
+
+    const qaFailed = await flow.submit(storyId, {
+      verdict: 'fail',
+      findings: ['Console error on submit'],
+      screenshots: ['qa.png'],
+    });
+    expect(qaFailed.remainingSteps[0]).toBe('implement');
+    expect(qaFailed.next === 'nothing' || qaFailed.next.lastResult === 'none' ? [] : qaFailed.next.lastResult.details).toEqual([
+      'Console error on submit',
+    ]);
+
+    await flow.submit(storyId, { summary: 'fixed console error' });
+    await flow.advanceToCommit(storyId);
+    await flow.submit(storyId, { verdict: 'pass', findings: [], screenshots: ['qa.png'] });
+
+    const reviewFailed = await flow.submit(storyId, {
+      findings: [
+        { rule: 'W14', file: COVER, description: 'function does two things', blocking: true },
+        { rule: 'W18', file: COVER, description: 'prefer readonly array', blocking: false },
+      ],
+    });
+    expect(reviewFailed.remainingSteps[0]).toBe('implement');
+    expect(reviewFailed.followUps).toEqual([]);
+    expect(
+      reviewFailed.next === 'nothing' || reviewFailed.next.lastResult === 'none' ? [] : reviewFailed.next.lastResult.details,
+    ).toEqual([`W14 in ${COVER}: function does two things`]);
     await rm(root, { recursive: true, force: true });
   });
 });

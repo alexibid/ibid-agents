@@ -4,6 +4,7 @@ import type { FieldKind, FlowStep } from './definition.js';
 import { draftsIn, epicSizeProblems, parsedDraft, parsedLinks, type BacklogDraft } from '../backlog/backlog.js';
 import { existsForSignedInUser } from './github-link.js';
 import { failedRunProblem } from './ci-run.js';
+import { DISCOVERY_REVIEW_EXAMPLE, discoveryReviewProblem, uncoveredRulesProblem } from './discovery-review.js';
 
 export interface Verdict {
   readonly passed: boolean;
@@ -30,8 +31,10 @@ const CHECKS: Readonly<Record<FieldKind, Check>> = {
     Array.isArray(value) ? firstProblem(value.map(String), missingFile) : 'must be a list of absolute file paths, empty when nothing changed',
   'passing-runs': async (value) =>
     isList(value) ? firstProblem(value.map(String), (link) => failedRunProblem(link)) : 'must be a list of GitHub Actions run links',
-  backlog: async (value) => [...parsedDraft(value).problems, ...epicSizeProblems(value)].join('; '),
+  backlog: async (value, earlier) =>
+    [...parsedDraft(value).problems, ...epicSizeProblems(value), uncoveredRulesProblem(value, earlier)].filter((problem) => problem !== OK).join('; '),
   'published-issues': async (value, earlier) => unpublishedProblem(value, draftsIn(earlier).at(0)),
+  'discovery-review': async (value) => discoveryReviewProblem(value),
 };
 
 export async function judgeHandBack(step: FlowStep, handedBack: unknown, earlier: Earlier = {}): Promise<Verdict> {
@@ -74,6 +77,7 @@ export function handBackShapeOf(step: FlowStep): string {
       ],
     },
     'published-issues': [{ key: '<S1>', url: 'https://github.com/<owner>/<name>/issues/<number>' }],
+    'discovery-review': DISCOVERY_REVIEW_EXAMPLE,
   };
   return JSON.stringify(Object.fromEntries(Object.entries(step.fields).map(([field, kind]) => [field, examples[kind]])));
 }

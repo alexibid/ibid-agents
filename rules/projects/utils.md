@@ -33,5 +33,5 @@ confirmed when the flow engine is built.
 - Pure input and output: no side effect, parameters are never mutated. (L03)
 - No dependency on any other library or framework module. (L03)
 - Fully tree-shakeable.
-- Full unit test coverage. (L04)
+- Unit tests for the data transformations and the cases that can really go wrong. (T11)
 - No workspace script lives here; whatever is added ships with the package. (W04)

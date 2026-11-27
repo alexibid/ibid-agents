@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { issueNameOf, outlineOf, type BacklogItem, type Epic } from './backlog';
+import { filterOutline, issueNameOf, outlineOf, type BacklogItem, type Epic } from './backlog';
 
 const item = (changes: Partial<BacklogItem>): BacklogItem => ({
   key: 'S1',
@@ -50,5 +50,41 @@ describe('outlineOf', () => {
 describe('issueNameOf', () => {
   it('should name a published issue by repository and number, and a draft by repository only', () => {
     expect([issueNameOf(HEAD), issueNameOf(item({}))]).toEqual(['papikapi#1', 'services']);
+  });
+});
+
+describe('filterOutline', () => {
+  const fullOutline = () =>
+    outlineOf(
+      epicOf(
+        item({ key: 'Épico', kind: 'epic', title: 'Drive e créditos', body: 'Sincronização', parent: '' }),
+        item({ key: 'D0', kind: 'task', title: 'Desenho', parent: 'Épico' }),
+        item({ key: 'S1', title: 'Entrar com Google', body: 'Autenticação OAuth' }),
+        item({ key: 'T1', kind: 'task', title: 'Configurar cliente', parent: 'S1' }),
+        item({ key: 'S2', title: 'Comprar créditos', body: 'Pagamento Stripe' }),
+      ),
+    );
+
+  it('should return the full outline when the query is empty or whitespace', () => {
+    const outline = fullOutline();
+    expect(filterOutline(outline, '')).toBe(outline);
+    expect(filterOutline(outline, '   ')).toBe(outline);
+  });
+
+  it('should return the full outline when the epic title or body matches case-insensitively', () => {
+    const outline = fullOutline();
+    expect(filterOutline(outline, 'DRIVE')).toBe(outline);
+    expect(filterOutline(outline, 'sincronização')).toBe(outline);
+  });
+
+  it('should keep only matching stories when the epic does not match directly', () => {
+    const filtered = filterOutline(fullOutline(), 'oauth');
+    expect(filtered?.epicTasks).toEqual([]);
+    expect(filtered?.stories.map((branch) => branch.story.key)).toEqual(['S1']);
+    expect(filtered?.stories[0]?.tasks.map((task) => task.key)).toEqual(['T1']);
+  });
+
+  it('should return null when neither the epic nor any story matches', () => {
+    expect(filterOutline(fullOutline(), 'inexistente')).toBeNull();
   });
 });

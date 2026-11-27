@@ -15,7 +15,9 @@ import { PostgresNoteArchive } from './memory/note-archive.js';
 import { ChangeFeed } from './monitor/change-feed.js';
 import { fileClock } from './monitor/engine-clock.js';
 import { EngineServers } from './monitor/engine-servers.js';
+import { IdleServerSweep, TWO_DAYS_OPEN_ONE_DAY_IDLE } from './monitor/idle-servers.js';
 import { PsServerProcesses } from './monitor/ps-server-processes.js';
+import { ACTIVITY_DIRECTORY, FileServerActivity } from './relay/server-activity.js';
 import { RESTART_SIGNAL } from './relay/restart-signal-file.js';
 import { createMonitorApi } from './monitor/http-api.js';
 import { MonitorQueries } from './monitor/monitor-queries.js';
@@ -28,8 +30,11 @@ const READ_ACTIVITY_EVERY_MS = 20_000;
 const SERVER_SCRIPTS = { relay: join(import.meta.dirname, 'server.js'), engine: join(import.meta.dirname, 'engine.js') };
 const STARTED_ON = new Date();
 const SAMPLE_LIMITS_EVERY_MS = 60_000;
+const SWEEP_IDLE_SERVERS_EVERY_MS = 3_600_000;
 
 const database = new Database();
+const serverProcesses = new PsServerProcesses(SERVER_SCRIPTS);
+const idleServers = new IdleServerSweep(serverProcesses, new FileServerActivity(ACTIVITY_DIRECTORY), TWO_DAYS_OPEN_ONE_DAY_IDLE);
 const feed = new ChangeFeed();
 const usageSync = new UsageSync(new UsageLedger(database));
 const limitLedger = new LimitLedger(database);
@@ -73,6 +78,13 @@ async function sampleLimits(): Promise<void> {
   }
 }
 
+async function retireIdleServers(): Promise<void> {
+  const retired = await idleServers.retire(new Date());
+  if (retired.length > 0) {
+    console.log(`Stopped idle flow engine servers: ${retired.join(', ')}`);
+  }
+}
+
 async function closeCommittedStories(): Promise<void> {
   const closed = await commitCloser.closeCommitted();
   if (closed.length > 0) {
@@ -104,10 +116,11 @@ createMonitorApi({
   backlog: new PostgresBacklogArchive(database),
   feed,
   refreshLimits: sampleLimitsNow,
-  engine: new EngineServers(new PsServerProcesses(SERVER_SCRIPTS), fileClock(SERVER_SCRIPTS.engine, STARTED_ON), RESTART_SIGNAL),
+  engine: new EngineServers(serverProcesses, fileClock(SERVER_SCRIPTS.engine, STARTED_ON), RESTART_SIGNAL),
 }).listen(PORT, '127.0.0.1', () => {
   console.log(`The monitor serves http://127.0.0.1:${PORT}`);
 });
 repeatedly(sampleLimitsNow, SAMPLE_LIMITS_EVERY_MS);
 repeatedly(closeCommittedStories, SAMPLE_LIMITS_EVERY_MS);
+repeatedly(retireIdleServers, SWEEP_IDLE_SERVERS_EVERY_MS);
 repeatedly(() => oneAtATime(readActivity), READ_ACTIVITY_EVERY_MS);

@@ -46,7 +46,6 @@ way it will be guaranteed.
 | W26 | BEM class names, and SCSS always nested under its block with `&` (elements, modifiers, states, media queries) | judgement | no | Stylelint `selector-class-pattern`, then reviewer |
 | W27 | A spec exists for every component, service, use case and repository | machine | no | Sibling spec check |
 | W28 | Tests are written before or alongside the code | process | no | Test author works from the story before the developer |
-| W29 | All business logic is covered | machine | no | Coverage threshold on domain and application layers |
 | W30 | A changed UI component has an updated story | machine | no | Diff check: component changed implies story changed or present |
 | W31 | Journeys run on the mobile viewport, seeded, clock frozen | machine | no | Journey config scan |
 | W32 | Journeys cover open, interact, dialogs, submit and persistence after reload | judgement | no | Test validator |
@@ -141,9 +140,7 @@ way it will be guaranteed.
 | Id | Rule | Kind | Today | How it is guaranteed |
 | --- | --- | --- | --- | --- |
 | L01 | `services` is headless: no DOM and no templates | machine | no | Import and globals restriction |
-| L02 | Every public service method has a spec | judgement | no | Test validator |
 | L03 | `utils` holds pure functions with no dependency | machine | partial | `@nx/dependency-checks`, plus W02 |
-| L04 | `utils` has full coverage | machine | no | Coverage threshold |
 | L05 | `boilerplate` holds no product logic and no single-product dependency | judgement | no | Reviewer |
 
 ## Testing
@@ -152,7 +149,7 @@ How many tests, at which layer, and with what data. The weights follow the testi
 
 | Id | Rule | Kind | Today | How it is guaranteed |
 | --- | --- | --- | --- | --- |
-| T01 | Each criterion is proven at the lowest layer that can prove it: logic unit tests (50–60%), component integration (25–35%), journeys (10–15%) | judgement | no | Test validator |
+| T01 | Component integration is the default layer: one test that runs the real flow (component, state, user action) with real internal collaborators; unit tests only for complex business rules and data transformations; journeys only for critical flows | judgement | no | Test validator |
 | T02 | Every test reads its data from mocks; no test reaches a real API, database, local file or installed app | judgement | no | Test validator and reviewer |
 | T03 | Logic is tested without TestBed; TestBed only for `inject()`, lifecycle or templates | judgement | no | Reviewer |
 | T04 | Tests assert public behaviour (DOM, signal value, output), never private members or internal call counts | judgement | no | Test validator |
@@ -162,8 +159,10 @@ How many tests, at which layer, and with what data. The weights follow the testi
 | T08 | Journeys never call `waitForTimeout` | machine | no | Journey scan |
 | T09 | Each journey prepares its own mocked data and depends on no run order | judgement | no | Test validator |
 | T10 | Page objects hold locators and actions; every `expect` stays in the spec | judgement | no | Reviewer |
-| T11 | Business logic aims at 75–85% coverage; no tests for trivial getters, modules or route tables | judgement | no | Test validator |
+| T11 | Tests follow behaviour and business risk, never line coverage: complex rules, data transformations and the errors a user really meets; no coverage percentage is required | judgement | no | Test validator |
 | T12 | Signal effects are flushed with `TestBed.flushEffects()` or `fixture.whenStable()`, never with timeouts | judgement | no | Reviewer |
+| T13 | No test for what static analysis already guarantees (types, missing properties, interface contracts), nor for external libraries, static configuration, trivial getters and setters or boilerplate | judgement | no | Test validator and reviewer |
+| T14 | A test that would not fail on a real bug, or only mirrors the structure of the code, is deleted | judgement | no | Test validator |
 
 ## From the existing skills
 
@@ -181,11 +180,11 @@ Rules that lived only inside a skill and were in no rule file.
 
 | Kind | Count |
 | --- | --- |
-| `machine` | 59 |
+| `machine` | 57 |
 | `guard` | 5 |
 | `process` | 13 |
-| `judgement` | 40 |
-| All | 117 |
+| `judgement` | 41 |
+| All | 116 |
 
 Enforced by something other than memory today: 9, plus 1 partial and 1 unverified.
 

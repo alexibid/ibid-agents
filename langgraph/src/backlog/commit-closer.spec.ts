@@ -15,6 +15,10 @@ class ClosingSync implements IssueSync {
     return UPDATED;
   }
 
+  async closeBuilt(): Promise<GithubSync> {
+    return UPDATED;
+  }
+
   async closeDone(origin: { readonly issue: string }): Promise<GithubSync> {
     this.closed.push(origin.issue);
     return UPDATED;

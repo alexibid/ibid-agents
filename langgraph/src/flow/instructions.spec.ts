@@ -26,10 +26,13 @@ const sheet: ProjectSheet = {
 const state = (overrides: Partial<FlowStateValue>): FlowStateValue => ({
   story: { project: 'figures-app', title: 'A cat', criteria: ['The cat stands'] },
   origin: NO_ORIGIN,
+  epicMembers: [],
   commitRequested: false,
+  commitConfirmed: false,
   lastPasses: {},
   sheet,
   baseline: {},
+  implementBaseline: undefined,
   contractsDirectory: CONTRACTS,
   plan: EMPTY_PLAN,
   testFiles: [],
@@ -77,11 +80,32 @@ describe('stepInstruction', () => {
     expect(instruction.doneBy).toBe('developer or UI agent');
     expect(instruction.contracts).toEqual(['/repo/agents/developer.md']);
   });
+
+  it('should scope validate-tests task to changed files after an earlier pass or prior failed criteria', () => {
+    const afterPass = stepInstruction(
+      'validate-tests',
+      state({ lastPasses: { 'validate-tests': { a: '1' } } }),
+      ['apps/figures-app/src/cat.spec.ts'],
+    );
+    expect(afterPass.task).toContain('only these files changed since: apps/figures-app/src/cat.spec.ts');
+
+    const afterFail = stepInstruction(
+      'validate-tests',
+      state({
+        history: [
+          { step: 'validate-tests', passed: false, details: ['No test proves: The cat stands — missing spec'] },
+          { step: 'author-tests', passed: true, details: [] },
+          { step: 'unit-tests', passed: true, details: [] },
+        ],
+      }),
+    );
+    expect(afterFail.task).toContain('Prior validation failed only on: No test proves: The cat stands — missing spec');
+  });
 });
 
 describe('the model named in an instruction', () => {
-  it('should name the strongest model of each client for the plan', () => {
-    expect(planInstruction(state({})).models).toEqual({ claude: 'opus', antigravity: 'pro' });
+  it('should name the lighter model of each client for the plan', () => {
+    expect(planInstruction(state({})).models).toEqual({ claude: 'sonnet', antigravity: 'flash' });
   });
 
   it('should name the lighter model of each client for a review', () => {
